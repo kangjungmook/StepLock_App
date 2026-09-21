@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,11 +32,10 @@ import com.steplock.app.data.BlockedApp
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.SampleData
+import com.steplock.app.data.UnlockEvaluator
 import com.steplock.app.ui.components.AppListItem
 import com.steplock.app.ui.components.BottomNavBar
 import com.steplock.app.ui.components.ConditionRow
-import com.steplock.app.ui.components.IconTile
-import com.steplock.app.ui.components.LockBanner
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
@@ -49,14 +49,23 @@ import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.theme.StepLockTheme
+import com.steplock.app.ui.util.UnlockCondition
 import com.steplock.app.ui.util.durationLabel
+import com.steplock.app.ui.util.enabledConditions
 import com.steplock.app.ui.util.formatThousands
+import com.steplock.app.ui.util.isAchieved
+import com.steplock.app.ui.util.primaryCondition
+import com.steplock.app.ui.util.progress
+import com.steplock.app.ui.util.remainingText
 import com.steplock.app.ui.util.sleepGoalLabel
-import com.steplock.app.ui.util.sleepGoalMinutes
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 
+/**
+ * 홈. 화면을 열었을 때 가장 알고 싶은 것은 "지금 잠겨 있나"이므로
+ * 그 답을 맨 위 한 장으로 보여 주고, 조건은 같은 모양의 링으로 나열합니다.
+ */
 @Composable
 fun HomeScreen(
     userName: String?,
@@ -71,8 +80,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val lockedApps = apps.filter { it.id in settings.blockedAppIds }
-    val stepProgress = (stat.steps.toFloat() / settings.stepGoal).coerceIn(0f, 1f)
-    val sleepAchieved = stat.sleepMinutes >= sleepGoalMinutes(settings.sleepGoalHours)
+    val conditions = enabledConditions(settings)
+    val unlocked = UnlockEvaluator.isUnlocked(settings, stat)
 
     Column(
         modifier = modifier
@@ -91,149 +100,113 @@ fun HomeScreen(
                     bottom = 24.dp,
                 ),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (userName != null) {
-                            stringResource(R.string.home_greeting, userName)
-                        } else {
-                            stringResource(R.string.home_greeting_anonymous)
-                        },
-                        style = SlText.Greeting,
-                        color = SlColor.TextPrimary,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = stat.date.format(
-                            DateTimeFormatter.ofPattern(
-                                stringResource(R.string.home_date_pattern),
-                                Locale.KOREAN,
-                            ),
-                        ),
-                        style = SlText.RowValue,
-                        color = SlColor.TextSecondary,
-                    )
-                }
-                // 목표를 채우면 캐릭터가 걸음을 멈춥니다.
-                StepLockMascot(
-                    modifier = Modifier.size(width = 48.dp, height = 60.dp),
-                    mood = if (stepProgress >= 1f) MascotMood.Resting else MascotMood.Walking,
-                )
-            }
+            Text(
+                text = if (userName != null) {
+                    stringResource(R.string.home_greeting, userName)
+                } else {
+                    stringResource(R.string.home_greeting_anonymous)
+                },
+                style = SlText.Greeting,
+                color = SlColor.TextPrimary,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = stat.date.format(
+                    DateTimeFormatter.ofPattern(
+                        stringResource(R.string.home_date_pattern),
+                        Locale.KOREAN,
+                    ),
+                ),
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+            )
 
-            Spacer(Modifier.height(20.dp))
-            LockBanner(
-                title = stringResource(R.string.home_locked_count, lockedApps.size),
-                subtitle = lockedApps.joinToString(" · ") { it.name },
-                actionLabel = stringResource(R.string.home_locked_manage),
-                onClick = onManageLocks,
+            Spacer(Modifier.height(24.dp))
+            TodayStatusCard(
+                unlocked = unlocked,
+                description = if (unlocked) {
+                    stringResource(R.string.home_status_unlocked_desc)
+                } else {
+                    primaryCondition(settings).remainingText(stat, settings)
+                },
             )
 
             Spacer(Modifier.height(28.dp))
             SectionLabel(stringResource(R.string.home_section_conditions))
             Spacer(Modifier.height(12.dp))
             SlPanel {
-                ConditionRow(
-                    title = stringResource(R.string.condition_steps),
-                    value = stringResource(
-                        R.string.home_steps_value,
-                        stat.steps.formatThousands(),
-                        settings.stepGoal.formatThousands(),
-                    ),
-                    leading = {
-                        ProgressRing(
-                            progress = stepProgress,
-                            size = SlDimen.TouchTarget,
-                            radius = 18.dp,
-                            strokeWidth = 4.dp,
-                        ) {
-                            Text(
-                                text = "${(stepProgress * 100).roundToInt()}%",
-                                style = SlText.RingPercent,
-                                color = SlColor.BrandDeep,
-                            )
-                        }
-                    },
-                )
-                SlDivider()
-                ConditionRow(
-                    title = stringResource(R.string.condition_sleep),
-                    value = stringResource(
-                        R.string.home_sleep_value,
-                        durationLabel(stat.sleepMinutes),
-                        sleepGoalLabel(settings.sleepGoalHours),
-                    ),
-                    leading = {
-                        if (sleepAchieved) {
-                            IconTile(
-                                icon = SlIcons.CheckMedium,
-                                tint = SlColor.OnBrand,
-                                background = SlColor.Brand,
-                                size = SlDimen.TouchTarget,
-                                shape = CircleShape,
-                                iconSize = 22.dp,
-                            )
-                        } else {
-                            IconTile(
-                                icon = SlIcons.Moon,
-                                tint = SlColor.BrandDeep,
-                                background = SlColor.SurfaceAlt,
-                                size = SlDimen.TouchTarget,
-                                shape = RoundedCornerShape(SlDimen.RadiusField),
-                                iconSize = 22.dp,
-                            )
-                        }
-                    },
-                    trailing = { if (sleepAchieved) AchievedBadge() },
-                )
-                SlDivider()
-                ConditionRow(
-                    title = stringResource(R.string.condition_pomodoro),
-                    value = stringResource(
-                        R.string.home_pomodoro_value,
-                        stat.pomodoroSessions,
-                        settings.pomodoroGoal,
-                    ),
-                    modifier = Modifier.clickable(role = Role.Button, onClick = onPomodoroClick),
-                    leading = {
-                        IconTile(
-                            icon = SlIcons.Timer,
-                            tint = SlColor.BrandDeep,
-                            background = SlColor.SurfaceAlt,
-                            size = SlDimen.TouchTarget,
-                            shape = RoundedCornerShape(SlDimen.RadiusField),
-                            iconSize = 22.dp,
+                if (conditions.isEmpty()) {
+                    EmptyHint(
+                        title = stringResource(R.string.home_no_conditions_title),
+                        description = stringResource(R.string.home_no_conditions_desc),
+                        onClick = onManageLocks,
+                    )
+                } else {
+                    conditions.forEachIndexed { index, condition ->
+                        if (index > 0) SlDivider()
+                        ConditionRow(
+                            title = stringResource(condition.titleRes),
+                            value = condition.valueText(stat, settings),
+                            modifier = if (condition == UnlockCondition.Pomodoro) {
+                                Modifier.clickable(role = Role.Button, onClick = onPomodoroClick)
+                            } else {
+                                Modifier
+                            },
+                            leading = {
+                                // 세 조건 모두 "목표 대비 진행"이라 같은 링으로 보여 줍니다.
+                                ConditionRing(
+                                    progress = condition.progress(stat, settings),
+                                    achieved = condition.isAchieved(stat, settings),
+                                )
+                            },
+                            trailing = if (condition == UnlockCondition.Pomodoro) {
+                                { Chevron() }
+                            } else {
+                                null
+                            },
                         )
-                    },
-                    trailing = {
-                        SessionDots(
-                            completed = stat.pomodoroSessions,
-                            goal = settings.pomodoroGoal,
-                        )
-                    },
-                )
+                    }
+                }
             }
 
             Spacer(Modifier.height(28.dp))
-            SectionLabel(stringResource(R.string.home_section_blocked_apps))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionLabel(
+                    text = stringResource(R.string.home_section_blocked_apps),
+                    modifier = Modifier.weight(1f),
+                )
+                // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
+                if (lockedApps.isNotEmpty()) DetectingStatus()
+            }
             Spacer(Modifier.height(12.dp))
             SlPanel {
-                lockedApps.forEachIndexed { index, app ->
-                    if (index > 0) SlDivider()
-                    AppListItem(
-                        name = app.name,
-                        badgeInitial = app.initial,
-                        badgeColor = appBadgeColor(app.id),
-                        subtitle = app.subtitle,
-                        modifier = Modifier.clickable(
-                            role = Role.Button,
-                            onClick = { onAppClick(app) },
-                        ),
-                        trailing = { DetectingStatus() },
+                if (lockedApps.isEmpty()) {
+                    EmptyHint(
+                        title = stringResource(R.string.home_no_apps_title),
+                        description = stringResource(R.string.home_no_apps_desc),
+                        onClick = onManageLocks,
                     )
+                } else {
+                    lockedApps.forEachIndexed { index, app ->
+                        if (index > 0) SlDivider()
+                        AppListItem(
+                            name = app.name,
+                            badgeInitial = app.initial,
+                            badgeColor = appBadgeColor(app.id),
+                            subtitle = app.subtitle,
+                            badgeSize = 36.dp,
+                            nameStyle = SlText.ListItem,
+                            verticalPadding = 12.dp,
+                            modifier = Modifier.clickable(
+                                role = Role.Button,
+                                onClick = { onAppClick(app) },
+                            ),
+                            trailing = { Chevron() },
+                        )
+                    }
                 }
             }
         }
@@ -242,33 +215,105 @@ fun HomeScreen(
     }
 }
 
+/**
+ * 오늘 잠금이 풀렸는지 한 장으로. 상태에 따라 색과 캐릭터 표정이 함께 바뀌어서
+ * 글을 읽지 않아도 구분됩니다.
+ */
 @Composable
-private fun AchievedBadge() {
-    Box(
+private fun TodayStatusCard(unlocked: Boolean, description: String) {
+    val container = if (unlocked) SlColor.BrandTint else SlColor.AmberSurface
+    val titleColor = if (unlocked) SlColor.BrandDeep else SlColor.AmberText
+    val descColor = if (unlocked) SlColor.BrandInk else SlColor.AmberSubText
+
+    Row(
         modifier = Modifier
-            .clip(CircleShape)
-            .background(SlColor.BrandTintAlt)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SlDimen.RadiusPanel))
+            .background(container)
+            .padding(start = 16.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = stringResource(R.string.home_badge_achieved),
-            style = SlText.Chip,
-            color = SlColor.BrandDeep,
+        StepLockMascot(
+            modifier = Modifier.size(width = 60.dp, height = 74.dp),
+            mood = if (unlocked) MascotMood.Resting else MascotMood.Walking,
+            footprintColor = descColor.copy(alpha = 0.28f),
         )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(
+                    if (unlocked) {
+                        R.string.home_status_unlocked_title
+                    } else {
+                        R.string.home_status_locked_title
+                    },
+                ),
+                style = SlText.StatusTitle,
+                color = titleColor,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(text = description, style = SlText.BodySm, color = descColor)
+        }
+    }
+}
+
+/** 달성하면 숫자 대신 체크가 들어갑니다 — 모양은 그대로 두고 상태만 바꿉니다. */
+@Composable
+private fun ConditionRing(progress: Float, achieved: Boolean) {
+    ProgressRing(
+        progress = progress,
+        size = SlDimen.TouchTarget,
+        radius = 18.dp,
+        strokeWidth = 4.dp,
+    ) {
+        if (achieved) {
+            Icon(
+                imageVector = SlIcons.CheckBold,
+                contentDescription = null,
+                tint = SlColor.Brand,
+                modifier = Modifier.size(18.dp),
+            )
+        } else {
+            Text(
+                text = "${(progress * 100).roundToInt()}%",
+                style = SlText.RingPercent,
+                color = SlColor.BrandDeep,
+            )
+        }
     }
 }
 
 @Composable
-private fun SessionDots(completed: Int, goal: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(goal) { index ->
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(if (index < completed) SlColor.Brand else SlColor.Border),
+private fun Chevron() {
+    Icon(
+        imageVector = SlIcons.ChevronRight,
+        contentDescription = null,
+        tint = SlColor.TextTertiary,
+        modifier = Modifier.size(18.dp),
+    )
+}
+
+/** 조건이나 앱을 하나도 고르지 않았을 때. 빈 패널을 두지 않고 다음 행동을 안내합니다. */
+@Composable
+private fun EmptyHint(title: String, description: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = SlText.RowTitle, color = SlColor.TextPrimary)
+            Text(
+                text = description,
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
+        Chevron()
     }
 }
 
@@ -290,6 +335,25 @@ private fun DetectingStatus() {
             color = SlColor.TextSecondary,
         )
     }
+}
+
+@Composable
+private fun UnlockCondition.valueText(stat: DailyStat, settings: LockSettings): String = when (this) {
+    UnlockCondition.Steps -> stringResource(
+        R.string.home_steps_value,
+        stat.steps.formatThousands(),
+        settings.stepGoal.formatThousands(),
+    )
+    UnlockCondition.Sleep -> stringResource(
+        R.string.home_sleep_value,
+        durationLabel(stat.sleepMinutes),
+        sleepGoalLabel(settings.sleepGoalHours),
+    )
+    UnlockCondition.Pomodoro -> stringResource(
+        R.string.home_pomodoro_value,
+        stat.pomodoroSessions,
+        settings.pomodoroGoal,
+    )
 }
 
 @Preview(widthDp = 412, heightDp = 892)

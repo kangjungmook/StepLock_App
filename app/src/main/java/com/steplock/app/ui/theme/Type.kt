@@ -56,6 +56,7 @@ object SlText {
     val RingValue = slStyle(FontWeight.Black, 42f, 42f, -1f)
     val LoginHeading = slStyle(FontWeight.Black, 20f, 26f)
     val DialogTitle = slStyle(FontWeight.Black, 19f, 26f)
+    val StatusTitle = slStyle(FontWeight.Black, 18f, 25f)
 
     val ScreenTitle = slStyle(FontWeight.Bold, 18f, 24f)
     val RowTitle = slStyle(FontWeight.Bold, 15f, 21f)

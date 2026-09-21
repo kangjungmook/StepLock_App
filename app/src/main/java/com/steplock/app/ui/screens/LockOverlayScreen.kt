@@ -1,6 +1,5 @@
 package com.steplock.app.ui.screens
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,9 +35,13 @@ import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlText
-import com.steplock.app.ui.util.formatThousands
+import com.steplock.app.ui.util.UnlockCondition
+import com.steplock.app.ui.util.enabledConditions
+import com.steplock.app.ui.util.isAchieved
+import com.steplock.app.ui.util.primaryCondition
+import com.steplock.app.ui.util.progress
+import com.steplock.app.ui.util.remainingText
 import com.steplock.app.ui.util.sleepGoalLabel
-import com.steplock.app.ui.util.sleepGoalMinutes
 import com.steplock.app.ui.util.withTopicParticle
 import kotlin.math.roundToInt
 
@@ -57,27 +60,14 @@ fun LockOverlayScreen(
     onTemporaryAllow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sleepGoal = sleepGoalMinutes(settings.sleepGoalHours)
-    val sleepAchieved = stat.sleepMinutes >= sleepGoal
-    val pomodoroAchieved = stat.pomodoroSessions >= settings.pomodoroGoal
+    val sleepAchieved = UnlockCondition.Sleep.isAchieved(stat, settings)
+    val pomodoroAchieved = UnlockCondition.Pomodoro.isAchieved(stat, settings)
 
     // 켜 둔 조건만 다룹니다. 끈 조건을 보여 주면 열 수 없는 자물쇠처럼 읽힙니다.
-    val hero = when {
-        settings.stepsEnabled -> LockCondition.Steps
-        settings.sleepEnabled -> LockCondition.Sleep
-        else -> LockCondition.Pomodoro
-    }
-    val heroProgress = when (hero) {
-        LockCondition.Steps -> stat.steps.toFloat() / settings.stepGoal
-        LockCondition.Sleep -> stat.sleepMinutes.toFloat() / sleepGoal
-        LockCondition.Pomodoro -> stat.pomodoroSessions.toFloat() / settings.pomodoroGoal
-    }.coerceIn(0f, 1f)
-
-    val enabledCount = listOf(
-        settings.stepsEnabled,
-        settings.sleepEnabled,
-        settings.pomodoroEnabled,
-    ).count { it }
+    // 홈과 같은 기준·같은 문구를 쓰려고 조건 계산은 공용 유틸에 있습니다.
+    val hero = primaryCondition(settings)
+    val heroProgress = hero.progress(stat, settings)
+    val enabledCount = enabledConditions(settings).size
 
     Column(
         modifier = modifier
@@ -113,12 +103,8 @@ fun LockOverlayScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                // 전부 만족 모드에서는 크게 보여 준 조건을 이미 채웠을 수 있습니다.
-                text = if (heroProgress >= 1f) {
-                    stringResource(R.string.lock_remaining_done)
-                } else {
-                    hero.remainingText(stat, settings)
-                },
+                // 채운 조건이 히어로일 수 있어서(전부 만족 모드) 공용 확장이 분기합니다.
+                text = hero.remainingText(stat, settings),
                 style = SlText.Remaining,
                 color = SlColor.Dark.AmberText,
                 textAlign = TextAlign.Center,
@@ -143,7 +129,7 @@ fun LockOverlayScreen(
                         color = SlColor.Dark.TextPrimary,
                     )
                     Text(
-                        text = stringResource(hero.captionRes),
+                        text = stringResource(hero.goalCaptionRes),
                         style = SlText.LabelSm,
                         color = SlColor.Dark.TextMuted,
                     )
@@ -151,8 +137,8 @@ fun LockOverlayScreen(
             }
 
             // 링으로 보여 준 조건은 빼고, 남은 조건만 칩으로 요약합니다.
-            val showSleepChip = settings.sleepEnabled && hero != LockCondition.Sleep
-            val showPomodoroChip = settings.pomodoroEnabled && hero != LockCondition.Pomodoro
+            val showSleepChip = settings.sleepEnabled && hero != UnlockCondition.Sleep
+            val showPomodoroChip = settings.pomodoroEnabled && hero != UnlockCondition.Pomodoro
             if (showSleepChip || showPomodoroChip) {
                 Spacer(Modifier.height(28.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -215,27 +201,6 @@ fun LockOverlayScreen(
             color = SlColor.Dark.TextLink,
         )
     }
-}
-
-/** 잠금 화면이 크게 보여 줄 수 있는 조건. */
-private enum class LockCondition(@StringRes val captionRes: Int) {
-    Steps(R.string.lock_ring_caption),
-    Sleep(R.string.lock_ring_caption_sleep),
-    Pomodoro(R.string.lock_ring_caption_pomodoro),
-}
-
-@Composable
-private fun LockCondition.remainingText(stat: DailyStat, settings: LockSettings): String = when (this) {
-    LockCondition.Steps -> stringResource(
-        R.string.lock_remaining,
-        (settings.stepGoal - stat.steps).coerceAtLeast(0).formatThousands(),
-    )
-    // 지금 당장 채울 수 없는 조건이라 남은 시간을 숫자로 재촉하지 않습니다.
-    LockCondition.Sleep -> stringResource(R.string.lock_remaining_sleep)
-    LockCondition.Pomodoro -> stringResource(
-        R.string.lock_remaining_pomodoro,
-        (settings.pomodoroGoal - stat.pomodoroSessions).coerceAtLeast(1),
-    )
 }
 
 @Preview(widthDp = 412, heightDp = 892)

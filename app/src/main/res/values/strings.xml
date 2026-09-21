@@ -80,14 +80,20 @@
     <string name="home_greeting">좋은 아침이에요, %1$s님</string>
     <string name="home_greeting_anonymous">좋은 아침이에요</string>
     <string name="home_date_pattern">M월 d일 EEEE</string>
-    <string name="home_locked_count">%1$d개 앱 잠금 중</string>
-    <string name="home_locked_manage">잠금 설정 관리</string>
+    <!-- 홈 맨 위 상태 카드 — 오늘 잠금이 풀렸는지 -->
+    <string name="home_status_unlocked_title">오늘은 열려 있어요</string>
+    <string name="home_status_unlocked_desc">잠긴 앱을 자유롭게 쓸 수 있어요</string>
+    <string name="home_status_locked_title">아직 잠겨 있어요</string>
     <string name="home_section_conditions">잠금 해제 조건</string>
+    <!-- 조건이나 앱을 하나도 고르지 않은 경우 -->
+    <string name="home_no_conditions_title">켜 둔 조건이 없어요</string>
+    <string name="home_no_conditions_desc">설정에서 조건을 켜면 잠금이 시작돼요</string>
+    <string name="home_no_apps_title">잠글 앱을 고르지 않았어요</string>
+    <string name="home_no_apps_desc">설정에서 잠글 앱을 골라 주세요</string>
     <string name="home_section_blocked_apps">차단 중인 앱</string>
     <string name="home_steps_value">%1$s / %2$s보</string>
     <string name="home_sleep_value">%1$s / %2$s</string>
     <string name="home_pomodoro_value">%1$d / %2$d 세션</string>
-    <string name="home_badge_achieved">달성</string>
     <string name="home_app_detecting">감지 중</string>
     <string name="nav_home">홈</string>
     <string name="nav_stats">통계</string>

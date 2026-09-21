@@ -51,7 +51,7 @@
 | --- | --- | --- |
 | **Login** | 앱 첫 화면. 밑줄형 입력 · 로그인 유지 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
 | **Onboarding** | 잠금 해제 조건 3가지 안내 + 권한 3단계 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
-| **Home** | 오늘의 달성 현황, 잠금 상태 배너, 차단 중인 앱 목록 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
+| **Home** | 맨 위에 오늘 잠금이 풀렸는지 한 장으로, 아래에 조건별 진행과 차단 앱 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
 | **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
@@ -161,13 +161,13 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 
 | 컴포저블 | 설명 |
 | --- | --- |
-| `ProgressRing` | 홈 44dp · 잠금 176dp 공용 원형 게이지. 박스 크기와 링 반지름을 따로 받습니다. |
+| `ProgressRing` | 홈 44dp · 잠금 176dp 공용 원형 게이지. 홈의 세 조건이 같은 링을 써서 달성 시 숫자 대신 체크가 들어갑니다. |
 | `ConditionRow` | 홈의 조건 한 줄. 앞쪽 시각 요소와 뒤쪽 상태를 슬롯으로 받습니다. |
 | `ConditionSettingCard` | 토글 + 구분선 + `GoalStepper` 조합. 설정의 조건 카드 3개. |
 | `GoalStepper` | −/+ 44dp 버튼과 목표값. 걸음 500보 · 수면 30분 · 세션 1회 단위. |
 | `AppListItem` | 앱 뱃지 + 이름/부제 + 상태 슬롯(감지 중 점 / 체크박스). |
-| `LockBanner` | 앰버 톤 잠금 상태 배너. 탭하면 설정으로 이동합니다. |
 | `StatusChip` | 잠금 화면 미니 상태 칩. 달성 / 미달성 2상태. |
+| `SlConfirmDialog` | 되돌릴 수 없는 동작의 확인 대화상자. 앱 토큰으로 직접 그렸습니다. |
 | `UnderlineTextField` | 밑줄형 입력. 포커스 시 밑줄이 브랜드 그린, 비밀번호는 표시 토글 내장. |
 | `SocialLoginButton` | 구글 · 카카오 · 애플 44dp 원형 버튼. |
 | `SlSwitch` · `CheckboxMark` | 시안 규격(52×32 트랙, 24dp 체크박스)에 맞춘 선택 컨트롤. |
