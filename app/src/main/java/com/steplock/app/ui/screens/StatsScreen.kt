@@ -214,7 +214,10 @@ private fun AchievementRow(icon: ImageVector, title: String, achievedByDay: List
     )
 }
 
-/** 숫자를 크게, 라벨을 작게. 현재 기록만 브랜드 색으로 강조합니다. */
+/**
+ * 라벨과 숫자를 한 줄에 둡니다. 두 줄로 쌓으면 아래 차트와 조건 목록이
+ * 화면 밖으로 밀려서, 요약인데 자리를 제일 많이 차지하게 됩니다.
+ */
 @Composable
 private fun StreakFigure(
     label: String,
@@ -222,12 +225,15 @@ private fun StreakFigure(
     highlight: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
-        Spacer(Modifier.height(6.dp))
         Text(
             text = stringResource(R.string.stats_streak_days, days),
-            style = SlText.Greeting,
+            style = SlText.StatusTitle,
             color = if (highlight) SlColor.Brand else SlColor.TextPrimary,
         )
     }

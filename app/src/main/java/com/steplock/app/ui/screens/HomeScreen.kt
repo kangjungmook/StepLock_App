@@ -212,7 +212,8 @@ fun HomeScreen(
                             name = app.name,
                             badgeInitial = app.initial,
                             badgeColor = appBadgeColor(app.id),
-                            subtitle = app.subtitle,
+                            // 부제(어느 앱의 기능인지)는 앱을 고르는 설정에서만 필요합니다.
+                            // 홈에서는 줄만 두 배로 키워 목록이 화면을 넘기게 만들었습니다.
                             badgeSize = 36.dp,
                             nameStyle = SlText.ListItem,
                             verticalPadding = 12.dp,

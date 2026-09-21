@@ -29,13 +29,18 @@ object SampleData {
         pomodoroSessions = 2,
     )
 
+    /**
+     * 최근 닷새는 세 조건을 다 채웠고 오늘은 아직 못 채운 상태.
+     * 연속 달성이 5일로 나오고, 오늘은 잠긴 채로 수면만 달성이라
+     * 조건 링의 두 상태(퍼센트·체크)가 한 화면에 같이 보입니다.
+     */
     val weekly: List<DailyStat> = listOf(
         Triple(6420, 390, 1),
         Triple(8210, 445, 3),
-        Triple(3180, 420, 0),
-        Triple(9040, 470, 2),
-        Triple(7650, 400, 4),
-        Triple(0, 505, 0),
+        Triple(8600, 430, 3),
+        Triple(9040, 470, 4),
+        Triple(8150, 425, 3),
+        Triple(8320, 440, 3),
         Triple(5240, 440, 2),
     ).mapIndexed { index, (steps, sleepMinutes, sessions) ->
         DailyStat(
