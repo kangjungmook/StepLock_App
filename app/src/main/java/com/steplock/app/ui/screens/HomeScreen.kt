@@ -50,6 +50,7 @@ import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.StepTrack
 import com.steplock.app.ui.components.WeekDay
 import com.steplock.app.ui.components.WeekRail
