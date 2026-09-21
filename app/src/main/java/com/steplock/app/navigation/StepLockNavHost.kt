@@ -1,13 +1,21 @@
 package com.steplock.app.navigation
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -16,6 +24,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.steplock.app.data.BlockedAppCatalog
+import com.steplock.app.service.AppWatchService
+import com.steplock.app.system.AppPermissions
+import com.steplock.app.system.PermissionStep
+import com.steplock.app.system.nextPermissionStep
 import com.steplock.app.ui.StepLockUiState
 import com.steplock.app.ui.StepLockViewModel
 import com.steplock.app.ui.components.NavTab
@@ -72,11 +84,35 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.ONBOARDING) {
+            val context = LocalContext.current
+            var step by remember { mutableStateOf(nextPermissionStep(context)) }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                step = nextPermissionStep(context)
+            }
+            val activityRecognitionRequest = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) { step = nextPermissionStep(context) }
+
             OnboardingScreen(
-                onGrantPermission = {
-                    viewModel.completeOnboarding()
-                    navController.navigate(Route.HOME) {
-                        popUpTo(startDestination) { inclusive = true }
+                ctaText = stringResource(step.ctaRes),
+                onCtaClick = {
+                    when (step) {
+                        PermissionStep.ActivityRecognition ->
+                            activityRecognitionRequest.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+
+                        PermissionStep.UsageAccess ->
+                            context.startActivity(AppPermissions.usageAccessSettings())
+
+                        PermissionStep.Overlay ->
+                            context.startActivity(AppPermissions.overlaySettings(context))
+
+                        PermissionStep.Ready -> {
+                            AppWatchService.start(context)
+                            viewModel.completeOnboarding()
+                            navController.navigate(Route.HOME) {
+                                popUpTo(startDestination) { inclusive = true }
+                            }
+                        }
                     }
                 },
             )

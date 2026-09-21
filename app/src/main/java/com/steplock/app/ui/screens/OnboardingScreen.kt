@@ -34,7 +34,8 @@ import com.steplock.app.ui.theme.StepLockTheme
 
 @Composable
 fun OnboardingScreen(
-    onGrantPermission: () -> Unit,
+    ctaText: String,
+    onCtaClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -101,10 +102,7 @@ fun OnboardingScreen(
 
         Spacer(Modifier.height(24.dp))
         Spacer(Modifier.weight(1f))
-        PrimaryButton(
-            text = stringResource(R.string.onboarding_cta),
-            onClick = onGrantPermission,
-        )
+        PrimaryButton(text = ctaText, onClick = onCtaClick)
         Spacer(Modifier.height(14.dp))
         Text(
             text = stringResource(R.string.onboarding_privacy),
@@ -143,6 +141,9 @@ private fun UnlockRule(icon: ImageVector, title: String, description: String) {
 @Composable
 private fun OnboardingScreenPreview() {
     StepLockTheme {
-        OnboardingScreen(onGrantPermission = {})
+        OnboardingScreen(
+            ctaText = stringResource(R.string.permission_cta_activity),
+            onCtaClick = {},
+        )
     }
 }

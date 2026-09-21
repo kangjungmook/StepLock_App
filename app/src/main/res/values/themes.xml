@@ -6,4 +6,9 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <style name="Theme.StepLock.Lock" parent="Theme.StepLock">
+        <item name="android:windowBackground">@color/steplock_dark_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

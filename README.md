@@ -1,7 +1,8 @@
 # 스텝락 (StepLock)
 
 > 걸음 수 · 수면 시간 · 집중 타이머 중 하나를 채워야 쇼츠·릴스·틱톡의 잠금이 풀리는 습관 관리 앱.
-> Kotlin + Jetpack Compose로 만든 **UI 레이어 구현**입니다.
+> Kotlin + Jetpack Compose. 다섯 화면과 함께 **설정 영구 저장 · 걸음 수 집계 · 차단 앱 감지와
+> 잠금 오버레이**까지 동작합니다.
 
 디자인 시안(OKLCH 토큰 기반 HTML 프로토타입)을 Compose로 이식하면서, 색·간격·타이포·터치 영역을
 토큰으로 정리하고 화면을 재사용 컴포저블 단위로 분리했습니다.
@@ -27,6 +28,32 @@
 온보딩을 마친 기기는 로그인을 건너뛰고 홈으로 시작합니다 (`StepLockViewModel.startDestination`).
 
 각 화면 파일 하단에 `@Preview`가 있어 Android Studio에서 412×892 프레임으로 바로 확인할 수 있습니다.
+
+---
+
+## 잠금은 이렇게 동작합니다
+
+1. `AppWatchService`(포그라운드 서비스)가 1초 간격으로 `UsageStatsManager`의 이벤트를 읽어
+   전경 앱을 확인합니다.
+2. 전경 앱이 차단 목록에 있으면 `UnlockEvaluator`로 오늘 조건을 판정합니다.
+   전부 만족 모드가 꺼져 있으면 켜 둔 조건 중 하나만 채워도 통과합니다.
+3. 조건 미달이면 `LockActivity`를 띄웁니다. 닫기와 뒤로 가기는 홈으로 보내고,
+   "5분만 임시로 허용하기"를 누르면 그 시간만 감시를 쉽니다.
+
+걸음 수는 `TYPE_STEP_COUNTER`의 부팅 후 누적값에서 그날 첫 값을 기준점으로 빼 계산하고,
+기준점은 DataStore에 날짜와 함께 저장합니다. 재부팅으로 누적값이 줄면 기준점을 다시 잡습니다.
+
+**감지 방식 선택** — 접근성 서비스가 더 빠르고 정확하지만 Play 스토어에서 민감 권한으로 분류돼
+심사 설명을 요구합니다. 그래서 심사 부담이 작은 사용 정보 접근(`PACKAGE_USAGE_STATS`) +
+화면 위 표시(`SYSTEM_ALERT_WINDOW`) 조합을 택했습니다. 대신 폴링이라 감지가 1초 정도 늦습니다.
+
+필요한 권한은 세 가지이고, 온보딩 CTA가 남은 권한 하나씩만 순서대로 요구합니다.
+
+| 권한 | 용도 |
+| --- | --- |
+| `ACTIVITY_RECOGNITION` | 걸음 수 센서 읽기 (런타임 권한) |
+| 사용 정보 접근 | 전경 앱 확인 (설정 화면에서 허용) |
+| 화면 위 표시 | 다른 앱 위에 잠금 화면 띄우기 (설정 화면에서 허용) |
 
 ---
 
@@ -99,29 +126,35 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 
 ## 데이터 · 상태 설계
 
-로그인 전에도 기기별로 기록이 쌓이고, 로그인 후 서버 계정에 귀속시킬 수 있도록 모델을 준비했습니다
+로그인 전에도 기기별로 기록이 쌓이고, 로그인 후 서버 계정에 귀속시킬 수 있도록 모델을 잡았습니다
 ([`Models.kt`](app/src/main/java/com/steplock/app/data/Models.kt)).
 
 - `LockSettings` · `DailyStat` — `deviceUuid: String`과 `accountId: String?`를 함께 보관.
   로그인 성공 시 `deviceUuid` 레코드를 계정에 귀속(claim)시키는 마이그레이션 훅용입니다.
 - `AuthState` — `Unknown` · `Guest` · `SignedIn(accountId)`.
-- `StepLockViewModel` — 목표값·토글·차단 앱 선택을 들고 있어, 설정에서 걸음 목표를 바꾸면
-  홈 게이지와 잠금 화면 문구가 함께 갱신됩니다.
+- `SettingsRepository` — DataStore Preferences에 목표값·조건 토글·차단 앱·기기 UUID·
+  온보딩 완료 여부와 걸음 기준점을 저장하고 `Flow<AppPreferences>`로 흘려보냅니다.
+- `StepLockViewModel` — 저장된 설정과 센서 걸음 수를 합쳐 `StateFlow<StepLockUiState?>`로 냅니다.
+  설정에서 걸음 목표를 바꾸면 홈 게이지와 잠금 화면 문구가 함께 갱신됩니다.
 
 ---
 
 ## 기술 스택
 
 - Kotlin 2.0 · Jetpack Compose (Material 3) · Navigation Compose
+- DataStore Preferences · SensorManager · UsageStatsManager · 포그라운드 서비스
 - Gradle KTS + 버전 카탈로그 (`gradle/libs.versions.toml`)
 - minSdk 26 / targetSdk 35 · edge-to-edge
 
 ```
 app/src/main/java/com/steplock/app
 ├── MainActivity.kt
-├── data/            # LockSettings · DailyStat · BlockedApp · AuthState · 데모 데이터
+├── data/            # 모델 · SettingsRepository(DataStore) · StepTracker · UnlockEvaluator
 ├── navigation/      # Route · StepLockNavHost
+├── service/         # AppWatchService — 전경 앱 감시
+├── system/          # 권한 확인과 설정 화면 인텐트
 └── ui/
+    ├── LockActivity.kt
     ├── components/  # 재사용 컴포저블 + stroke 아이콘 세트
     ├── screens/     # 5개 화면
     ├── theme/       # 색 · 타이포 · 치수 토큰
@@ -139,10 +172,16 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 
 ## 구현 범위
 
-지금은 **화면·레이아웃·UI 상태**까지입니다. 아래는 아직 연결하지 않았습니다.
+동작하는 것 — 다섯 화면, 설정 영구 저장, 걸음 수 집계, 차단 앱 감지와 잠금 오버레이,
+조건 판정(하나만 / 전부 만족), 임시 허용 5분.
 
-- 실제 인증 (Firebase Auth, 구글·카카오·애플 SDK) — 버튼과 상태만 준비
-- 손쉬운 사용(Accessibility) 서비스 기반 앱 감지와 오버레이 표시
-- 걸음 수·수면 데이터 연동 (Health Connect / 센서)
-- DataStore 영구 저장 — 현재 목표값은 앱 실행 중에만 유지됩니다
-- 통계 탭 화면
+아직 연결하지 않은 것:
+
+- **수면 시간** — Health Connect 연동이 필요해 조건 기본값을 꺼 두었습니다.
+- **집중 타이머** — 포그라운드 서비스 타이머와 알림이 필요합니다. 목표 세션만 저장됩니다.
+- **실제 인증** — 로그인 화면은 레이아웃과 상태까지입니다. Firebase Auth·소셜 SDK 미연결.
+- **통계 탭** — 화면이 없어 탭을 눌러도 이동하지 않습니다.
+- **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.
+
+쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.
+짧은 영상 화면만 골라 잠그려면 접근성 서비스로 화면 단위를 봐야 합니다.

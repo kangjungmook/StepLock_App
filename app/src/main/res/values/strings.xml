@@ -42,7 +42,17 @@
     <string name="onboarding_pomodoro_title">집중 타이머를 완료하면 해제</string>
     <string name="onboarding_pomodoro_desc">25분 뽀모도로를 목표 세션만큼 끝내면 열립니다.</string>
     <string name="onboarding_caption">세 가지 중 하나만 채워도 해제돼요</string>
-    <string name="onboarding_cta">손쉬운 사용 권한 허용하기</string>
+
+    <!-- 권한 단계별 CTA — 남은 권한 하나만 요구합니다 -->
+    <string name="permission_cta_activity">걸음 수 접근 허용하기</string>
+    <string name="permission_cta_usage">사용 정보 접근 허용하기</string>
+    <string name="permission_cta_overlay">화면 위 표시 허용하기</string>
+    <string name="permission_cta_start">스텝락 시작하기</string>
+
+    <!-- 잠금 감시 알림 -->
+    <string name="watch_channel_name">잠금 감시</string>
+    <string name="watch_notification_title">스텝락이 잠금을 지키고 있어요</string>
+    <string name="watch_notification_text">차단한 앱을 열면 조건 화면을 보여줍니다</string>
     <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
 
     <!-- 홈 -->

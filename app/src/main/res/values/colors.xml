@@ -4,4 +4,6 @@
     <color name="steplock_background">#F5F2E9</color>
     <!-- oklch(58% 0.13 165) — 브랜드 그린 -->
     <color name="steplock_brand">#009267</color>
+    <!-- oklch(19% 0.02 260) — 잠금 오버레이 배경 -->
+    <color name="steplock_dark_background">#0F141D</color>
 </resources>
