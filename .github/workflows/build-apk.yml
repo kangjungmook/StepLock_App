@@ -32,6 +32,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: assembleDebug
+        id: debug_build
         run: |
           set -o pipefail
           ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
@@ -81,8 +82,9 @@ jobs:
           set -o pipefail
           ./gradlew bundleRelease --stacktrace 2>&1 | tee build.log
 
+      # 디버그가 깨진 경우는 위에서 이미 이슈를 남겼으므로 중복을 막습니다.
       - name: 릴리스 빌드 실패를 이슈로
-        if: failure()
+        if: failure() && steps.debug_build.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./.github/report-build-failure.sh "릴리스 빌드 실패 (R8 규칙 확인 필요)"

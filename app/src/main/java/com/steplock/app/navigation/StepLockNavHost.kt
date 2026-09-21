@@ -165,6 +165,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.HOME) {
+            val context = LocalContext.current
             // 온보딩 이후에도 권한이 꺼질 수 있어(사용자가 끄거나 배터리 최적화가 회수)
             // 홈으로 돌아올 때마다 다시 확인합니다.
             var permissionStep by remember { mutableStateOf(nextPermissionStep(context)) }
