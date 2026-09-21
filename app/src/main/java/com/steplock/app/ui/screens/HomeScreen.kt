@@ -36,12 +36,14 @@ import com.steplock.app.ui.components.BottomNavBar
 import com.steplock.app.ui.components.ConditionRow
 import com.steplock.app.ui.components.IconTile
 import com.steplock.app.ui.components.LockBanner
+import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.appBadgeColor
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -89,26 +91,38 @@ fun HomeScreen(
                     bottom = 24.dp,
                 ),
         ) {
-            Text(
-                text = if (userName != null) {
-                    stringResource(R.string.home_greeting, userName)
-                } else {
-                    stringResource(R.string.home_greeting_anonymous)
-                },
-                style = SlText.Greeting,
-                color = SlColor.TextPrimary,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = stat.date.format(
-                    DateTimeFormatter.ofPattern(
-                        stringResource(R.string.home_date_pattern),
-                        Locale.KOREAN,
-                    ),
-                ),
-                style = SlText.RowValue,
-                color = SlColor.TextSecondary,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (userName != null) {
+                            stringResource(R.string.home_greeting, userName)
+                        } else {
+                            stringResource(R.string.home_greeting_anonymous)
+                        },
+                        style = SlText.Greeting,
+                        color = SlColor.TextPrimary,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = stat.date.format(
+                            DateTimeFormatter.ofPattern(
+                                stringResource(R.string.home_date_pattern),
+                                Locale.KOREAN,
+                            ),
+                        ),
+                        style = SlText.RowValue,
+                        color = SlColor.TextSecondary,
+                    )
+                }
+                // 목표를 채우면 캐릭터가 걸음을 멈춥니다.
+                StepLockMascot(
+                    modifier = Modifier.size(width = 48.dp, height = 60.dp),
+                    mood = if (stepProgress >= 1f) MascotMood.Resting else MascotMood.Walking,
+                )
+            }
 
             Spacer(Modifier.height(20.dp))
             LockBanner(

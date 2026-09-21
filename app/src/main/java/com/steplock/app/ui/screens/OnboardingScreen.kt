@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -45,16 +47,9 @@ fun OnboardingScreen(
             .safeDrawingPadding()
             .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 24.dp),
     ) {
-        IconTile(
-            icon = SlIcons.LockBadge,
-            tint = SlColor.BrandDeep,
-            background = SlColor.BrandTint,
-            size = 72.dp,
-            shape = RoundedCornerShape(24.dp),
-            iconSize = 32.dp,
-        )
+        StepLockMascot(modifier = Modifier.size(width = 96.dp, height = 119.dp))
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.app_name),
             style = SlText.AppTitle,
