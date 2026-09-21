@@ -1,80 +1,103 @@
 package com.steplock.app.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.steplock.app.data.AuthState
-import com.steplock.app.data.SampleData
-import com.steplock.app.navigation.Route
+import com.steplock.app.data.BlockedAppCatalog
+import com.steplock.app.data.DailyStat
+import com.steplock.app.data.LockSettings
+import com.steplock.app.data.SettingsRepository
+import com.steplock.app.data.StepTracker
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-/**
- * 화면 확인용 상태 보관소. 센서·저장소·인증 연결 전이라 값은 데모 데이터에서 시작합니다.
- * 목표값을 바꾸면 홈 게이지와 잠금 화면 문구가 함께 갱신됩니다.
- */
-class StepLockViewModel : ViewModel() {
+data class StepLockUiState(
+    val settings: LockSettings,
+    val today: DailyStat,
+    val onboardingCompleted: Boolean,
+    val authState: AuthState,
+)
 
-    var settings by mutableStateOf(SampleData.settings)
-        private set
+class StepLockViewModel(
+    private val repository: SettingsRepository,
+    stepTracker: StepTracker,
+) : ViewModel() {
 
-    var authState by mutableStateOf<AuthState>(AuthState.Unknown)
-        private set
+    val apps = BlockedAppCatalog.apps
 
-    var onboardingCompleted by mutableStateOf(false)
-        private set
+    /** 설정이 DataStore에서 올라오기 전에는 null입니다. */
+    val uiState: StateFlow<StepLockUiState?> =
+        combine(repository.preferences, stepTracker.todaySteps()) { prefs, steps ->
+            StepLockUiState(
+                settings = prefs.settings,
+                today = DailyStat(
+                    deviceUuid = prefs.settings.deviceUuid,
+                    accountId = prefs.settings.accountId,
+                    date = LocalDate.now(),
+                    steps = steps,
+                    sleepMinutes = 0,
+                    pomodoroSessions = 0,
+                ),
+                onboardingCompleted = prefs.onboardingCompleted,
+                authState = prefs.authState,
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val today = SampleData.today
-    val apps = SampleData.apps
-    val userName = SampleData.USER_NAME
-
-    /** 온보딩을 마친 기기는 로그인을 건너뛰고 홈으로 들어갑니다. */
-    val startDestination: String
-        get() = when {
-            onboardingCompleted -> Route.HOME
-            authState == AuthState.Unknown -> Route.LOGIN
-            else -> Route.ONBOARDING
-        }
-
-    fun setStepsEnabled(enabled: Boolean) {
-        settings = settings.copy(stepsEnabled = enabled)
+    init {
+        viewModelScope.launch { repository.ensureDeviceUuid() }
     }
 
-    fun setSleepEnabled(enabled: Boolean) {
-        settings = settings.copy(sleepEnabled = enabled)
+    fun setStepsEnabled(enabled: Boolean) = edit { it.copy(stepsEnabled = enabled) }
+
+    fun setSleepEnabled(enabled: Boolean) = edit { it.copy(sleepEnabled = enabled) }
+
+    fun setPomodoroEnabled(enabled: Boolean) = edit { it.copy(pomodoroEnabled = enabled) }
+
+    fun setRequireAllConditions(enabled: Boolean) = edit { it.copy(requireAllConditions = enabled) }
+
+    fun changeStepGoal(delta: Int) = edit {
+        it.copy(stepGoal = (it.stepGoal + delta).coerceIn(1000, 20000))
     }
 
-    fun setPomodoroEnabled(enabled: Boolean) {
-        settings = settings.copy(pomodoroEnabled = enabled)
+    fun changeSleepGoal(delta: Float) = edit {
+        it.copy(sleepGoalHours = (it.sleepGoalHours + delta).coerceIn(4f, 12f))
     }
 
-    fun setRequireAllConditions(enabled: Boolean) {
-        settings = settings.copy(requireAllConditions = enabled)
+    fun changePomodoroGoal(delta: Int) = edit {
+        it.copy(pomodoroGoal = (it.pomodoroGoal + delta).coerceIn(1, 8))
     }
 
-    fun changeStepGoal(delta: Int) {
-        settings = settings.copy(stepGoal = (settings.stepGoal + delta).coerceIn(1000, 20000))
-    }
-
-    fun changeSleepGoal(delta: Float) {
-        settings = settings.copy(sleepGoalHours = (settings.sleepGoalHours + delta).coerceIn(4f, 12f))
-    }
-
-    fun changePomodoroGoal(delta: Int) {
-        settings = settings.copy(pomodoroGoal = (settings.pomodoroGoal + delta).coerceIn(1, 8))
-    }
-
-    fun toggleBlockedApp(appId: String) {
-        val blocked = settings.blockedAppIds
-        settings = settings.copy(
-            blockedAppIds = if (appId in blocked) blocked - appId else blocked + appId,
-        )
+    fun toggleBlockedApp(appId: String) = edit {
+        val blocked = it.blockedAppIds
+        it.copy(blockedAppIds = if (appId in blocked) blocked - appId else blocked + appId)
     }
 
     fun continueAsGuest() {
-        authState = AuthState.Guest
+        viewModelScope.launch { repository.setGuest() }
     }
 
     fun completeOnboarding() {
-        onboardingCompleted = true
+        viewModelScope.launch { repository.setOnboardingCompleted(true) }
+    }
+
+    private fun edit(transform: (LockSettings) -> LockSettings) {
+        viewModelScope.launch { repository.updateSettings(transform) }
+    }
+
+    companion object {
+        fun factory(context: Context) = viewModelFactory {
+            initializer {
+                val app = context.applicationContext
+                val repository = SettingsRepository(app)
+                StepLockViewModel(repository, StepTracker(app, repository))
+            }
+        }
     }
 }

@@ -57,7 +57,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun HomeScreen(
-    userName: String,
+    userName: String?,
     stat: DailyStat,
     settings: LockSettings,
     apps: List<BlockedApp>,
@@ -89,7 +89,11 @@ fun HomeScreen(
                 ),
         ) {
             Text(
-                text = stringResource(R.string.home_greeting, userName),
+                text = if (userName != null) {
+                    stringResource(R.string.home_greeting, userName)
+                } else {
+                    stringResource(R.string.home_greeting_anonymous)
+                },
                 style = SlText.Greeting,
                 color = SlColor.TextPrimary,
             )
@@ -277,7 +281,7 @@ private fun DetectingStatus() {
 private fun HomeScreenPreview() {
     StepLockTheme {
         HomeScreen(
-            userName = SampleData.USER_NAME,
+            userName = SampleData.settings.displayName,
             stat = SampleData.today,
             settings = SampleData.settings,
             apps = SampleData.apps,

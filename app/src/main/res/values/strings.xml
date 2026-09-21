@@ -47,6 +47,7 @@
 
     <!-- 홈 -->
     <string name="home_greeting">좋은 아침이에요, %1$s님</string>
+    <string name="home_greeting_anonymous">좋은 아침이에요</string>
     <string name="home_date_pattern">M월 d일 EEEE</string>
     <string name="home_locked_count">%1$d개 앱 잠금 중</string>
     <string name="home_locked_manage">잠금 설정 관리</string>
