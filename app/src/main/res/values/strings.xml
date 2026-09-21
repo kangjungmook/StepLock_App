@@ -84,7 +84,9 @@
     <string name="home_status_unlocked_title">오늘은 열려 있어요</string>
     <string name="home_status_unlocked_desc">잠긴 앱을 자유롭게 쓸 수 있어요</string>
     <string name="home_status_locked_title">아직 잠겨 있어요</string>
-    <string name="home_section_conditions">잠금 해제 조건</string>
+    <!-- 트랙이 첫 조건을 보여 주므로 카드에는 나머지만 들어갑니다 -->
+    <string name="home_section_conditions_rest">나머지 조건</string>
+    <string name="home_track_goal">목표 %1$s</string>
     <!-- 조건이나 앱을 하나도 고르지 않은 경우 -->
     <string name="home_no_conditions_title">켜 둔 조건이 없어요</string>
     <string name="home_no_conditions_desc">설정에서 조건을 켜면 잠금이 시작돼요</string>

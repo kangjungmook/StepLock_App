@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -42,12 +40,11 @@ import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
-import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
-import com.steplock.app.ui.components.StepLockMascot
+import com.steplock.app.ui.components.StepTrack
 import com.steplock.app.ui.components.appBadgeColor
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -139,56 +136,99 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
-            TodayStatusCard(
-                unlocked = unlocked,
-                description = if (unlocked) {
-                    stringResource(R.string.home_status_unlocked_desc)
-                } else {
-                    primaryCondition(settings).remainingText(stat, settings)
-                },
-                streak = streak,
-            )
-
-            Spacer(Modifier.height(28.dp))
-            SectionLabel(stringResource(R.string.home_section_conditions))
-            Spacer(Modifier.height(12.dp))
-            SlPanel {
-                if (conditions.isEmpty()) {
+            if (conditions.isEmpty()) {
+                Spacer(Modifier.height(24.dp))
+                SlPanel {
                     SlEmptyState(
                         title = stringResource(R.string.home_no_conditions_title),
                         description = stringResource(R.string.home_no_conditions_desc),
                         onClick = onManageLocks,
                     )
-                } else {
-                    conditions.forEachIndexed { index, condition ->
-                        if (index > 0) SlDivider()
-                        ConditionRow(
-                            title = stringResource(condition.titleRes),
-                            value = condition.valueText(stat, settings),
-                            modifier = if (condition == UnlockCondition.Pomodoro) {
-                                Modifier.clickable(role = Role.Button, onClick = onPomodoroClick)
+                }
+            } else {
+                val hero = primaryCondition(settings)
+
+                // 오늘의 결론을 먼저 말하고, 트랙이 근거를 보여 줍니다.
+                Spacer(Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (unlocked) {
+                                R.string.home_status_unlocked_title
                             } else {
-                                Modifier
+                                R.string.home_status_locked_title
                             },
-                            leading = {
-                                // 세 조건 모두 "목표 대비 진행"이라 같은 링으로 보여 줍니다.
-                                ConditionRing(
-                                    progress = condition.progress(stat, settings),
-                                    achieved = condition.isAchieved(stat, settings),
-                                )
-                            },
-                            trailing = if (condition == UnlockCondition.Pomodoro) {
-                                { SlChevron() }
-                            } else {
-                                null
-                            },
-                        )
+                        ),
+                        style = SlText.StatusTitle,
+                        color = if (unlocked) SlColor.BrandInk else SlColor.AmberText,
+                        modifier = Modifier.weight(1f),
+                    )
+                    // 하루치로는 자랑할 게 없어서 이틀 이상일 때만 보여 줍니다.
+                    if (streak >= 2) StreakBadge(streak)
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (unlocked) {
+                        stringResource(R.string.home_status_unlocked_desc)
+                    } else {
+                        hero.remainingText(stat, settings)
+                    },
+                    style = SlText.BodySm,
+                    color = SlColor.TextSecondary,
+                )
+
+                Spacer(Modifier.height(20.dp))
+                StepTrack(
+                    progress = hero.progress(stat, settings),
+                    startLabel = hero.currentText(stat, settings),
+                    goalLabel = stringResource(
+                        R.string.home_track_goal,
+                        hero.goalText(settings),
+                    ),
+                    mood = if (unlocked) MascotMood.Resting else MascotMood.Walking,
+                )
+
+                // 트랙이 첫 조건을 보여 주므로 카드에는 나머지만 넣습니다.
+                val rest = conditions.filter { it != hero }
+                if (rest.isNotEmpty()) {
+                    Spacer(Modifier.height(32.dp))
+                    SectionLabel(stringResource(R.string.home_section_conditions_rest))
+                    Spacer(Modifier.height(12.dp))
+                    SlPanel {
+                        rest.forEachIndexed { index, condition ->
+                            if (index > 0) SlDivider()
+                            ConditionRow(
+                                title = stringResource(condition.titleRes),
+                                value = condition.valueText(stat, settings),
+                                modifier = if (condition == UnlockCondition.Pomodoro) {
+                                    Modifier.clickable(
+                                        role = Role.Button,
+                                        onClick = onPomodoroClick,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                                leading = {
+                                    ConditionRing(
+                                        progress = condition.progress(stat, settings),
+                                        achieved = condition.isAchieved(stat, settings),
+                                    )
+                                },
+                                trailing = if (condition == UnlockCondition.Pomodoro) {
+                                    { SlChevron() }
+                                } else {
+                                    null
+                                },
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(32.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -200,33 +240,32 @@ fun HomeScreen(
                 // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
                 if (lockedApps.isNotEmpty() && warningTitle == null) DetectingStatus()
             }
-            Spacer(Modifier.height(12.dp))
-            SlPanel {
-                if (lockedApps.isEmpty()) {
+            // 앱 목록은 카드로 감싸지 않습니다. 위의 트랙·카드와 무게를 달리해
+            // 같은 크기의 상자가 쌓이지 않게 합니다.
+            if (lockedApps.isEmpty()) {
+                SlPanel(modifier = Modifier.padding(top = 12.dp)) {
                     SlEmptyState(
                         title = stringResource(R.string.home_no_apps_title),
                         description = stringResource(R.string.home_no_apps_desc),
                         onClick = onManageLocks,
                     )
-                } else {
-                    lockedApps.forEachIndexed { index, app ->
-                        if (index > 0) SlDivider()
-                        AppListItem(
-                            name = app.name,
-                            badgeInitial = app.initial,
-                            badgeColor = appBadgeColor(app.id),
-                            // 부제(어느 앱의 기능인지)는 앱을 고르는 설정에서만 필요합니다.
-                            // 홈에서는 줄만 두 배로 키워 목록이 화면을 넘기게 만들었습니다.
-                            badgeSize = 36.dp,
-                            nameStyle = SlText.ListItem,
-                            verticalPadding = 12.dp,
-                            modifier = Modifier.clickable(
-                                role = Role.Button,
-                                onClick = { onAppClick(app) },
-                            ),
-                            trailing = { SlChevron() },
-                        )
-                    }
+                }
+            } else {
+                lockedApps.forEachIndexed { index, app ->
+                    if (index > 0) SlDivider()
+                    AppListItem(
+                        name = app.name,
+                        badgeInitial = app.initial,
+                        badgeColor = appBadgeColor(app.id),
+                        badgeSize = 36.dp,
+                        nameStyle = SlText.ListItem,
+                        verticalPadding = 12.dp,
+                        modifier = Modifier.clickable(
+                            role = Role.Button,
+                            onClick = { onAppClick(app) },
+                        ),
+                        trailing = { SlChevron() },
+                    )
                 }
             }
         }
@@ -235,81 +274,19 @@ fun HomeScreen(
     }
 }
 
-/**
- * 오늘 잠금이 풀렸는지 한 장으로. 상태에 따라 색과 캐릭터 표정이 함께 바뀌어서
- * 글을 읽지 않아도 구분됩니다.
- */
+/** 연속 달성 배지. 상태 제목 옆에 붙어 숫자 하나로만 자랑합니다. */
 @Composable
-private fun TodayStatusCard(unlocked: Boolean, description: String, streak: Int) {
-    val container = if (unlocked) SlColor.BrandTint else SlColor.AmberSurface
-    val titleColor = if (unlocked) SlColor.BrandDeep else SlColor.AmberText
-    val descColor = if (unlocked) SlColor.BrandInk else SlColor.AmberSubText
-
-    Row(
+private fun StreakBadge(streak: Int) {
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusPanel))
-            .background(container)
-            .padding(start = 16.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clip(CircleShape)
+            .background(SlColor.BrandTintAlt)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
     ) {
-        StepLockMascot(
-            modifier = Modifier.size(width = 60.dp, height = 74.dp),
-            mood = if (unlocked) MascotMood.Resting else MascotMood.Walking,
-            footprintColor = descColor.copy(alpha = 0.28f),
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(
-                    if (unlocked) {
-                        R.string.home_status_unlocked_title
-                    } else {
-                        R.string.home_status_locked_title
-                    },
-                ),
-                style = SlText.StatusTitle,
-                color = titleColor,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(text = description, style = SlText.BodySm, color = descColor)
-
-            // 하루치로는 자랑할 게 없어서 이틀 이상일 때만 보여 줍니다.
-            if (streak >= 2) {
-                Spacer(Modifier.height(10.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(SlColor.Surface)
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_streak, streak),
-                        style = SlText.Chip,
-                        color = titleColor,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 권한이 꺼지면 잠금은 아무것도 못 하는데 화면은 평소와 같아 보입니다.
- * 그 상태를 눈에 띄게 알리고 바로 고치러 갈 수 있게 합니다.
- */
-@Composable
-private fun PermissionWarning(title: String, description: String, onClick: () -> Unit) {
-    SlPanel(
-        borderColor = SlColor.Error,
-        contentPadding = PaddingValues(SlDimen.PanelPadding),
-    ) {
-        SlDetailRow(
-            title = title,
-            description = description,
-            modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
-            titleColor = SlColor.Error,
-            trailing = { SlChevron() },
+        Text(
+            text = stringResource(R.string.home_streak, streak),
+            style = SlText.Chip,
+            color = SlColor.BrandDeep,
         )
     }
 }
@@ -377,6 +354,27 @@ private fun UnlockCondition.valueText(stat: DailyStat, settings: LockSettings): 
         stat.pomodoroSessions,
         settings.pomodoroGoal,
     )
+}
+
+@Composable
+private fun UnlockCondition.currentText(stat: DailyStat, settings: LockSettings): String =
+    when (this) {
+        UnlockCondition.Steps -> stringResource(
+            R.string.unit_steps,
+            stat.steps.formatThousands(),
+        )
+        UnlockCondition.Sleep -> durationLabel(stat.sleepMinutes)
+        UnlockCondition.Pomodoro -> stringResource(R.string.unit_sessions, stat.pomodoroSessions)
+    }
+
+@Composable
+private fun UnlockCondition.goalText(settings: LockSettings): String = when (this) {
+    UnlockCondition.Steps -> stringResource(
+        R.string.unit_steps,
+        settings.stepGoal.formatThousands(),
+    )
+    UnlockCondition.Sleep -> sleepGoalLabel(settings.sleepGoalHours)
+    UnlockCondition.Pomodoro -> stringResource(R.string.unit_sessions, settings.pomodoroGoal)
 }
 
 @Preview(widthDp = 412, heightDp = 892)
