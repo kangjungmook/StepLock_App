@@ -41,6 +41,8 @@ import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
+import com.steplock.app.ui.components.SlChevron
+import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
@@ -152,7 +154,7 @@ fun HomeScreen(
             Spacer(Modifier.height(12.dp))
             SlPanel {
                 if (conditions.isEmpty()) {
-                    EmptyHint(
+                    SlEmptyState(
                         title = stringResource(R.string.home_no_conditions_title),
                         description = stringResource(R.string.home_no_conditions_desc),
                         onClick = onManageLocks,
@@ -176,7 +178,7 @@ fun HomeScreen(
                                 )
                             },
                             trailing = if (condition == UnlockCondition.Pomodoro) {
-                                { Chevron() }
+                                { SlChevron() }
                             } else {
                                 null
                             },
@@ -200,7 +202,7 @@ fun HomeScreen(
             Spacer(Modifier.height(12.dp))
             SlPanel {
                 if (lockedApps.isEmpty()) {
-                    EmptyHint(
+                    SlEmptyState(
                         title = stringResource(R.string.home_no_apps_title),
                         description = stringResource(R.string.home_no_apps_desc),
                         onClick = onManageLocks,
@@ -221,7 +223,7 @@ fun HomeScreen(
                                 role = Role.Button,
                                 onClick = { onAppClick(app) },
                             ),
-                            trailing = { Chevron() },
+                            trailing = { SlChevron() },
                         )
                     }
                 }
@@ -317,7 +319,7 @@ private fun PermissionWarning(title: String, description: String, onClick: () ->
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        Chevron()
+        SlChevron()
     }
 }
 
@@ -344,40 +346,6 @@ private fun ConditionRing(progress: Float, achieved: Boolean) {
                 color = SlColor.BrandDeep,
             )
         }
-    }
-}
-
-@Composable
-private fun Chevron() {
-    Icon(
-        imageVector = SlIcons.ChevronRight,
-        contentDescription = null,
-        tint = SlColor.TextTertiary,
-        modifier = Modifier.size(18.dp),
-    )
-}
-
-/** 조건이나 앱을 하나도 고르지 않았을 때. 빈 패널을 두지 않고 다음 행동을 안내합니다. */
-@Composable
-private fun EmptyHint(title: String, description: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = SlText.RowTitle, color = SlColor.TextPrimary)
-            Text(
-                text = description,
-                style = SlText.RowValue,
-                color = SlColor.TextSecondary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        Chevron()
     }
 }
 

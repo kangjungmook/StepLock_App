@@ -107,7 +107,7 @@ fun LoginScreen(
             modifier = Modifier
                 .align(Alignment.Center)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp, vertical = 24.dp),
+                .padding(horizontal = SlDimen.ScreenPaddingWide, vertical = 24.dp),
         ) {
             Wordmark(text = stringResource(R.string.app_wordmark))
 
@@ -211,7 +211,6 @@ fun LoginScreen(
                     stringResource(R.string.login_submit)
                 },
                 onClick = { onLogin(email, password, rememberMe) },
-                height = SlDimen.ButtonHeight,
                 shape = CircleShape,
                 enabled = !submitting,
             )

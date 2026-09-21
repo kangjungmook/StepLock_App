@@ -37,6 +37,7 @@ import com.steplock.app.ui.components.IconTile
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlDivider
+import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.WeeklyBarChart
@@ -61,6 +62,11 @@ fun StatsScreen(
 ) {
     val sleepGoalMinutes = sleepGoalMinutes(settings.sleepGoalHours)
     val averageSteps = if (weekly.isEmpty()) 0 else weekly.sumOf { it.steps } / weekly.size
+    // 새로 설치한 기기는 7일치가 모두 0으로 채워져 옵니다. 0만 그린 차트는
+    // 고장처럼 보이므로 빈 상태로 바꿉니다.
+    val hasRecords = weekly.any {
+        it.steps > 0 || it.sleepMinutes > 0 || it.pomodoroSessions > 0
+    }
     val weekdayFormatter = DateTimeFormatter.ofPattern(
         stringResource(R.string.stats_weekday_pattern),
         Locale.KOREAN,
@@ -88,6 +94,17 @@ fun StatsScreen(
                 style = SlText.Greeting,
                 color = SlColor.TextPrimary,
             )
+
+            if (!hasRecords) {
+                Spacer(Modifier.height(24.dp))
+                SlPanel {
+                    SlEmptyState(
+                        title = stringResource(R.string.stats_empty_title),
+                        description = stringResource(R.string.stats_empty_desc),
+                    )
+                }
+                return@Column
+            }
 
             Spacer(Modifier.height(24.dp))
             SectionLabel(stringResource(R.string.stats_section_streak))

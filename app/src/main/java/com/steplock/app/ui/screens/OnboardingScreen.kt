@@ -45,7 +45,12 @@ fun OnboardingScreen(
             .fillMaxSize()
             .background(SlColor.Background)
             .safeDrawingPadding()
-            .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 24.dp),
+            .padding(
+                start = SlDimen.ScreenPaddingWide,
+                end = SlDimen.ScreenPaddingWide,
+                top = 28.dp,
+                bottom = 24.dp,
+            ),
     ) {
         StepLockMascot(modifier = Modifier.size(width = 96.dp, height = 119.dp))
 

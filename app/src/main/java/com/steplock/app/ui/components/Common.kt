@@ -118,6 +118,20 @@ fun PrimaryButton(
     }
 }
 
+/**
+ * "눌러서 더 볼 수 있다"를 나타내는 셰브론. 목록 줄·빈 상태·경고 줄에서
+ * 같은 크기·같은 색으로 써야 눌리는 줄과 아닌 줄이 구분됩니다.
+ */
+@Composable
+fun SlChevron(modifier: Modifier = Modifier, tint: Color = SlColor.TextTertiary) {
+    Icon(
+        imageVector = SlIcons.ChevronRight,
+        contentDescription = null,
+        tint = tint,
+        modifier = modifier.size(18.dp),
+    )
+}
+
 /** 텍스트 링크 — 44dp 터치 영역을 확보합니다. */
 @Composable
 fun TextLink(

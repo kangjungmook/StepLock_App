@@ -35,6 +35,7 @@ import com.steplock.app.ui.components.StatusChip
 import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
+import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.util.UnlockCondition
 import com.steplock.app.ui.util.enabledConditions
@@ -76,7 +77,7 @@ fun LockOverlayScreen(
             .fillMaxSize()
             .background(SlColor.Dark.Background)
             .safeDrawingPadding()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
+            .padding(horizontal = SlDimen.ScreenPaddingWide, vertical = 24.dp),
     ) {
         Column(
             modifier = Modifier

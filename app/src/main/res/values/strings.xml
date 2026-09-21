@@ -115,6 +115,9 @@
     <string name="stats_today_steps">오늘 %1$s보</string>
     <string name="stats_achieved_days">7일 중 %1$d일 달성</string>
     <string name="stats_section_streak">연속 달성</string>
+    <!-- 아직 아무 기록도 없는 새 설치 상태 -->
+    <string name="stats_empty_title">아직 기록이 없어요</string>
+    <string name="stats_empty_desc">하루를 보내면 걸음 수와 달성 현황이 여기에 쌓입니다</string>
     <string name="stats_streak_current">현재</string>
     <string name="stats_streak_longest">최장 기록</string>
     <string name="stats_streak_days">%1$d일</string>
