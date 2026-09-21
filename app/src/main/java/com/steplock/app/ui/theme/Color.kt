@@ -70,10 +70,14 @@ object SlColor {
         val AmberTint = Color(0xFF46280C) // oklch(31% 0.06 60)
         val AmberIcon = Color(0xFFF79643) // oklch(76% 0.15 58)
         val AmberText = Color(0xFFFBA962) // oklch(80% 0.13 60)
+        // 잠금 화면에서 가장 큰 면적을 차지하는 링 — 채도를 낮춰 눈이 덜 피로합니다.
+        val AmberRing = Color(0xFFE59656) // oklch(74% 0.125 58)
 
         val GreenTint = Color(0xFF0A3123) // oklch(28% 0.05 165)
         val GreenBorder = Color(0xFF134E39) // oklch(38% 0.07 165)
         val GreenIcon = Color(0xFF3CC998) // oklch(75% 0.14 165)
         val GreenText = Color(0xFF94E1BF) // oklch(85% 0.09 165)
+        // 어두운 배경 위 캐릭터의 그림자 면 — 밝은 GreenIcon 과 짝을 이룹니다.
+        val GreenDeep = Color(0xFF0D8963) // oklch(56% 0.115 165)
     }
 }

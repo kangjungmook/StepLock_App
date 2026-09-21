@@ -60,17 +60,6 @@ object SlIcons {
     val CheckBold = strokeVector("CheckBold", 3f, listOf(CHECK))
     val CheckExtraBold = strokeVector("CheckExtraBold", 3.4f, listOf(CHECK))
 
-    /** 배지용 자물쇠 — 키홀 점까지 포함합니다. */
-    val LockBadge = strokeVector(
-        name = "LockBadge",
-        strokeWidth = 1.8f,
-        paths = listOf(
-            roundRect(x = 4.5f, y = 10f, w = 15f, h = 10.5f, r = 3f),
-            "M8 10V7a4 4 0 0 1 8 0v3",
-        ),
-        filled = listOf(circle(cx = 12f, cy = 15.2f, r = 1.3f)),
-    )
-
     val Lock = strokeVector(
         name = "Lock",
         strokeWidth = 2f,
@@ -87,15 +76,6 @@ object SlIcons {
             circle(cx = 13.5f, cy = 4.2f, r = 2f),
             "M10 21.5l2.2-6.1-2.7-2.6V8.4L14 7l2.1 3.2 3 1",
             "M9.6 12.8L7.4 17",
-        ),
-    )
-
-    val StepsCompact = strokeVector(
-        name = "StepsCompact",
-        strokeWidth = 2f,
-        paths = listOf(
-            circle(cx = 13.5f, cy = 4.2f, r = 2f),
-            "M10 21.5l2.2-6.1-2.7-2.6V8.4L14 7l2.1 3.2 3 1",
         ),
     )
 
@@ -127,8 +107,6 @@ object SlIcons {
     val ChevronRight = strokeVector("ChevronRight", 2f, listOf("m9 5 7 7-7 7"))
 
     val ArrowLeft = strokeVector("ArrowLeft", 2f, listOf("M19 12H5", "m11 6-6 6 6 6"))
-
-    val Close = strokeVector("Close", 2.2f, listOf("M6 6l12 12", "M18 6 6 18"))
 
     val Minus = strokeVector("Minus", 2.2f, listOf("M5 12h14"))
 
@@ -210,7 +188,6 @@ private fun strokeVector(
     name: String,
     strokeWidth: Float,
     paths: List<String>,
-    filled: List<String> = emptyList(),
 ): ImageVector = builder(name).apply {
     paths.forEach { path ->
         addPath(
@@ -221,7 +198,6 @@ private fun strokeVector(
             strokeLineJoin = StrokeJoin.Round,
         )
     }
-    filled.forEach { path -> addFilled(path, Color.Black) }
 }.build()
 
 private fun filledVector(name: String, paths: List<String>): ImageVector = builder(name).apply {

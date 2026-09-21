@@ -131,11 +131,23 @@
 
     <!-- 잠금 오버레이 -->
     <string name="lock_title">%1$s 잠겨있어요</string>
-    <string name="lock_desc">오늘의 조건을 아직 채우지 않았어요.\n조금만 더 움직이면 열립니다.</string>
+    <!-- 링 가운데 캡션 — 지금 보여 주는 조건이 무엇인지 알려 줍니다 -->
     <string name="lock_ring_caption">걸음 목표</string>
-    <string name="lock_remaining">%1$s보 더 걸으면 해제돼요</string>
+    <string name="lock_ring_caption_sleep">수면 목표</string>
+    <string name="lock_ring_caption_pomodoro">집중 목표</string>
+    <!-- 제목 바로 아래 한 줄 — 무엇을 더 하면 열리는지 -->
+    <string name="lock_remaining">%1$s보만 더 걸으면 열려요</string>
+    <string name="lock_remaining_sleep">오늘 수면 목표를 채우면 열려요</string>
+    <string name="lock_remaining_pomodoro">%1$d세션만 더 끝내면 열려요</string>
+    <!-- 전부 만족 모드에서 크게 보여 준 조건은 이미 채운 경우 -->
+    <string name="lock_remaining_done">남은 조건을 채우면 열려요</string>
+    <!-- 남은 조건 칩 -->
     <string name="lock_chip_sleep_done">수면 완료</string>
+    <string name="lock_chip_sleep_goal">수면 %1$s</string>
     <string name="lock_chip_sessions">%1$d/%2$d 세션</string>
+    <!-- 여러 조건을 켠 경우 해제 규칙을 한 줄로 설명합니다 -->
+    <string name="lock_rule_any">조건 하나만 채워도 열려요</string>
+    <string name="lock_rule_all">조건을 모두 채워야 열려요</string>
     <string name="lock_dismiss">알겠어요, 닫기</string>
     <string name="lock_temporary_allow">5분만 임시로 허용하기</string>
 </resources>

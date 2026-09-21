@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlText
 
-/** 잠금 화면의 조건별 미니 상태 — 달성 / 진행 중 / 미시작. */
-enum class ChipState { Achieved, Active, Idle }
+/** 잠금 화면의 조건별 미니 상태 — 달성 / 미달성. */
+enum class ChipState { Achieved, Idle }
 
 @Composable
 fun StatusChip(
@@ -30,10 +30,10 @@ fun StatusChip(
 ) {
     val container = if (state == ChipState.Achieved) SlColor.Dark.GreenTint else SlColor.Dark.Surface
     val border = if (state == ChipState.Achieved) SlColor.Dark.GreenBorder else SlColor.Dark.Border
-    val iconTint = when (state) {
-        ChipState.Achieved -> SlColor.Dark.GreenIcon
-        ChipState.Active -> SlColor.Dark.AmberText
-        ChipState.Idle -> SlColor.Dark.TextMuted
+    val iconTint = if (state == ChipState.Achieved) {
+        SlColor.Dark.GreenIcon
+    } else {
+        SlColor.Dark.TextMuted
     }
     val textColor = if (state == ChipState.Achieved) SlColor.Dark.GreenText else SlColor.Dark.TextChip
 

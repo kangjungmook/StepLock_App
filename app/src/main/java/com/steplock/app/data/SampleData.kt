@@ -11,7 +11,9 @@ object SampleData {
     val settings = LockSettings(
         deviceUuid = PREVIEW_UUID,
         displayName = "지우",
+        // 프리뷰는 세 조건을 모두 켠 사용자를 기준으로 합니다.
         sleepEnabled = true,
+        pomodoroEnabled = true,
         blockedAppIds = setOf("shorts", "reels", "tiktok"),
     )
 

@@ -39,6 +39,7 @@
 
 - **온보딩** — 걸어 들어오는 첫 화면
 - **홈** — 인사말 옆에서 걷다가, 걸음 목표를 채우면 멈추고 눈을 감습니다(상태를 형태로 보여줌)
+- **잠금** — 어두운 배경용 그린으로 색만 바꿔 같은 도형을 씁니다. 아직 걷고 있다는 게 곧 아직 못 열었다는 뜻입니다
 
 ---
 
@@ -50,7 +51,7 @@
 | **Onboarding** | 잠금 해제 조건 3가지 안내 + 권한 3단계 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
 | **Home** | 오늘의 달성 현황, 잠금 상태 배너, 차단 중인 앱 목록 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
 | **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
-| **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
+| **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 | **Stats** | 최근 7일 걸음 막대 차트와 조건별 달성 일수 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
@@ -125,6 +126,8 @@
 | 강조(앰버·잠금) | `oklch(70% 0.15 55)` | `#E48233` |
 | 다크 배경 | `oklch(19% 0.02 260)` | `#0F141D` |
 | 다크 서피스 | `oklch(25% 0.02 260)` | `#1C222B` |
+| 잠금 링(앰버) | `oklch(74% 0.125 58)` | `#E59656` |
+| 다크 캐릭터(그린) | `oklch(75% 0.14 165)` | `#3CC998` |
 
 - 배경은 순수 흰색·검정 대신 브랜드 색이 은은하게 섞인 **틴티드 뉴트럴**을 씁니다.
 - 다크 팔레트는 **잠금 오버레이 전용**이라 시스템 다크모드를 따라가지 않습니다.
@@ -156,13 +159,13 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 
 | 컴포저블 | 설명 |
 | --- | --- |
-| `ProgressRing` | 홈 44dp · 잠금 200dp 공용 원형 게이지. 박스 크기와 링 반지름을 따로 받습니다. |
+| `ProgressRing` | 홈 44dp · 잠금 176dp 공용 원형 게이지. 박스 크기와 링 반지름을 따로 받습니다. |
 | `ConditionRow` | 홈의 조건 한 줄. 앞쪽 시각 요소와 뒤쪽 상태를 슬롯으로 받습니다. |
 | `ConditionSettingCard` | 토글 + 구분선 + `GoalStepper` 조합. 설정의 조건 카드 3개. |
 | `GoalStepper` | −/+ 44dp 버튼과 목표값. 걸음 500보 · 수면 30분 · 세션 1회 단위. |
 | `AppListItem` | 앱 뱃지 + 이름/부제 + 상태 슬롯(감지 중 점 / 체크박스). |
 | `LockBanner` | 앰버 톤 잠금 상태 배너. 탭하면 설정으로 이동합니다. |
-| `StatusChip` | 잠금 화면 미니 상태 칩. 달성 / 진행 중 / 미시작 3상태. |
+| `StatusChip` | 잠금 화면 미니 상태 칩. 달성 / 미달성 2상태. |
 | `UnderlineTextField` | 밑줄형 입력. 포커스 시 밑줄이 브랜드 그린, 비밀번호는 표시 토글 내장. |
 | `SocialLoginButton` | 구글 · 카카오 · 애플 44dp 원형 버튼. |
 | `SlSwitch` · `CheckboxMark` | 시안 규격(52×32 트랙, 24dp 체크박스)에 맞춘 선택 컨트롤. |
