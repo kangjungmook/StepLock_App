@@ -252,6 +252,13 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,
                 onBack = { navController.popBackStack() },
+                onDeleteAccount = viewModel::askDeleteAccount,
+                onDeleteAccountConfirm = viewModel::confirmDeleteAccount,
+                onDeleteAccountDismiss = viewModel::dismissDeleteAccount,
+                deleteAccountConfirming = viewModel.deleteAccountState.confirming,
+                deleteAccountDeleting = viewModel.deleteAccountState.deleting,
+                deleteAccountErrorText = stringResource(R.string.delete_account_failed)
+                    .takeIf { viewModel.deleteAccountState.failed },
                 onStepsEnabledChange = viewModel::setStepsEnabled,
                 onSleepEnabledChange = { enabled ->
                     when {

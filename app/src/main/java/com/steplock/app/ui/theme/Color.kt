@@ -32,6 +32,8 @@ object SlColor {
     val OnAmber = Color(0xFFFEFCF4) // oklch(99% 0.01 90)
 
     val Error = Color(0xFFC53637) // oklch(55% 0.18 25)
+    // 계정 삭제처럼 되돌릴 수 없는 버튼의 글자색 (Error 대비 5.2:1)
+    val OnError = Color(0xFFFFF9F8) // oklch(99% 0.01 25)
 
     val Shadow = Color(0xFF414853) // oklch(40% 0.02 260)
 

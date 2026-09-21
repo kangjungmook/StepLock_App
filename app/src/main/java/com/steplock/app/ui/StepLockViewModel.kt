@@ -55,6 +55,13 @@ data class LoginUiState(
     val notice: LoginNotice? = null,
 )
 
+/** 계정 삭제는 되돌릴 수 없어서 확인 → 진행 → 실패 단계를 화면이 구분해야 합니다. */
+data class DeleteAccountUiState(
+    val confirming: Boolean = false,
+    val deleting: Boolean = false,
+    val failed: Boolean = false,
+)
+
 data class PomodoroUiState(
     val remainingMs: Long,
     val progress: Float,
@@ -75,6 +82,9 @@ class StepLockViewModel(
     val apps = BlockedAppCatalog.apps
 
     var loginState by mutableStateOf(LoginUiState())
+        private set
+
+    var deleteAccountState by mutableStateOf(DeleteAccountUiState())
         private set
 
     val sleepReadPermission: String get() = sleepRepository.readPermission
@@ -253,6 +263,32 @@ class StepLockViewModel(
 
     fun signOut() {
         viewModelScope.launch { authRepository.signOut() }
+    }
+
+    fun askDeleteAccount() {
+        deleteAccountState = DeleteAccountUiState(confirming = true)
+    }
+
+    fun dismissDeleteAccount() {
+        deleteAccountState = DeleteAccountUiState()
+    }
+
+    /**
+     * 서버에서 계정을 지운 뒤 기기에 남은 데이터까지 정리합니다.
+     * 서버 삭제가 실패하면 로컬은 건드리지 않습니다 — 지워지지 않은 계정을
+     * 기기에서만 잊으면 사용자가 다시 로그인할 방법을 잃습니다.
+     */
+    fun confirmDeleteAccount() {
+        deleteAccountState = DeleteAccountUiState(deleting = true)
+        viewModelScope.launch {
+            val result = authRepository.deleteAccount()
+            if (result.isSuccess) {
+                repository.clearAllLocalData()
+                deleteAccountState = DeleteAccountUiState()
+            } else {
+                deleteAccountState = DeleteAccountUiState(confirming = true, failed = true)
+            }
+        }
     }
 
     fun requestPasswordReset(email: String) {

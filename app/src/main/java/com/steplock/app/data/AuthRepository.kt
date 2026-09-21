@@ -11,6 +11,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 
 /** OAuth 콜백으로 돌아올 딥링크. AndroidManifest의 intent-filter와 같아야 합니다. */
@@ -65,6 +66,17 @@ class AuthRepository {
     suspend fun signInWithApple(): Result<Unit> = runCatching { auth.signInWith(Apple) }
 
     suspend fun signOut(): Result<Unit> = runCatching { auth.signOut() }
+
+    /**
+     * 계정과 서버 기록을 지웁니다. auth.users 는 공개 키로 지울 수 없어
+     * security definer 함수(delete_own_account)를 호출하고, 테이블은
+     * auth.users 를 cascade 로 참조하므로 함께 사라집니다.
+     * 삭제가 끝나면 남은 세션을 정리합니다.
+     */
+    suspend fun deleteAccount(): Result<Unit> = runCatching {
+        SupabaseProvider.client.postgrest.rpc("delete_own_account")
+        auth.signOut()
+    }
 
     /** 재설정 링크는 딥링크로 앱으로 돌아옵니다. */
     suspend fun sendPasswordReset(email: String): Result<Unit> = runCatching {

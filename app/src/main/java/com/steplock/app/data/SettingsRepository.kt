@@ -155,6 +155,21 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    /**
+     * 계정 삭제 뒤 기기에 남은 것까지 지웁니다. 설정·기록·걸음 기준점·집중 세션·
+     * 수면 캐시가 전부 사라지고 기기 UUID도 새로 발급됩니다.
+     * 온보딩 완료 표시만 남겨 권한 안내를 처음부터 다시 받지 않게 합니다.
+     */
+    suspend fun clearAllLocalData() {
+        store.edit { prefs ->
+            val onboarded = prefs[Keys.onboardingCompleted] ?: false
+            prefs.clear()
+            prefs[Keys.onboardingCompleted] = onboarded
+            prefs[Keys.deviceUuid] = UUID.randomUUID().toString()
+            prefs[Keys.guest] = true
+        }
+    }
+
     suspend fun startPomodoro(durationMs: Long = Pomodoro.SESSION_MS) {
         store.edit { prefs ->
             prefs[Keys.pomodoroEndsAt] = System.currentTimeMillis() + durationMs

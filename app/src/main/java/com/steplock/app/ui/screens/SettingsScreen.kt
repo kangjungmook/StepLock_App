@@ -37,6 +37,7 @@ import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
+import com.steplock.app.ui.components.SlConfirmDialog
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.SlSwitch
 import com.steplock.app.ui.components.TextLink
@@ -56,6 +57,12 @@ fun SettingsScreen(
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onBack: () -> Unit,
+    onDeleteAccount: () -> Unit,
+    onDeleteAccountConfirm: () -> Unit,
+    onDeleteAccountDismiss: () -> Unit,
+    deleteAccountConfirming: Boolean,
+    deleteAccountDeleting: Boolean,
+    deleteAccountErrorText: String?,
     onStepsEnabledChange: (Boolean) -> Unit,
     onSleepEnabledChange: (Boolean) -> Unit,
     onPomodoroEnabledChange: (Boolean) -> Unit,
@@ -114,6 +121,17 @@ fun SettingsScreen(
                     onSignIn = onSignIn,
                     onSignOut = onSignOut,
                 )
+                // 되돌릴 수 없는 동작이라 계정 줄과 떼어 놓고 눈에 덜 띄게 둡니다.
+                if (accountEmail != null) {
+                    TextLink(
+                        text = stringResource(R.string.settings_account_delete),
+                        onClick = onDeleteAccount,
+                        style = SlText.LinkSm,
+                        color = SlColor.TextSecondary,
+                        underline = false,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
 
             val stepsTitle = stringResource(R.string.condition_steps)
@@ -212,6 +230,23 @@ fun SettingsScreen(
             }
         }
     }
+
+    if (deleteAccountConfirming) {
+        SlConfirmDialog(
+            title = stringResource(R.string.delete_account_title),
+            description = stringResource(R.string.delete_account_desc),
+            confirmText = if (deleteAccountDeleting) {
+                stringResource(R.string.delete_account_deleting)
+            } else {
+                stringResource(R.string.delete_account_confirm)
+            },
+            cancelText = stringResource(R.string.delete_account_cancel),
+            onConfirm = onDeleteAccountConfirm,
+            onDismiss = onDeleteAccountDismiss,
+            errorText = deleteAccountErrorText,
+            busy = deleteAccountDeleting,
+        )
+    }
 }
 
 @Composable
@@ -300,6 +335,12 @@ private fun SettingsScreenPreview() {
             onSignIn = {},
             onSignOut = {},
             onBack = {},
+            onDeleteAccount = {},
+            onDeleteAccountConfirm = {},
+            onDeleteAccountDismiss = {},
+            deleteAccountConfirming = false,
+            deleteAccountDeleting = false,
+            deleteAccountErrorText = null,
             onStepsEnabledChange = {},
             onSleepEnabledChange = {},
             onPomodoroEnabledChange = {},

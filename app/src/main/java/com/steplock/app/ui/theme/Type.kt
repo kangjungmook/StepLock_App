@@ -55,6 +55,7 @@ object SlText {
     val LockTitle = slStyle(FontWeight.Black, 25f, 32f, -0.4f)
     val RingValue = slStyle(FontWeight.Black, 42f, 42f, -1f)
     val LoginHeading = slStyle(FontWeight.Black, 20f, 26f)
+    val DialogTitle = slStyle(FontWeight.Black, 19f, 26f)
 
     val ScreenTitle = slStyle(FontWeight.Bold, 18f, 24f)
     val RowTitle = slStyle(FontWeight.Bold, 15f, 21f)

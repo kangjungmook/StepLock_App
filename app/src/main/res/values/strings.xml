@@ -125,6 +125,14 @@
     <string name="settings_account_guest_desc">로그인하면 다른 기기에서도 같은 설정을 씁니다</string>
     <string name="settings_account_sign_in">로그인하기</string>
     <string name="settings_account_sign_out">로그아웃</string>
+    <!-- 계정 삭제 — 되돌릴 수 없으므로 문구에 무엇이 사라지는지 적습니다 -->
+    <string name="settings_account_delete">계정 삭제</string>
+    <string name="delete_account_title">계정과 기록을 모두 삭제할까요?</string>
+    <string name="delete_account_desc">계정, 서버에 저장된 설정과 일별 기록, 이 기기에 남은 기록이 모두 지워집니다. 되돌릴 수 없어요.</string>
+    <string name="delete_account_confirm">계정과 기록 삭제하기</string>
+    <string name="delete_account_deleting">삭제 중…</string>
+    <string name="delete_account_cancel">그대로 두기</string>
+    <string name="delete_account_failed">삭제하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요</string>
     <string name="sleep_health_connect_missing">수면 조건은 Health Connect가 필요해요. 설치한 뒤 다시 켜 주세요</string>
     <string name="sleep_permission_denied">수면 데이터 읽기를 허용하면 조건을 켤 수 있어요</string>
 
