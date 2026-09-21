@@ -5,10 +5,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +63,8 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 fun SlPanel(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(SlDimen.RadiusCard),
+    containerColor: Color = SlColor.Surface,
+    borderColor: Color = SlColor.Border,
     contentPadding: PaddingValues = PaddingValues(
         horizontal = SlDimen.PanelPadding,
         vertical = 4.dp,
@@ -71,11 +75,44 @@ fun SlPanel(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(SlColor.Surface)
-            .border(1.dp, SlColor.Border, shape)
+            .background(containerColor)
+            .border(1.dp, borderColor, shape)
             .padding(contentPadding),
         content = content,
     )
+}
+
+/**
+ * 제목 + 설명 + 뒤쪽 컨트롤 한 줄.
+ *
+ * 빈 상태·권한 경고·계정 줄·전부 만족 토글이 모두 같은 구조를 따로 그리고 있어서
+ * 제목과 설명의 글자 크기·간격이 조금씩 달랐습니다. 배치만 여기서 맡고
+ * 면과 뜻(색·테두리·뒤쪽 컨트롤)은 호출하는 쪽이 정합니다.
+ */
+@Composable
+fun SlDetailRow(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    titleColor: Color = SlColor.TextPrimary,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = SlText.RowTitle, color = titleColor)
+            Text(
+                text = description,
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        trailing?.invoke()
+    }
 }
 
 @Composable
@@ -144,8 +181,10 @@ fun TextLink(
 ) {
     Box(
         modifier = modifier
+            .clip(RoundedCornerShape(SlDimen.RadiusSmall))
             .defaultMinSize(minHeight = SlDimen.TouchTarget)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -285,7 +324,7 @@ fun CheckboxMark(
     checked: Boolean,
     modifier: Modifier = Modifier,
     size: Dp = 24.dp,
-    cornerRadius: Dp = SlDimen.RadiusCheckbox,
+    cornerRadius: Dp = SlDimen.RadiusSmall,
     borderWidth: Dp = 2.dp,
     checkIcon: ImageVector = SlIcons.CheckBold,
     checkSize: Dp = 14.dp,

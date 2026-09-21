@@ -1,11 +1,11 @@
 package com.steplock.app.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,8 +42,9 @@ import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
-import com.steplock.app.ui.components.SlEmptyState
+import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
+import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.StepLockMascot
@@ -299,27 +300,17 @@ private fun TodayStatusCard(unlocked: Boolean, description: String, streak: Int)
  */
 @Composable
 private fun PermissionWarning(title: String, description: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusCard))
-            .background(SlColor.Surface)
-            .border(1.dp, SlColor.Error, RoundedCornerShape(SlDimen.RadiusCard))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    SlPanel(
+        borderColor = SlColor.Error,
+        contentPadding = PaddingValues(SlDimen.PanelPadding),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = SlText.RowTitle, color = SlColor.Error)
-            Text(
-                text = description,
-                style = SlText.RowValue,
-                color = SlColor.TextSecondary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        SlChevron()
+        SlDetailRow(
+            title = title,
+            description = description,
+            modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
+            titleColor = SlColor.Error,
+            trailing = { SlChevron() },
+        )
     }
 }
 

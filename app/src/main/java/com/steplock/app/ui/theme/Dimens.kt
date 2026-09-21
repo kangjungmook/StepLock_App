@@ -16,7 +16,8 @@ object SlDimen {
     val RadiusCta = 16.dp
     val RadiusBadge = 13.dp
     val RadiusBadgeSmall = 12.dp
-    val RadiusCheckbox = 8.dp
+    /** 작은 요소와 누르는 영역의 리플 모서리 (체크박스, 텍스트 링크). */
+    val RadiusSmall = 8.dp
 
     /** 하단 탭이나 목록이 있는 화면의 좌우 여백. */
     val ScreenPadding = 20.dp

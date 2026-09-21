@@ -4,23 +4,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,9 +33,10 @@ import com.steplock.app.ui.components.ConditionSettingCard
 import com.steplock.app.ui.components.IconTapTarget
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SectionLabel
+import com.steplock.app.ui.components.SlConfirmDialog
+import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
-import com.steplock.app.ui.components.SlConfirmDialog
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.SlSwitch
 import com.steplock.app.ui.components.TextLink
@@ -251,76 +250,56 @@ fun SettingsScreen(
 
 @Composable
 private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusCard))
-            .background(SlColor.SurfaceAlt)
-            .padding(start = SlDimen.PanelPadding, top = 8.dp, end = 8.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    SlPanel(
+        containerColor = SlColor.SurfaceAlt,
+        borderColor = Color.Transparent,
+        contentPadding = PaddingValues(
+            start = SlDimen.PanelPadding,
+            top = 8.dp,
+            end = 8.dp,
+            bottom = 8.dp,
+        ),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = accountEmail ?: stringResource(R.string.settings_account_guest),
-                style = SlText.RowTitle,
-                color = SlColor.TextPrimary,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
+        SlDetailRow(
+            title = accountEmail ?: stringResource(R.string.settings_account_guest),
+            description = if (accountEmail != null) {
+                stringResource(R.string.settings_account_synced)
+            } else {
+                stringResource(R.string.settings_account_guest_desc)
+            },
+        ) {
+            TextLink(
                 text = if (accountEmail != null) {
-                    stringResource(R.string.settings_account_synced)
+                    stringResource(R.string.settings_account_sign_out)
                 } else {
-                    stringResource(R.string.settings_account_guest_desc)
+                    stringResource(R.string.settings_account_sign_in)
                 },
-                style = SlText.Caption,
-                color = SlColor.TextSecondary,
+                onClick = if (accountEmail != null) onSignOut else onSignIn,
+                style = SlText.LinkSm,
+                color = SlColor.BrandInk,
+                underline = false,
             )
         }
-        TextLink(
-            text = if (accountEmail != null) {
-                stringResource(R.string.settings_account_sign_out)
-            } else {
-                stringResource(R.string.settings_account_sign_in)
-            },
-            onClick = if (accountEmail != null) onSignOut else onSignIn,
-            style = SlText.LinkSm,
-            color = SlColor.BrandInk,
-            underline = false,
-            modifier = Modifier.padding(horizontal = 8.dp),
-        )
     }
 }
 
 @Composable
 private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusCard))
-            .background(SlColor.SurfaceAlt)
-            .padding(SlDimen.PanelPadding),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    SlPanel(
+        containerColor = SlColor.SurfaceAlt,
+        borderColor = Color.Transparent,
+        contentPadding = PaddingValues(SlDimen.PanelPadding),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.settings_strict_title),
-                style = SlText.RowTitle,
-                color = SlColor.TextPrimary,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.settings_strict_desc),
-                style = SlText.Caption,
-                color = SlColor.TextSecondary,
+        SlDetailRow(
+            title = stringResource(R.string.settings_strict_title),
+            description = stringResource(R.string.settings_strict_desc),
+        ) {
+            SlSwitch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                contentDescription = stringResource(R.string.settings_strict_title),
             )
         }
-        SlSwitch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
-            contentDescription = stringResource(R.string.settings_strict_title),
-        )
     }
 }
 

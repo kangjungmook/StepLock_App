@@ -2,7 +2,6 @@ package com.steplock.app.ui.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,15 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
@@ -155,7 +151,7 @@ fun LoginScreen(
             ) {
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(SlDimen.RadiusSmall))
                         .toggleable(
                             value = rememberMe,
                             role = Role.Checkbox,
@@ -179,11 +175,12 @@ fun LoginScreen(
                         color = SlColor.TextSecondary,
                     )
                 }
-                InlineTextButton(
+                TextLink(
                     text = stringResource(R.string.login_forgot),
                     onClick = { onForgotPassword(email) },
                     style = SlText.Label,
                     color = SlColor.BrandInk,
+                    underline = false,
                 )
             }
 
@@ -245,7 +242,7 @@ fun LoginScreen(
                     style = SlText.Signup,
                     color = SlColor.TextSecondary,
                 )
-                InlineTextButton(
+                TextLink(
                     text = stringResource(R.string.login_signup_action),
                     onClick = { onSignUp(email, password) },
                     style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
@@ -262,26 +259,6 @@ fun LoginScreen(
             )
         }
     }
-}
-
-@Composable
-private fun InlineTextButton(
-    text: String,
-    onClick: () -> Unit,
-    style: TextStyle,
-    color: Color,
-    underline: Boolean = false,
-) {
-    Text(
-        text = text,
-        style = style,
-        color = color,
-        textDecoration = if (underline) TextDecoration.Underline else null,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-    )
 }
 
 @Preview(widthDp = 412, heightDp = 892)
