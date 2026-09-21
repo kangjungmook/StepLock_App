@@ -1,0 +1,51 @@
+name: 디버그 APK 빌드
+
+# 컴퓨터 없이도 폰에 설치할 수 있도록, GitHub가 APK를 빌드해
+# "debug" 릴리즈에 올려 둡니다. 폰 브라우저에서 바로 내려받을 수 있습니다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: APK 이름 정리
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/debug/app-debug.apk out/steplock-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steplock-debug-apk
+          path: out/steplock-debug.apk
+
+      # 아티팩트는 zip으로 감싸여 내려오므로, 폰에서 바로 설치하려면 릴리즈가 편합니다.
+      - name: debug 릴리즈에 올리기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view debug >/dev/null 2>&1; then
+            gh release upload debug out/steplock-debug.apk --clobber
+          else
+            gh release create debug out/steplock-debug.apk \
+              --title "디버그 빌드 (설치용)" \
+              --notes "main 브랜치를 빌드한 디버그 APK입니다. 테스트용이고 서명은 디버그 키입니다." \
+              --prerelease
+          fi
