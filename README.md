@@ -1,5 +1,7 @@
 # 스텝락 (StepLock)
 
+[![디버그 APK 빌드](https://github.com/kangjungmook/StepLock_App/actions/workflows/build-apk.yml/badge.svg)](https://github.com/kangjungmook/StepLock_App/actions/workflows/build-apk.yml)
+
 > 걸음 수 · 수면 시간 · 집중 타이머 중 하나를 채워야 쇼츠·릴스·틱톡의 잠금이 풀리는 습관 관리 앱.
 > Kotlin + Jetpack Compose. 세 조건(걸음 수 · 수면 시간 · 집중 타이머)이 실제 데이터로 판정되고,
 > **차단 앱 감지와 잠금 오버레이**까지 동작합니다.
@@ -312,6 +314,16 @@ app/src/main/java/com/steplock/app
 ```
 
 Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 볼 수 있습니다.
+
+### 폰에 바로 설치하기
+
+빌드 환경 없이 확인하려면 GitHub Actions가 만들어 둔 APK를 받으면 됩니다.
+main에 푸시될 때마다 새로 빌드해 같은 주소에 올립니다.
+
+**[steplock-debug.apk 내려받기](https://github.com/kangjungmook/StepLock_App/releases/download/debug/steplock-debug.apk)**
+
+디버그 키로 서명한 테스트 빌드라 "출처를 알 수 없는 앱" 설치를 허용해야 합니다.
+설치 후 **사용 정보 접근**과 **다른 앱 위에 표시**를 수동으로 켜야 잠금이 동작합니다.
 
 ## 구현 범위
 
