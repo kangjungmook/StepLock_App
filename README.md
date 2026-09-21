@@ -163,11 +163,38 @@ Firebase Auth는 카카오를 직접 지원하지 않아 커스텀 토큰을 발
 - 설정 상단 계정 줄에서 로그인 상태를 보고 로그아웃할 수 있고, 게스트면 같은 자리에서
   `LoginTrigger.Sync` 문구로 로그인 화면을 띄웁니다.
 
-**배포 전에 대시보드에서 해 줄 일** (코드가 아니라 설정입니다)
+### 배포 전 콘솔 설정
 
-1. Authentication → URL Configuration → Redirect URLs에 `steplock://login-callback` 추가
-2. Authentication → Providers에서 Google · Kakao 활성화 후 각 OAuth 앱의 client id/secret 입력
-3. 이메일 로그인을 그대로 쓸 거면 Email 확인 메일 사용 여부 결정
+코드가 아니라 콘솔 설정입니다. OAuth 앱은 소유 계정으로 약관에 동의해야 발급되므로 직접 만들어야
+합니다. 아래 값만 그대로 붙여 넣으면 됩니다.
+
+양쪽 콘솔에 공통으로 넣는 **콜백 URL**:
+
+```
+https://thcchvmwkgfhqqzponnx.supabase.co/auth/v1/callback
+```
+
+**1. Supabase — Authentication → URL Configuration**
+
+- Redirect URLs에 `steplock://login-callback` 추가 (앱으로 돌아올 딥링크)
+
+**2. Google — Google Cloud Console → APIs & Services → 사용자 인증 정보**
+
+- OAuth 클라이언트 ID 만들기 → 애플리케이션 유형 **웹 애플리케이션**
+  (Supabase가 웹 플로우로 중개하므로 Android 유형이 아닙니다)
+- 승인된 리디렉션 URI에 위 콜백 URL 추가
+- 발급된 client ID / client secret → Supabase Authentication → Providers → Google에 입력
+
+**3. Kakao — Kakao Developers → 내 애플리케이션**
+
+- 앱 생성 후 카카오 로그인 활성화
+- Redirect URI에 위 콜백 URL 추가
+- 동의 항목에서 이메일을 받으려면 `account_email` 활성화 (Supabase가 계정 식별에 씁니다)
+- REST API 키 → Supabase의 Kakao provider "Client ID",
+  보안 → Client Secret 코드 → "Client Secret"에 입력
+
+**4. 이메일 로그인** — Authentication → Providers → Email에서 확인 메일 사용 여부를 정합니다.
+기본은 켜져 있어 회원가입 후 메일의 링크를 눌러야 로그인됩니다.
 
 `SUPABASE_URL`과 공개 키는 `app/build.gradle.kts`의 `buildConfigField`에 있습니다. 공개 키는
 클라이언트에 노출되도록 설계된 값이라 저장소에 함께 둡니다 — 데이터 보호는 RLS로 합니다.
