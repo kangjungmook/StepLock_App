@@ -53,7 +53,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = SlText.SectionLabel,
-        color = SlColor.TextPrimary,
+        color = SlColor.TextSecondary,
         modifier = modifier,
     )
 }
@@ -62,11 +62,9 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun SlPanel(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(SlDimen.RadiusPanel),
+    shape: Shape = RoundedCornerShape(SlDimen.RadiusCard),
     containerColor: Color = SlColor.Surface,
-    borderColor: Color = Color.Transparent,
-    // 테두리로 면을 가두면 서식 칸처럼 보입니다. 옅은 그림자로 띄우기만 합니다.
-    elevation: Dp = 2.dp,
+    borderColor: Color = SlColor.Border,
     contentPadding: PaddingValues = PaddingValues(
         horizontal = SlDimen.PanelPadding,
         vertical = 4.dp,
@@ -76,12 +74,6 @@ fun SlPanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = elevation,
-                shape = shape,
-                ambientColor = SlColor.Shadow,
-                spotColor = SlColor.Shadow,
-            )
             .clip(shape)
             .background(containerColor)
             .border(1.dp, borderColor, shape)

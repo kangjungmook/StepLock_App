@@ -67,8 +67,7 @@ object SlText {
     val Chip = slStyle(FontWeight.Bold, 12f, 16f)
     val Remaining = slStyle(FontWeight.Bold, 14f, 20f)
     val RingPercent = slStyle(FontWeight.Bold, 11f, 14f)
-    /** 섹션 제목. 자간 넓은 작은 라벨 대신 굵은 큰 글씨로 위계를 만듭니다. */
-    val SectionLabel = slStyle(FontWeight.Bold, 17f, 23f, -0.2f)
+    val SectionLabel = slStyle(FontWeight.Bold, 12f, 16f, 0.6f)
     val NavLabelActive = slStyle(FontWeight.Bold, 11f, 14f)
 
     val Tagline = slStyle(FontWeight.Normal, 15f, 24f)

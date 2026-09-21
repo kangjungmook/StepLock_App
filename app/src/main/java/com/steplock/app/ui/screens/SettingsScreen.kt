@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -254,8 +253,6 @@ private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: (
     SlPanel(
         containerColor = SlColor.SurfaceAlt,
         borderColor = Color.Transparent,
-        elevation = 0.dp,
-        shape = RoundedCornerShape(SlDimen.RadiusCard),
         contentPadding = PaddingValues(
             start = SlDimen.PanelPadding,
             top = 8.dp,
@@ -291,8 +288,6 @@ private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) 
     SlPanel(
         containerColor = SlColor.SurfaceAlt,
         borderColor = Color.Transparent,
-        elevation = 0.dp,
-        shape = RoundedCornerShape(SlDimen.RadiusCard),
         contentPadding = PaddingValues(SlDimen.PanelPadding),
     ) {
         SlDetailRow(
