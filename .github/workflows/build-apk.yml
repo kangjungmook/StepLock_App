@@ -2,6 +2,7 @@ name: 디버그 APK 빌드
 
 # 컴퓨터 없이도 폰에 설치할 수 있도록, GitHub가 APK를 빌드해
 # "debug" 릴리즈에 올려 둡니다. 폰 브라우저에서 바로 내려받을 수 있습니다.
+# 이어서 릴리스 빌드(R8 축소)와 AAB도 만들어 스토어 업로드용을 검증합니다.
 on:
   push:
     branches: [main]
@@ -14,6 +15,12 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # secrets 컨텍스트는 step 의 if 에서 직접 못 읽는 경우가 있어 env 로 옮겨 둡니다.
+      KEYSTORE_BASE64: ${{ secrets.STEPLOCK_KEYSTORE_BASE64 }}
+      STEPLOCK_STORE_PASSWORD: ${{ secrets.STEPLOCK_STORE_PASSWORD }}
+      STEPLOCK_KEY_ALIAS: ${{ secrets.STEPLOCK_KEY_ALIAS }}
+      STEPLOCK_KEY_PASSWORD: ${{ secrets.STEPLOCK_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,26 +38,11 @@ jobs:
 
       # 실행 로그는 Actions UI 밖에서 받기 어려우므로, 실패하면 이슈로 남겨
       # 어디서 깨졌는지 바로 볼 수 있게 합니다.
-      - name: 실패 로그를 이슈로 남기기
+      - name: 디버그 빌드 실패를 이슈로
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            echo "커밋 \`${{ github.sha }}\` · [실행 로그](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-            echo
-            echo '### 오류로 보이는 줄'
-            echo '```'
-            grep -nE "^e: |error:|^FAILURE:|^Caused by:|Unresolved reference|FAILED$|^\* What went wrong|^\* Where" build.log \
-              | head -80 || echo '(패턴에 걸린 줄이 없습니다 — 아래 전문을 보세요)'
-            echo '```'
-            echo
-            echo '### 로그 마지막 150줄'
-            echo '```'
-            tail -n 150 build.log
-            echo '```'
-          } > issue.md
-          gh issue create --title "빌드 실패 · ${{ github.sha }}" --body-file issue.md
+        run: ./.github/report-build-failure.sh "디버그 빌드 실패"
 
       - name: APK 이름 정리
         run: |
@@ -75,3 +67,34 @@ jobs:
               --notes "main 브랜치를 빌드한 디버그 APK입니다. 테스트용이고 서명은 디버그 키입니다." \
               --prerelease
           fi
+
+      # 여기부터는 스토어 업로드용입니다. 설치용 APK를 이미 올린 뒤에 실행해서,
+      # R8 규칙 문제가 폰 테스트를 막지 않게 합니다.
+      - name: 서명 키 준비 (시크릿이 있을 때만)
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "STEPLOCK_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: bundleRelease (AAB · R8 규칙 검증)
+        run: |
+          set -o pipefail
+          ./gradlew bundleRelease --stacktrace 2>&1 | tee build.log
+
+      - name: 릴리스 빌드 실패를 이슈로
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./.github/report-build-failure.sh "릴리스 빌드 실패 (R8 규칙 확인 필요)"
+
+      - name: AAB 이름 정리
+        run: |
+          # 서명 시크릿이 없으면 파일 이름에 unsigned 가 붙습니다.
+          AAB=$(find app/build/outputs/bundle/release -name '*.aab' | head -1)
+          echo "찾은 AAB: $AAB"
+          cp "$AAB" out/steplock-release.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steplock-release-aab
+          path: out/steplock-release.aab

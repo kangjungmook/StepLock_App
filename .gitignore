@@ -8,3 +8,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# 릴리스 서명 — 절대 저장소에 넣지 않습니다
+/keystore.properties
+*.jks
+*.keystore
