@@ -56,10 +56,12 @@ fun StepTrack(
         val walkWidth = trackWidth - MASCOT_WIDTH
 
         Column {
+            // 캐릭터 그림 아래쪽에 발자국용 여백이 있어서, 그 만큼 낮은 칸에 두어
+            // 발이 트랙 선에 닿게 합니다(칸을 넘겨 그려도 잘리지 않습니다).
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(MASCOT_HEIGHT),
+                    .height(MASCOT_HEIGHT - 6.dp),
             ) {
                 StepLockMascot(
                     modifier = Modifier
@@ -82,13 +84,13 @@ fun StepTrack(
 
                 if (animated < 1f) {
                     drawLine(
-                        color = SlColor.Border,
-                        start = Offset(walked, centerY),
+                        color = SlColor.BorderStrong,
+                        start = Offset(walked + stroke, centerY),
                         end = Offset(finishX, centerY),
-                        strokeWidth = stroke,
+                        strokeWidth = 2.dp.toPx(),
                         cap = StrokeCap.Round,
                         pathEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(2.dp.toPx(), 7.dp.toPx()),
+                            floatArrayOf(2.dp.toPx(), 6.dp.toPx()),
                             0f,
                         ),
                     )
