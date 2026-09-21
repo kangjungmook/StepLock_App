@@ -280,7 +280,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 | `RadiusCta` | **16dp** | 버튼 |
 | `RadiusField` | **14dp** | 입력 칸, 작은 아이콘 타일 |
 | `RadiusBadge` / `RadiusBadgeSmall` | 13dp / 12dp | 앱 뱃지 (40dp / 36dp) |
-| `RadiusCheckbox` | 8dp | 체크박스 |
+| `RadiusSmall` | 8dp | 체크박스, 텍스트 링크의 리플 영역 |
 | 원형 | `CircleShape` | 칩, 소셜 버튼, 점, 스위치 |
 
 **모서리는 요소 크기에 따라 커집니다** (8 → 12 → 14 → 16 → 18 → 20). 같은 크기의 요소가
@@ -334,7 +334,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 | 컴포넌트 | 모양 | 크기 | 쓰는 기준 |
 | --- | --- | --- | --- |
 | `PrimaryButton` | 꽉 찬 면, 모서리 16dp | 높이 **56dp**, 가로 꽉 채움 | **화면의 주 동작 하나.** 색을 바꿔 파괴적 동작(삭제=`Error`)이나 다크 화면(`Dark.SurfaceAlt`)에도 씁니다 |
-| `TextLink` | 글자만, 밑줄 선택 | 터치 영역 **44dp** | 부차적 동작. 밑줄 켜면 문서 링크 느낌, 끄면 줄 안의 동작(로그아웃 등) |
+| `TextLink` | 글자만, 밑줄 선택, 리플 8dp 모서리 | 터치 영역 **44dp** | 부차적 동작. 밑줄 켜면 문서 링크 느낌, 끄면 줄 안의 동작(로그아웃 등). **줄 안에 인라인으로도 씁니다** — 로그인의 "회원가입", "비밀번호를 잊으셨나요?" |
 | `IconTapTarget` | 원형 면 + 아이콘 | **44dp** | 뒤로 가기 같은 아이콘 단독 버튼 |
 | `SocialLoginButton` | 원형 | **44dp** | 구글·카카오·애플. 각 브랜드 색 유지 |
 | `GoalStepper` | −/+ 버튼 + 숫자 | 버튼 **44dp** | 목표값 조절. 걸음 500보 · 수면 30분 · 세션 1회 단위 |
@@ -346,7 +346,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 
 | 컴포넌트 | 모양 | 쓰는 기준 |
 | --- | --- | --- |
-| `SlPanel` | `Surface` 면 + 1dp `Border` + 모서리 18dp | **카드를 겹치지 않고** 하나의 면 안에서 줄을 나눕니다 |
+| `SlPanel` | `Surface` 면 + 1dp `Border` + 모서리 18dp | **카드를 겹치지 않고** 하나의 면 안에서 줄을 나눕니다. `containerColor` · `borderColor` 로 변형합니다 — 보조 면은 `SurfaceAlt` + `Transparent`, 경고는 `Surface` + `Error` |
 | `SlDivider` | 1dp `Border` 선 | 패널 안 줄 구분. **패널을 여러 개로 쪼개는 대신 이걸 씁니다** |
 | `SectionLabel` | Bold 12sp, 자간 +0.6 | 패널 위 섹션 이름 |
 | `ConditionSettingCard` | 토글 + 구분선 + 스테퍼 | 설정의 조건 카드 3개 |
@@ -360,7 +360,20 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 | --- | --- | --- |
 | `ConditionRow` | 앞쪽 슬롯 + 제목/값 + 뒤쪽 슬롯 | 홈의 조건 줄 |
 | `AppListItem` | 앱 뱃지 + 이름(+부제) + 뒤쪽 슬롯 | 앱 목록. **홈은 부제 없이, 설정은 체크박스와 함께** |
-| `SlEmptyState` | 제목 + 설명 (+셰브론) | 패널에 보여 줄 내용이 없을 때 |
+| `SlDetailRow` | 제목 + 설명 + 뒤쪽 슬롯 | **제목·설명 한 줄의 배치 원시 요소.** 면과 뜻은 호출하는 쪽이 정합니다 |
+| `SlEmptyState` | `SlDetailRow` + 셰브론(옵션) | 패널에 보여 줄 내용이 없을 때 |
+
+`SlDetailRow`를 쓰는 곳 — 뜻은 다르지만 **배치가 같습니다** **[코드]**
+
+| 어디 | 면 | 뒤쪽 |
+| --- | --- | --- |
+| 빈 상태 | 패널 안 (면 없음) | 셰브론(누를 수 있을 때만) |
+| 권한 경고 (홈) | `Surface` + `Error` 테두리 | 셰브론 |
+| 계정 줄 (설정) | `SurfaceAlt` | `TextLink` |
+| 전부 만족 토글 (설정) | `SurfaceAlt` | `SlSwitch` |
+
+**뜻이 다르므로 색과 뒤쪽 컨트롤은 다릅니다.** 배치만 공유해서 제목·설명의
+글자 크기와 간격이 저절로 맞습니다.
 
 **같은 역할의 줄은 같은 앞쪽 요소를 씁니다.** 홈의 조건 세 줄은 걸음·수면·집중이
 모두 "목표 대비 진행"이므로 **같은 44dp 링**을 쓰고, 달성하면 숫자 대신 체크가 들어갑니다.
@@ -394,9 +407,16 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 
 ## 4-7. 추출하지 않은 것
 
-- `PermissionWarning`(홈의 빨간 경고 줄) — **쓰이는 곳이 한 곳뿐**이라 `HomeScreen.kt`에
-  private으로 둡니다. 두 번째 화면에서 필요해지면 그때 `ui/components/`로 올리세요.
-- `TodayStatusCard`(홈 상태 카드) — 홈 전용입니다.
+다음은 **뜻이 한 화면에만 있어서** private으로 둡니다. 배치는 이미 공통 요소를 쓰므로
+중복이 아닙니다. 두 번째 화면에서 같은 뜻이 필요해지면 그때 `ui/components/`로 올리세요.
+
+| 무엇 | 어디 | 안에서 쓰는 공통 요소 |
+| --- | --- | --- |
+| `PermissionWarning` | `HomeScreen.kt` | `SlPanel` + `SlDetailRow` + `SlChevron` |
+| `AccountRow` · `StrictModeRow` | `SettingsScreen.kt` | `SlPanel` + `SlDetailRow` |
+| `AchievementRow` | `StatsScreen.kt` | `ConditionRow` + `IconTile` |
+| `TodayStatusCard` · `ConditionRing` | `HomeScreen.kt` | `StepLockMascot` / `ProgressRing` |
+| `UnlockRule` | `OnboardingScreen.kt` | `IconTile` — 아이콘이 **앞**에 오는 다른 구조 |
 
 ## 4-8. iOS 대응 **[제안 · 시작값]**
 
@@ -602,5 +622,11 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 | 버튼 안 로딩 표시 | 없음 | 16dp 인디케이터 | **[제안 · 시작값]** |
 | 고정폭 숫자 | 없음 | 타이머에 적용 | **[제안 · 시작값]** |
 | iOS 전체 | 없음 | 각 절의 iOS 표 | **[제안 · 시작값]** |
+| 제목+설명 줄 | 네 곳에서 따로 그림 | `SlDetailRow` 공통 | 추출 |
+| 줄 설명 글자 | 12sp · 13sp 혼용 | 13sp `RowValue` | 통일 |
+| 보조 면 카드 | 설정에서 직접 그림 | `SlPanel(containerColor)` | 통일 |
+| 로그인 텍스트 버튼 | 사설 `InlineTextButton` | 공통 `TextLink` | 통일 |
+| 텍스트 링크 리플 | 모서리 없는 사각형 | 8dp 모서리 + 좌우 4dp | 개선 |
+| `RadiusCheckbox` | 체크박스 전용 이름 | `RadiusSmall` (리플에도 씀) | 이름 정리 |
 
 **[제안 · 시작값]은 아직 코드에 없습니다.** 실제 기기에서 확인한 뒤 필요한 것만 넣으세요.
