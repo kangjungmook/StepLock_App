@@ -177,24 +177,33 @@ https://thcchvmwkgfhqqzponnx.supabase.co/auth/v1/callback
 **1. Supabase — Authentication → URL Configuration**
 
 - Redirect URLs에 `steplock://login-callback` 추가 (앱으로 돌아올 딥링크)
+- `OAuth Apps`와 `OAuth Server`는 Supabase를 OAuth 제공자로 쓸 때의 메뉴라 여기선 쓰지 않습니다.
 
-**2. Google — Google Cloud Console → APIs & Services → 사용자 인증 정보**
+**2. Google — Google Cloud Console → Google 인증 플랫폼**
 
-- OAuth 클라이언트 ID 만들기 → 애플리케이션 유형 **웹 애플리케이션**
-  (Supabase가 웹 플로우로 중개하므로 Android 유형이 아닙니다)
-- 승인된 리디렉션 URI에 위 콜백 URL 추가
-- 발급된 client ID / client secret → Supabase Authentication → Providers → Google에 입력
+- 먼저 브랜딩(동의 화면)을 만듭니다: 앱 이름 `스텝락`, 지원 이메일, 대상 **외부(External)**
+- 대상이 "테스트" 상태면 **등록한 테스트 사용자만 로그인됩니다** — `대상` 메뉴에서 본인 계정을
+  테스트 사용자로 추가하세요. 빠뜨리면 구글 로그인에서 액세스 차단이 뜹니다.
+- 클라이언트 → OAuth 클라이언트 ID 만들기 → 애플리케이션 유형 **웹 애플리케이션**
+  - Android 유형은 client secret을 발급하지 않습니다. Supabase가 서버에서 코드를 교환하므로
+    ID와 secret 한 쌍이 필요하고, 그래서 패키지 이름·SHA-1 지문은 이 방식에서 쓰지 않습니다.
+  - 승인된 리디렉션 URI에 위 콜백 URL 추가 (JavaScript 원본은 비워 둡니다)
+- 발급된 client ID / client secret → Supabase **Authentication → Sign In / Providers → Google**
 
-**3. Kakao — Kakao Developers → 내 애플리케이션**
+**3. Kakao — Kakao Developers → 앱 관리**
 
-- 앱 생성 후 카카오 로그인 활성화
-- Redirect URI에 위 콜백 URL 추가
-- 동의 항목에서 이메일을 받으려면 `account_email` 활성화 (Supabase가 계정 식별에 씁니다)
-- REST API 키 → Supabase의 Kakao provider "Client ID",
-  보안 → Client Secret 코드 → "Client Secret"에 입력
+- 제품 설정 → **카카오 로그인 → 일반**: 사용 설정 ON, 같은 페이지의 Redirect URI에 위 콜백 URL 추가
+  (OpenID Connect는 켜 두어도 무해하지만 필수는 아닙니다)
+- 카카오 로그인 → **보안**: Client Secret 코드 생성 후 활성화 ON
+- 카카오 로그인 → **동의항목**: 카카오계정(이메일)을 **선택 동의**로 설정.
+  필수 동의는 비즈 앱 전환이 필요하고, 사용자가 동의하지 않으면 이메일 없이 계정이 만들어져
+  설정 화면의 계정 줄이 비어 보입니다.
+- 앱 설정 → **앱 → 앱 키**: `REST API 키` 복사
+- Supabase Authentication → Sign In / Providers → Kakao에 **Client ID = REST API 키**,
+  **Client Secret = 보안에서 만든 코드** (네이티브 앱 키나 JavaScript 키가 아닙니다)
 
-**4. 이메일 로그인** — Authentication → Providers → Email에서 확인 메일 사용 여부를 정합니다.
-기본은 켜져 있어 회원가입 후 메일의 링크를 눌러야 로그인됩니다.
+**4. 이메일 로그인** — Authentication → Sign In / Providers → Email에서 확인 메일 사용 여부를
+정합니다. 기본은 켜져 있어 회원가입 후 메일의 링크를 눌러야 로그인됩니다.
 
 `SUPABASE_URL`과 공개 키는 `app/build.gradle.kts`의 `buildConfigField`에 있습니다. 공개 키는
 클라이언트에 노출되도록 설계된 값이라 저장소에 함께 둡니다 — 데이터 보호는 RLS로 합니다.
