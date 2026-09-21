@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build:
@@ -24,7 +25,32 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: assembleDebug
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
+
+      # 실행 로그는 Actions UI 밖에서 받기 어려우므로, 실패하면 이슈로 남겨
+      # 어디서 깨졌는지 바로 볼 수 있게 합니다.
+      - name: 실패 로그를 이슈로 남기기
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "커밋 \`${{ github.sha }}\` · [실행 로그](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo
+            echo '### 오류로 보이는 줄'
+            echo '```'
+            grep -nE "^e: |error:|^FAILURE:|^Caused by:|Unresolved reference|FAILED$|^\* What went wrong|^\* Where" build.log \
+              | head -80 || echo '(패턴에 걸린 줄이 없습니다 — 아래 전문을 보세요)'
+            echo '```'
+            echo
+            echo '### 로그 마지막 150줄'
+            echo '```'
+            tail -n 150 build.log
+            echo '```'
+          } > issue.md
+          gh issue create --title "빌드 실패 · ${{ github.sha }}" --body-file issue.md
 
       - name: APK 이름 정리
         run: |
