@@ -165,7 +165,11 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.HOME) {
+            // 온보딩 이후에도 권한이 꺼질 수 있어(사용자가 끄거나 배터리 최적화가 회수)
+            // 홈으로 돌아올 때마다 다시 확인합니다.
+            var permissionStep by remember { mutableStateOf(nextPermissionStep(context)) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                permissionStep = nextPermissionStep(context)
                 viewModel.refreshSleep()
                 viewModel.recordToday()
                 viewModel.syncNow()
@@ -186,6 +190,29 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 onManageLocks = { navController.navigate(Route.SETTINGS) },
                 onAppClick = { app -> navController.navigate(Route.lock(app.id)) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
+                streak = state.streak,
+                // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
+                warningTitle = when (permissionStep) {
+                    PermissionStep.Ready -> null
+                    PermissionStep.ActivityRecognition -> stringResource(R.string.home_steps_stopped)
+                    else -> stringResource(R.string.home_watch_stopped)
+                },
+                warningDescription = when (permissionStep) {
+                    PermissionStep.Ready -> null
+                    PermissionStep.ActivityRecognition ->
+                        stringResource(R.string.home_permission_activity)
+                    PermissionStep.UsageAccess -> stringResource(R.string.home_permission_usage)
+                    PermissionStep.Overlay -> stringResource(R.string.home_permission_overlay)
+                },
+                onWarningClick = {
+                    context.startActivity(
+                        when (permissionStep) {
+                            PermissionStep.UsageAccess -> AppPermissions.usageAccessSettings()
+                            PermissionStep.Overlay -> AppPermissions.overlaySettings(context)
+                            else -> AppPermissions.appDetailsSettings(context)
+                        },
+                    )
+                },
             )
         }
 
@@ -194,6 +221,8 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             StatsScreen(
                 weekly = state.weekly,
                 settings = state.settings,
+                streak = state.streak,
+                longestStreak = state.longestStreak,
                 selectedTab = NavTab.Stats,
                 onTabSelected = { tab ->
                     when (tab) {
@@ -295,6 +324,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 appName = app.name,
                 stat = state.today,
                 settings = state.settings,
+                temporaryAllowRemaining = state.temporaryAllowRemaining,
                 onDismiss = { navController.popBackStack() },
                 onTemporaryAllow = { navController.popBackStack() },
             )

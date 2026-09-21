@@ -16,6 +16,7 @@ import com.steplock.app.data.LockSettings
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
+import com.steplock.app.data.StreakCalculator
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.SyncRepository
 import com.steplock.app.ui.components.SocialProvider
@@ -36,6 +37,11 @@ data class StepLockUiState(
     val weekly: List<DailyStat>,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
+    /** 연속 달성 일수 — 오늘이 아직 미달이면 어제까지로 셉니다. */
+    val streak: Int,
+    val longestStreak: Int,
+    /** 오늘 남은 임시 허용 횟수. 0이면 잠금 화면에서 버튼이 사라집니다. */
+    val temporaryAllowRemaining: Int,
 )
 
 enum class LoginError {
@@ -100,12 +106,17 @@ class StepLockViewModel(
                 sleepMinutes = prefs.sleepMinutesToday,
                 pomodoroSessions = prefs.pomodoro.sessionsToday,
             )
+            // 오늘 기록은 아직 history 에 없을 수 있어 따로 얹어 줘야 연속이 끊기지 않습니다.
+            val withToday = prefs.history.filter { it.date != today.date } + today
             StepLockUiState(
                 settings = prefs.settings,
                 today = today,
                 weekly = lastSevenDays(prefs.history, today),
                 onboardingCompleted = prefs.onboardingCompleted,
                 authState = prefs.authState,
+                streak = StreakCalculator.current(withToday, prefs.settings, today.date),
+                longestStreak = StreakCalculator.longest(withToday, prefs.settings),
+                temporaryAllowRemaining = prefs.temporaryAllow.remainingToday,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -260,6 +271,9 @@ class StepLockViewModel(
             }
         }
     }
+
+    /** 잠금 화면에서 호출합니다. 하루 한도를 넘으면 false — 화면을 닫지 않아야 합니다. */
+    suspend fun useTemporaryAllow(): Boolean = repository.useTemporaryAllow()
 
     fun signOut() {
         viewModelScope.launch { authRepository.signOut() }

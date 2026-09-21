@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 전경 앱을 1초 간격으로 확인해 차단 대상이 열리면 잠금 화면을 띄웁니다.
@@ -86,7 +85,7 @@ class AppWatchService : Service() {
 
             if (blockedApp == null) {
                 shownForAppId = null
-            } else if (shownForAppId != blockedApp.id && !isTemporarilyAllowed()) {
+            } else if (shownForAppId != blockedApp.id && !current.temporaryAllow.isActive()) {
                 val stat = DailyStat(
                     deviceUuid = current.settings.deviceUuid,
                     accountId = current.settings.accountId,
@@ -165,8 +164,6 @@ class AppWatchService : Service() {
         private const val EVENT_WINDOW_MS = 10_000L
         private const val SLEEP_REFRESH_MS = 10 * 60_000L
 
-        private val temporaryAllowUntil = AtomicLong(0L)
-
         fun start(context: Context) {
             ContextCompat.startForegroundService(
                 context,
@@ -177,12 +174,5 @@ class AppWatchService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, AppWatchService::class.java))
         }
-
-        fun allowTemporarily(minutes: Int) {
-            temporaryAllowUntil.set(System.currentTimeMillis() + minutes * 60_000L)
-        }
-
-        fun isTemporarilyAllowed(): Boolean =
-            System.currentTimeMillis() < temporaryAllowUntil.get()
     }
 }

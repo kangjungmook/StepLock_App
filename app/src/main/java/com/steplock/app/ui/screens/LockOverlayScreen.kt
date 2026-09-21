@@ -25,6 +25,7 @@ import com.steplock.app.R
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.SampleData
+import com.steplock.app.data.TemporaryAllow
 import com.steplock.app.ui.components.ChipState
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.PrimaryButton
@@ -56,6 +57,7 @@ fun LockOverlayScreen(
     appName: String,
     stat: DailyStat,
     settings: LockSettings,
+    temporaryAllowRemaining: Int,
     onDismiss: () -> Unit,
     onTemporaryAllow: () -> Unit,
     modifier: Modifier = Modifier,
@@ -193,13 +195,31 @@ fun LockOverlayScreen(
             containerColor = SlColor.Dark.SurfaceAlt,
             contentColor = SlColor.Dark.TextBright,
         )
-        TextLink(
-            text = stringResource(R.string.lock_temporary_allow),
-            onClick = onTemporaryAllow,
-            modifier = Modifier.fillMaxWidth(),
-            style = SlText.LinkSm,
-            color = SlColor.Dark.TextLink,
-        )
+        // 한도를 다 쓰면 링크 자체를 없앱니다. 눌러도 안 되는 버튼을 남기면
+        // 왜 안 되는지 알 수 없습니다.
+        if (temporaryAllowRemaining > 0) {
+            TextLink(
+                text = stringResource(
+                    R.string.lock_temporary_allow,
+                    TemporaryAllow.MINUTES,
+                    temporaryAllowRemaining,
+                ),
+                onClick = onTemporaryAllow,
+                modifier = Modifier.fillMaxWidth(),
+                style = SlText.LinkSm,
+                color = SlColor.Dark.TextLink,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.lock_temporary_allow_exhausted),
+                style = SlText.LinkSm,
+                color = SlColor.Dark.TextLink,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
+            )
+        }
     }
 }
 
@@ -210,6 +230,7 @@ private fun LockOverlayScreenPreview() {
         appName = "쇼츠",
         stat = SampleData.today,
         settings = SampleData.settings,
+        temporaryAllowRemaining = TemporaryAllow.DAILY_LIMIT,
         onDismiss = {},
         onTemporaryAllow = {},
     )

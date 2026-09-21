@@ -53,6 +53,8 @@ import java.util.Locale
 fun StatsScreen(
     weekly: List<DailyStat>,
     settings: LockSettings,
+    streak: Int,
+    longestStreak: Int,
     selectedTab: NavTab,
     onTabSelected: (NavTab) -> Unit,
     modifier: Modifier = Modifier,
@@ -88,6 +90,26 @@ fun StatsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
+            SectionLabel(stringResource(R.string.stats_section_streak))
+            Spacer(Modifier.height(12.dp))
+            SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    StreakFigure(
+                        label = stringResource(R.string.stats_streak_current),
+                        days = streak,
+                        highlight = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    StreakFigure(
+                        label = stringResource(R.string.stats_streak_longest),
+                        days = longestStreak,
+                        highlight = false,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(28.dp))
             SectionLabel(stringResource(R.string.stats_section_steps))
             Spacer(Modifier.height(12.dp))
             SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
@@ -192,6 +214,25 @@ private fun AchievementRow(icon: ImageVector, title: String, achievedByDay: List
     )
 }
 
+/** 숫자를 크게, 라벨을 작게. 현재 기록만 브랜드 색으로 강조합니다. */
+@Composable
+private fun StreakFigure(
+    label: String,
+    days: Int,
+    highlight: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.stats_streak_days, days),
+            style = SlText.Greeting,
+            color = if (highlight) SlColor.Brand else SlColor.TextPrimary,
+        )
+    }
+}
+
 @Preview(widthDp = 412, heightDp = 892)
 @Composable
 private fun StatsScreenPreview() {
@@ -199,6 +240,8 @@ private fun StatsScreenPreview() {
         StatsScreen(
             weekly = SampleData.weekly,
             settings = SampleData.settings,
+            streak = 3,
+            longestStreak = 5,
             selectedTab = NavTab.Stats,
             onTabSelected = {},
         )

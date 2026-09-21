@@ -52,6 +52,7 @@ data class AppPreferences(
     val onboardingCompleted: Boolean,
     val authState: AuthState,
     val pomodoro: PomodoroState,
+    val temporaryAllow: TemporaryAllowState,
     /** Health Connect에서 마지막으로 읽어 둔 오늘의 수면 분. */
     val sleepMinutesToday: Int,
     /** 통계용 일별 기록. 오래된 날부터 정렬됩니다. */
@@ -64,6 +65,28 @@ data class AppPreferences(
  * 진행 중인 세션은 종료 시각으로, 멈춘 세션은 남은 시간으로 저장합니다.
  * 앱이 죽어도 종료 시각만 있으면 남은 시간을 다시 계산할 수 있습니다.
  */
+/**
+ * "5분만 임시로 허용하기"의 상태.
+ *
+ * 하루 한도를 두지 않으면 잠금 화면이 뜰 때마다 눌러서 앱을 무력화할 수 있습니다.
+ * 종료 시각과 사용 횟수를 DataStore에 두기 때문에 앱이나 서비스를 강제 종료해도
+ * 허용이 풀리거나 횟수가 되돌아가지 않습니다.
+ */
+data class TemporaryAllowState(
+    val allowedUntil: Long? = null,
+    val usedToday: Int = 0,
+) {
+    fun isActive(now: Long = System.currentTimeMillis()): Boolean =
+        allowedUntil != null && now < allowedUntil
+
+    val remainingToday: Int get() = (TemporaryAllow.DAILY_LIMIT - usedToday).coerceAtLeast(0)
+}
+
+object TemporaryAllow {
+    const val DAILY_LIMIT = 3
+    const val MINUTES = 5
+}
+
 data class PomodoroState(
     val endsAt: Long? = null,
     val pausedRemainingMs: Long? = null,

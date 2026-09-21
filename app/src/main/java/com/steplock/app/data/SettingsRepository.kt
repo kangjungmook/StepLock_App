@@ -71,6 +71,9 @@ class SettingsRepository(context: Context) {
         val sleepMinutesDate = stringPreferencesKey("sleep_minutes_date")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
         val dailyHistory = stringSetPreferencesKey("daily_history")
+        val tempAllowUntil = longPreferencesKey("temp_allow_until")
+        val tempAllowDate = stringPreferencesKey("temp_allow_date")
+        val tempAllowCount = intPreferencesKey("temp_allow_count")
         val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
     }
 
@@ -202,6 +205,29 @@ class SettingsRepository(context: Context) {
     }
 
     /** 진행 중이던 세션만 한 번 집계합니다 — 화면과 서비스가 동시에 불러도 중복되지 않게. */
+    /**
+     * 임시 허용을 한 번 씁니다. 하루 한도를 넘으면 아무것도 바꾸지 않고 false 를 돌려줍니다.
+     * 호출자가 화면을 닫기 전에 결과를 확인해야, 한도를 넘긴 상태로 잠금이 풀리지 않습니다.
+     */
+    suspend fun useTemporaryAllow(): Boolean {
+        var granted = false
+        store.edit { prefs ->
+            val today = LocalDate.now().toString()
+            val usedToday = if (prefs[Keys.tempAllowDate] == today) {
+                prefs[Keys.tempAllowCount] ?: 0
+            } else {
+                0
+            }
+            if (usedToday >= TemporaryAllow.DAILY_LIMIT) return@edit
+            prefs[Keys.tempAllowDate] = today
+            prefs[Keys.tempAllowCount] = usedToday + 1
+            prefs[Keys.tempAllowUntil] =
+                System.currentTimeMillis() + TemporaryAllow.MINUTES * 60_000L
+            granted = true
+        }
+        return granted
+    }
+
     suspend fun completePomodoroSession() {
         store.edit { prefs ->
             if (prefs[Keys.pomodoroEndsAt] == null) return@edit
@@ -293,6 +319,14 @@ class SettingsRepository(context: Context) {
             history = this[Keys.dailyHistory].orEmpty()
                 .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }
                 .sortedBy { it.date },
+            temporaryAllow = TemporaryAllowState(
+                allowedUntil = this[Keys.tempAllowUntil],
+                usedToday = if (this[Keys.tempAllowDate] == LocalDate.now().toString()) {
+                    this[Keys.tempAllowCount] ?: 0
+                } else {
+                    0
+                },
+            ),
             pomodoro = PomodoroState(
                 endsAt = this[Keys.pomodoroEndsAt],
                 pausedRemainingMs = this[Keys.pomodoroPausedRemaining],

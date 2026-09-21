@@ -95,6 +95,14 @@
     <string name="home_sleep_value">%1$s / %2$s</string>
     <string name="home_pomodoro_value">%1$d / %2$d 세션</string>
     <string name="home_app_detecting">감지 중</string>
+    <!-- 연속 달성 -->
+    <string name="home_streak">%1$d일 연속</string>
+    <!-- 권한이 꺼져 잠금이 멈춘 상태 — "감지 중"이 거짓이 되지 않게 알려 줍니다 -->
+    <string name="home_watch_stopped">잠금이 멈춰 있어요</string>
+    <string name="home_steps_stopped">걸음 수를 세지 못하고 있어요</string>
+    <string name="home_permission_usage">사용 정보 접근 권한이 꺼졌어요. 눌러서 다시 켜 주세요</string>
+    <string name="home_permission_overlay">다른 앱 위에 표시 권한이 꺼졌어요. 눌러서 다시 켜 주세요</string>
+    <string name="home_permission_activity">걸음 수 접근 권한이 꺼졌어요. 눌러서 다시 켜 주세요</string>
     <string name="nav_home">홈</string>
     <string name="nav_stats">통계</string>
     <string name="nav_settings">설정</string>
@@ -106,6 +114,10 @@
     <string name="stats_steps_summary">점선은 목표 %1$s보 · 일 평균 %2$s보</string>
     <string name="stats_today_steps">오늘 %1$s보</string>
     <string name="stats_achieved_days">7일 중 %1$d일 달성</string>
+    <string name="stats_section_streak">연속 달성</string>
+    <string name="stats_streak_current">현재</string>
+    <string name="stats_streak_longest">최장 기록</string>
+    <string name="stats_streak_days">%1$d일</string>
     <string name="stats_weekday_pattern">E</string>
 
     <!-- 조건 이름 -->
@@ -162,5 +174,7 @@
     <string name="lock_rule_any">조건 하나만 채워도 열려요</string>
     <string name="lock_rule_all">조건을 모두 채워야 열려요</string>
     <string name="lock_dismiss">알겠어요, 닫기</string>
-    <string name="lock_temporary_allow">5분만 임시로 허용하기</string>
+    <!-- 임시 허용은 하루 한도가 있어서 남은 횟수를 함께 보여 줍니다 -->
+    <string name="lock_temporary_allow">%1$d분만 임시로 허용하기 (오늘 %2$d번 남음)</string>
+    <string name="lock_temporary_allow_exhausted">오늘 쓸 수 있는 임시 허용을 다 썼어요</string>
 </resources>

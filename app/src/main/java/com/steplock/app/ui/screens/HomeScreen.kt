@@ -1,6 +1,7 @@
 package com.steplock.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,6 +78,11 @@ fun HomeScreen(
     onManageLocks: () -> Unit,
     onAppClick: (BlockedApp) -> Unit,
     onPomodoroClick: () -> Unit,
+    streak: Int,
+    /** 권한이 꺼져 감시가 멈춘 경우의 제목·설명. 정상이면 둘 다 null입니다. */
+    warningTitle: String?,
+    warningDescription: String?,
+    onWarningClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lockedApps = apps.filter { it.id in settings.blockedAppIds }
@@ -121,6 +127,15 @@ fun HomeScreen(
                 color = SlColor.TextSecondary,
             )
 
+            if (warningTitle != null && warningDescription != null) {
+                Spacer(Modifier.height(20.dp))
+                PermissionWarning(
+                    title = warningTitle,
+                    description = warningDescription,
+                    onClick = onWarningClick,
+                )
+            }
+
             Spacer(Modifier.height(24.dp))
             TodayStatusCard(
                 unlocked = unlocked,
@@ -129,6 +144,7 @@ fun HomeScreen(
                 } else {
                     primaryCondition(settings).remainingText(stat, settings)
                 },
+                streak = streak,
             )
 
             Spacer(Modifier.height(28.dp))
@@ -179,7 +195,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                 )
                 // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
-                if (lockedApps.isNotEmpty()) DetectingStatus()
+                if (lockedApps.isNotEmpty() && warningTitle == null) DetectingStatus()
             }
             Spacer(Modifier.height(12.dp))
             SlPanel {
@@ -220,7 +236,7 @@ fun HomeScreen(
  * 글을 읽지 않아도 구분됩니다.
  */
 @Composable
-private fun TodayStatusCard(unlocked: Boolean, description: String) {
+private fun TodayStatusCard(unlocked: Boolean, description: String, streak: Int) {
     val container = if (unlocked) SlColor.BrandTint else SlColor.AmberSurface
     val titleColor = if (unlocked) SlColor.BrandDeep else SlColor.AmberText
     val descColor = if (unlocked) SlColor.BrandInk else SlColor.AmberSubText
@@ -253,7 +269,54 @@ private fun TodayStatusCard(unlocked: Boolean, description: String) {
             )
             Spacer(Modifier.height(6.dp))
             Text(text = description, style = SlText.BodySm, color = descColor)
+
+            // 하루치로는 자랑할 게 없어서 이틀 이상일 때만 보여 줍니다.
+            if (streak >= 2) {
+                Spacer(Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(SlColor.Surface)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_streak, streak),
+                        style = SlText.Chip,
+                        color = titleColor,
+                    )
+                }
+            }
         }
+    }
+}
+
+/**
+ * 권한이 꺼지면 잠금은 아무것도 못 하는데 화면은 평소와 같아 보입니다.
+ * 그 상태를 눈에 띄게 알리고 바로 고치러 갈 수 있게 합니다.
+ */
+@Composable
+private fun PermissionWarning(title: String, description: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SlDimen.RadiusCard))
+            .background(SlColor.Surface)
+            .border(1.dp, SlColor.Error, RoundedCornerShape(SlDimen.RadiusCard))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = SlText.RowTitle, color = SlColor.Error)
+            Text(
+                text = description,
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Chevron()
     }
 }
 
@@ -370,6 +433,10 @@ private fun HomeScreenPreview() {
             onManageLocks = {},
             onAppClick = {},
             onPomodoroClick = {},
+            streak = 3,
+            warningTitle = null,
+            warningDescription = null,
+            onWarningClick = {},
         )
     }
 }

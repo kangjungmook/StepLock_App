@@ -11,14 +11,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.steplock.app.data.BlockedAppCatalog
-import com.steplock.app.service.AppWatchService
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.theme.SlColor
+import kotlinx.coroutines.launch
 
 /**
  * 차단한 앱이 열릴 때 그 위에 덮이는 화면. 감시 서비스가 띄웁니다.
@@ -41,6 +42,7 @@ class LockActivity : ComponentActivity() {
                 viewModel(factory = StepLockViewModel.factory(context))
             val state by stepLockViewModel.uiState.collectAsStateWithLifecycle()
 
+            val scope = rememberCoroutineScope()
             val loaded = state
             if (loaded == null) {
                 Box(Modifier.fillMaxSize().background(SlColor.Dark.Background))
@@ -49,10 +51,14 @@ class LockActivity : ComponentActivity() {
                     appName = app.name,
                     stat = loaded.today,
                     settings = loaded.settings,
+                    temporaryAllowRemaining = loaded.temporaryAllowRemaining,
                     onDismiss = { goHome() },
                     onTemporaryAllow = {
-                        AppWatchService.allowTemporarily(TEMPORARY_ALLOW_MINUTES)
-                        finish()
+                        // 저장이 끝난 뒤에 닫습니다. 먼저 닫으면 감시 서비스가
+                        // 아직 옛 값을 보고 잠금을 다시 띄울 수 있습니다.
+                        scope.launch {
+                            if (stepLockViewModel.useTemporaryAllow()) finish()
+                        }
                     },
                 )
             }
@@ -70,7 +76,6 @@ class LockActivity : ComponentActivity() {
 
     companion object {
         private const val EXTRA_APP_ID = "app_id"
-        const val TEMPORARY_ALLOW_MINUTES = 5
 
         fun intent(context: Context, appId: String): Intent =
             Intent(context, LockActivity::class.java)

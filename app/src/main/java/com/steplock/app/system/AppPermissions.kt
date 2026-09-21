@@ -45,6 +45,15 @@ object AppPermissions {
         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
         Uri.fromParts("package", context.packageName, null),
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    /**
+     * 런타임 권한을 한 번 거절당한 뒤에는 다시 물어도 대화상자가 뜨지 않으므로,
+     * 앱 정보 화면으로 보내 직접 켜게 합니다.
+     */
+    fun appDetailsSettings(context: Context): Intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", context.packageName, null),
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 }
 
 /** 온보딩 CTA는 아직 남은 권한 하나만 요구합니다. */
