@@ -10,6 +10,7 @@ import io.github.jan.supabase.auth.providers.Kakao
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 
 /** OAuth 콜백으로 돌아올 딥링크. AndroidManifest의 intent-filter와 같아야 합니다. */
@@ -26,6 +27,7 @@ object SupabaseProvider {
                 scheme = AUTH_CALLBACK_SCHEME
                 host = AUTH_CALLBACK_HOST
             }
+            install(Postgrest)
         }
     }
 }

@@ -14,6 +14,7 @@ import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
+import com.steplock.app.data.SyncRepository
 import com.steplock.app.ui.components.SocialProvider
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
@@ -55,6 +56,7 @@ class StepLockViewModel(
     stepTracker: StepTracker,
     private val sleepRepository: SleepRepository,
     private val authRepository: AuthRepository,
+    private val syncRepository: SyncRepository,
 ) : ViewModel() {
 
     val apps = BlockedAppCatalog.apps
@@ -122,6 +124,7 @@ class StepLockViewModel(
                         if (accountId != null) {
                             repository.setAccount(accountId = accountId, email = user.email)
                             loginState = LoginUiState()
+                            syncRepository.sync(accountId)
                         }
                     }
 
@@ -273,6 +276,12 @@ class StepLockViewModel(
         viewModelScope.launch { repository.setOnboardingCompleted(true) }
     }
 
+    /** 로그인된 계정이 있을 때만 서버와 맞춥니다. 게스트면 아무것도 하지 않습니다. */
+    fun syncNow() {
+        val accountId = uiState.value?.settings?.accountId ?: return
+        viewModelScope.launch { syncRepository.sync(accountId) }
+    }
+
     /** 통계에 쓰이도록 오늘 값을 이력에 적어 둡니다. 값이 같으면 쓰지 않습니다. */
     fun recordToday() {
         viewModelScope.launch {
@@ -309,6 +318,7 @@ class StepLockViewModel(
                     stepTracker = StepTracker(app, repository),
                     sleepRepository = SleepRepository(app, repository),
                     authRepository = AuthRepository(),
+                    syncRepository = SyncRepository(repository),
                 )
             }
         }

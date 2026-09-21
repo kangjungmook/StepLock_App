@@ -56,6 +56,8 @@ data class AppPreferences(
     val sleepMinutesToday: Int,
     /** 통계용 일별 기록. 오래된 날부터 정렬됩니다. */
     val history: List<DailyStat>,
+    /** 설정을 마지막으로 바꾼 시각. 서버와 비교해 최신 쪽을 택합니다. */
+    val settingsUpdatedAt: Long,
 )
 
 /**

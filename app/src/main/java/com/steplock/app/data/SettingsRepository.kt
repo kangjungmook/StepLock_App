@@ -2,6 +2,7 @@ package com.steplock.app.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -70,6 +71,7 @@ class SettingsRepository(context: Context) {
         val sleepMinutesDate = stringPreferencesKey("sleep_minutes_date")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
         val dailyHistory = stringSetPreferencesKey("daily_history")
+        val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
     }
 
     val preferences: Flow<AppPreferences> = store.data.map { it.toAppPreferences() }
@@ -83,18 +85,46 @@ class SettingsRepository(context: Context) {
 
     suspend fun updateSettings(transform: (LockSettings) -> LockSettings) {
         store.edit { prefs ->
-            val next = transform(prefs.toSettings())
-            prefs[Keys.stepGoal] = next.stepGoal
-            prefs[Keys.sleepGoalHours] = next.sleepGoalHours
-            prefs[Keys.pomodoroGoal] = next.pomodoroGoal
-            prefs[Keys.stepsEnabled] = next.stepsEnabled
-            prefs[Keys.sleepEnabled] = next.sleepEnabled
-            prefs[Keys.pomodoroEnabled] = next.pomodoroEnabled
-            prefs[Keys.requireAll] = next.requireAllConditions
-            prefs[Keys.blockedAppIds] = next.blockedAppIds
-            next.accountId?.let { prefs[Keys.accountId] = it }
-            next.displayName?.let { prefs[Keys.displayName] = it }
+            prefs.writeSettings(transform(prefs.toSettings()))
+            prefs[Keys.settingsUpdatedAt] = System.currentTimeMillis()
         }
+    }
+
+    /** 서버 값이 더 최신일 때 통째로 덮어씁니다. 서버의 시각을 그대로 보관합니다. */
+    suspend fun applyRemoteSettings(settings: LockSettings, updatedAt: Long) {
+        store.edit { prefs ->
+            prefs.writeSettings(settings)
+            prefs[Keys.settingsUpdatedAt] = updatedAt
+        }
+    }
+
+    /** 원격에만 있던 날짜를 채웁니다. 로컬에 있는 날짜는 건드리지 않습니다. */
+    suspend fun mergeHistory(rows: List<DailyStat>) {
+        store.edit { prefs ->
+            val existing = prefs[Keys.dailyHistory].orEmpty()
+            val existingDates = existing.map { it.substringBefore('|') }.toSet()
+            val added = rows
+                .filter { it.date.toString() !in existingDates }
+                .map { encodeDay(it) }
+            if (added.isEmpty()) return@edit
+            prefs[Keys.dailyHistory] = (existing + added)
+                .sortedByDescending { it.substringBefore('|') }
+                .take(HISTORY_DAYS)
+                .toSet()
+        }
+    }
+
+    private fun MutablePreferences.writeSettings(next: LockSettings) {
+        this[Keys.stepGoal] = next.stepGoal
+        this[Keys.sleepGoalHours] = next.sleepGoalHours
+        this[Keys.pomodoroGoal] = next.pomodoroGoal
+        this[Keys.stepsEnabled] = next.stepsEnabled
+        this[Keys.sleepEnabled] = next.sleepEnabled
+        this[Keys.pomodoroEnabled] = next.pomodoroEnabled
+        this[Keys.requireAll] = next.requireAllConditions
+        this[Keys.blockedAppIds] = next.blockedAppIds
+        next.accountId?.let { this[Keys.accountId] = it }
+        next.displayName?.let { this[Keys.displayName] = it }
     }
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
@@ -244,6 +274,7 @@ class SettingsRepository(context: Context) {
             } else {
                 0
             },
+            settingsUpdatedAt = this[Keys.settingsUpdatedAt] ?: 0L,
             history = this[Keys.dailyHistory].orEmpty()
                 .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }
                 .sortedBy { it.date },

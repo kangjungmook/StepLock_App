@@ -210,6 +210,34 @@ https://thcchvmwkgfhqqzponnx.supabase.co/auth/v1/callback
 
 ---
 
+## 서버 동기화
+
+로그인한 계정의 설정과 일별 기록을 Supabase Postgres와 맞춥니다
+([`SyncRepository.kt`](app/src/main/java/com/steplock/app/data/SyncRepository.kt)).
+로그인 직후와 홈 화면으로 돌아올 때 실행되고, 게스트면 아무것도 하지 않습니다.
+
+| 테이블 | 키 | 내용 |
+| --- | --- | --- |
+| `lock_settings` | `user_id` | 목표값·조건 토글·차단 앱·기기 UUID·`updated_at` |
+| `daily_stats` | `user_id` + `stat_date` | 날짜별 걸음·수면 분·완료 세션 |
+
+두 테이블 모두 RLS를 켜고 `auth.uid() = user_id` 정책만 둡니다 — 남의 행은 조회도 수정도
+되지 않습니다. 그래서 공개 키를 앱에 넣어도 안전합니다. 스키마는
+[`supabase/migrations/`](supabase/migrations)에 있어 다른 프로젝트에도 그대로 적용할 수 있습니다.
+
+**충돌 처리**
+
+- 설정은 `updated_at`이 최신인 쪽이 **통째로** 이깁니다. 항목별 병합은 하지 않습니다 —
+  "이 기기에서 목표를 8천으로 바꿨다"가 부분 병합으로 뒤섞이는 것보다 예측 가능합니다.
+  로컬 시각은 설정을 바꿀 때마다 DataStore에 기록됩니다.
+- 일별 기록은 로컬 것을 업서트한 뒤 **원격에만 있는 날짜만** 로컬로 채웁니다. 같은 날짜가
+  양쪽에 있으면 로컬이 정답입니다(센서·타이머가 도는 기기가 진실에 가깝다는 전제).
+
+기기 두 대를 동시에 쓰는 경우까지 정확히 맞추려면 항목별 타임스탬프나 서버 측 병합 함수가
+필요합니다. 지금은 한 대를 쓰다 기기를 바꾸는 경로를 기준으로 만들었습니다.
+
+---
+
 ## 데이터 · 상태 설계
 
 로그인 전에도 기기별로 기록이 쌓이고, 로그인 후 서버 계정에 귀속시킬 수 있도록 모델을 잡았습니다
@@ -231,16 +259,16 @@ https://thcchvmwkgfhqqzponnx.supabase.co/auth/v1/callback
 ## 기술 스택
 
 - Kotlin 2.0 · Jetpack Compose (Material 3) · Navigation Compose
-- Supabase Auth (supabase-kt) · DataStore Preferences · SensorManager · Health Connect ·
-  UsageStatsManager · 포그라운드 서비스
+- Supabase Auth + Postgrest (supabase-kt) · DataStore Preferences · SensorManager ·
+  Health Connect · UsageStatsManager · 포그라운드 서비스
 - Gradle KTS + 버전 카탈로그 (`gradle/libs.versions.toml`)
 - minSdk 26 / targetSdk 35 · edge-to-edge
 
 ```
 app/src/main/java/com/steplock/app
 ├── MainActivity.kt
-├── data/            # 모델 · SettingsRepository(DataStore) · AuthRepository · StepTracker ·
-│                    # SleepRepository · UnlockEvaluator
+├── data/            # 모델 · SettingsRepository(DataStore) · AuthRepository · SyncRepository ·
+│                    # StepTracker · SleepRepository · UnlockEvaluator
 ├── navigation/      # Route · StepLockNavHost
 ├── service/         # AppWatchService(전경 앱 감시) · PomodoroService(집중 세션)
 ├── system/          # 권한 확인과 설정 화면 인텐트
@@ -271,8 +299,8 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 - **소셜 프로바이더 설정** — 코드는 붙었지만 Supabase 대시보드에서 Google · Kakao OAuth 앱을
   등록해야 실제로 로그인됩니다(위 "로그인" 절 참고).
 - **비밀번호 찾기** — 링크만 있고 재설정 메일은 보내지 않습니다.
-- **서버 동기화** — 계정에 귀속만 해 두고, 설정·기록을 서버에 올리는 건 다음 단계입니다.
 - **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.
+- **다기기 동시 사용** — 동기화는 기기를 바꾸는 경로 기준입니다(위 "서버 동기화" 절 참고).
 
 쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.
 짧은 영상 화면만 골라 잠그려면 접근성 서비스로 화면 단위를 봐야 합니다.

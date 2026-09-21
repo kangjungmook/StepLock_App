@@ -167,6 +167,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshSleep()
                 viewModel.recordToday()
+                viewModel.syncNow()
             }
             HomeScreen(
                 userName = state.settings.displayName,
