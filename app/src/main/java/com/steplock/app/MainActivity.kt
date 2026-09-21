@@ -1,24 +1,34 @@
 package com.steplock.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.steplock.app.data.SupabaseProvider
 import com.steplock.app.navigation.StepLockNavHost
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.system.PermissionStep
 import com.steplock.app.system.nextPermissionStep
 import com.steplock.app.ui.theme.StepLockTheme
+import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        SupabaseProvider.client.handleDeeplinks(intent)
         setContent {
             StepLockTheme {
                 StepLockNavHost()
             }
         }
+    }
+
+    /** 소셜 로그인은 브라우저를 거쳐 딥링크로 돌아옵니다. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        SupabaseProvider.client.handleDeeplinks(intent)
     }
 
     /** 권한이 갖춰져 있으면 앱을 열 때마다 감시 서비스를 다시 살려 둡니다. */

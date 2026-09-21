@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.steplock.app.R
+import com.steplock.app.data.AuthState
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.service.PomodoroService
@@ -38,6 +40,8 @@ import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.screens.HomeScreen
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.screens.LoginScreen
+import com.steplock.app.ui.screens.LoginTrigger
+import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.screens.OnboardingScreen
 import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
@@ -45,13 +49,15 @@ import com.steplock.app.ui.screens.StatsScreen
 import com.steplock.app.ui.theme.SlColor
 
 object Route {
-    const val LOGIN = "login"
+    const val LOGIN = "login?trigger={trigger}"
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val STATS = "stats"
     const val POMODORO = "pomodoro"
     const val LOCK = "lock/{appId}"
+
+    fun login(trigger: LoginTrigger = LoginTrigger.AppStart) = "login?trigger=${trigger.name}"
 
     fun lock(appId: String) = "lock/$appId"
 }
@@ -74,20 +80,51 @@ fun StepLockNavHost() {
 private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiState) {
     val navController = rememberNavController()
     val startDestination = remember {
-        if (state.onboardingCompleted) Route.HOME else Route.LOGIN
+        if (state.onboardingCompleted) Route.HOME else Route.login()
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
-        composable(Route.LOGIN) {
+        composable(
+            route = Route.LOGIN,
+            arguments = listOf(
+                navArgument("trigger") {
+                    type = NavType.StringType
+                    defaultValue = LoginTrigger.AppStart.name
+                },
+            ),
+        ) { entry ->
+            val trigger = runCatching {
+                LoginTrigger.valueOf(entry.arguments?.getString("trigger").orEmpty())
+            }.getOrDefault(LoginTrigger.AppStart)
+            val loginState = viewModel.loginState
+
+            // 이메일·소셜 모두 세션이 붙는 순간 여기로 들어옵니다.
+            LaunchedEffect(state.authState) {
+                if (state.authState is AuthState.SignedIn) {
+                    if (trigger == LoginTrigger.AppStart) {
+                        navController.navigate(
+                            if (state.onboardingCompleted) Route.HOME else Route.ONBOARDING,
+                        ) {
+                            popUpTo(startDestination) { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                }
+            }
+
             LoginScreen(
-                onLogin = { _, _, _ -> navController.navigate(Route.ONBOARDING) },
-                onSocialLogin = { navController.navigate(Route.ONBOARDING) },
+                onLogin = { email, password, _ -> viewModel.signIn(email, password) },
+                onSignUp = { email, password -> viewModel.signUp(email, password) },
+                onSocialLogin = viewModel::signInWithSocial,
                 onGuestContinue = {
                     viewModel.continueAsGuest()
                     navController.navigate(Route.ONBOARDING)
                 },
                 onForgotPassword = {},
-                onSignUp = {},
+                trigger = trigger,
+                submitting = loginState.submitting,
+                errorText = loginState.error?.let { stringResource(it.messageRes()) },
             )
         }
 
@@ -209,6 +246,9 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             SettingsScreen(
                 settings = state.settings,
                 apps = viewModel.apps,
+                accountEmail = state.settings.accountEmail,
+                onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
+                onSignOut = viewModel::signOut,
                 onBack = { navController.popBackStack() },
                 onStepsEnabledChange = viewModel::setStepsEnabled,
                 onSleepEnabledChange = { enabled ->

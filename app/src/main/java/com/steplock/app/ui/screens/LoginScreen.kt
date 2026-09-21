@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
+import com.steplock.app.ui.LoginError
 import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
@@ -62,15 +63,26 @@ enum class LoginTrigger(@StringRes val noteRes: Int) {
     Social(R.string.login_note_social),
 }
 
+@StringRes
+internal fun LoginError.messageRes(): Int = when (this) {
+    LoginError.InvalidEmail -> R.string.login_error_email
+    LoginError.ShortPassword -> R.string.login_error_password
+    LoginError.SignInFailed -> R.string.login_error_sign_in
+    LoginError.SignUpFailed -> R.string.login_error_sign_up
+    LoginError.SocialFailed -> R.string.login_error_social
+}
+
 @Composable
 fun LoginScreen(
     onLogin: (email: String, password: String, rememberMe: Boolean) -> Unit,
+    onSignUp: (email: String, password: String) -> Unit,
     onSocialLogin: (SocialProvider) -> Unit,
     onGuestContinue: () -> Unit,
     onForgotPassword: () -> Unit,
-    onSignUp: () -> Unit,
     modifier: Modifier = Modifier,
     trigger: LoginTrigger = LoginTrigger.AppStart,
+    submitting: Boolean = false,
+    errorText: String? = null,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -167,12 +179,26 @@ fun LoginScreen(
                 )
             }
 
+            if (errorText != null) {
+                Text(
+                    text = errorText,
+                    style = SlText.Label,
+                    color = SlColor.Error,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
             Spacer(Modifier.height(24.dp))
             PrimaryButton(
-                text = stringResource(R.string.login_submit),
+                text = if (submitting) {
+                    stringResource(R.string.login_submitting)
+                } else {
+                    stringResource(R.string.login_submit)
+                },
                 onClick = { onLogin(email, password, rememberMe) },
                 height = SlDimen.ButtonHeight,
                 shape = CircleShape,
+                enabled = !submitting,
             )
 
             Spacer(Modifier.height(24.dp))
@@ -207,7 +233,7 @@ fun LoginScreen(
                 )
                 InlineTextButton(
                     text = stringResource(R.string.login_signup_action),
-                    onClick = onSignUp,
+                    onClick = { onSignUp(email, password) },
                     style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
                     color = SlColor.BrandInk,
                     underline = true,
@@ -250,10 +276,10 @@ private fun LoginScreenPreview() {
     StepLockTheme {
         LoginScreen(
             onLogin = { _, _, _ -> },
+            onSignUp = { _, _ -> },
             onSocialLogin = {},
             onGuestContinue = {},
             onForgotPassword = {},
-            onSignUp = {},
         )
     }
 }
@@ -264,10 +290,10 @@ private fun LoginScreenSyncPreview() {
     StepLockTheme {
         LoginScreen(
             onLogin = { _, _, _ -> },
+            onSignUp = { _, _ -> },
             onSocialLogin = {},
             onGuestContinue = {},
             onForgotPassword = {},
-            onSignUp = {},
             trigger = LoginTrigger.Sync,
         )
     }

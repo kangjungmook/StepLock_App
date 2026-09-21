@@ -31,6 +31,8 @@ object SlColor {
     val AmberSubText = Color(0xFF6A4F38) // oklch(45% 0.05 62)
     val OnAmber = Color(0xFFFEFCF4) // oklch(99% 0.01 90)
 
+    val Error = Color(0xFFC53637) // oklch(55% 0.18 25)
+
     val Shadow = Color(0xFF414853) // oklch(40% 0.02 260)
 
     /** 앱 뱃지는 식별을 위해 각 서비스 색을 유지합니다. */

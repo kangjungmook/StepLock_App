@@ -14,6 +14,17 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // Supabase 공개 키입니다. RLS로 보호되는 값이라 저장소에 함께 둡니다.
+        buildConfigField("String", "SUPABASE_URL", "\"https://thcchvmwkgfhqqzponnx.supabase.co\"")
+        buildConfigField(
+            "String",
+            "SUPABASE_ANON_KEY",
+            "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+                "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoY2Nodm13a2dmaHFxenBvbm54Iiwicm9sZSI6ImFub24i" +
+                "LCJpYXQiOjE3ODk5NjE3MzksImV4cCI6MjEwNTUzNzczOX0." +
+                "qceCUQgCg8uTKXaF1YtZ8DJtPIdQ-S2a5t4chQJrFPY\"",
+        )
     }
 
     buildTypes {
@@ -37,6 +48,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -47,6 +59,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.health.connect.client)
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

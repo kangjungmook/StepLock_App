@@ -150,6 +150,30 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 
 ---
 
+## 로그인
+
+인증은 **Supabase Auth**를 씁니다. 카카오를 기본 프로바이더로 제공하기 때문입니다 —
+Firebase Auth는 카카오를 직접 지원하지 않아 커스텀 토큰을 발급할 서버가 따로 필요합니다.
+
+- 이메일/비밀번호 로그인·회원가입이 동작하고, 세션은 Supabase 클라이언트가 복구합니다.
+- 구글 · 카카오 · 애플 버튼은 브라우저를 열고 `steplock://login-callback` 딥링크로 돌아옵니다.
+  결과는 `sessionStatus` 흐름으로 들어와 이메일 로그인과 같은 경로를 탑니다.
+- 로그인되면 `deviceUuid` 레코드에 `accountId`가 붙습니다(계정 귀속). 로그아웃하면 계정 정보만
+  지우고 기기 기록은 그대로 둡니다.
+- 설정 상단 계정 줄에서 로그인 상태를 보고 로그아웃할 수 있고, 게스트면 같은 자리에서
+  `LoginTrigger.Sync` 문구로 로그인 화면을 띄웁니다.
+
+**배포 전에 대시보드에서 해 줄 일** (코드가 아니라 설정입니다)
+
+1. Authentication → URL Configuration → Redirect URLs에 `steplock://login-callback` 추가
+2. Authentication → Providers에서 Google · Kakao 활성화 후 각 OAuth 앱의 client id/secret 입력
+3. 이메일 로그인을 그대로 쓸 거면 Email 확인 메일 사용 여부 결정
+
+`SUPABASE_URL`과 공개 키는 `app/build.gradle.kts`의 `buildConfigField`에 있습니다. 공개 키는
+클라이언트에 노출되도록 설계된 값이라 저장소에 함께 둡니다 — 데이터 보호는 RLS로 합니다.
+
+---
+
 ## 데이터 · 상태 설계
 
 로그인 전에도 기기별로 기록이 쌓이고, 로그인 후 서버 계정에 귀속시킬 수 있도록 모델을 잡았습니다
@@ -171,14 +195,16 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 ## 기술 스택
 
 - Kotlin 2.0 · Jetpack Compose (Material 3) · Navigation Compose
-- DataStore Preferences · SensorManager · Health Connect · UsageStatsManager · 포그라운드 서비스
+- Supabase Auth (supabase-kt) · DataStore Preferences · SensorManager · Health Connect ·
+  UsageStatsManager · 포그라운드 서비스
 - Gradle KTS + 버전 카탈로그 (`gradle/libs.versions.toml`)
 - minSdk 26 / targetSdk 35 · edge-to-edge
 
 ```
 app/src/main/java/com/steplock/app
 ├── MainActivity.kt
-├── data/            # 모델 · SettingsRepository(DataStore) · StepTracker · UnlockEvaluator
+├── data/            # 모델 · SettingsRepository(DataStore) · AuthRepository · StepTracker ·
+│                    # SleepRepository · UnlockEvaluator
 ├── navigation/      # Route · StepLockNavHost
 ├── service/         # AppWatchService(전경 앱 감시) · PomodoroService(집중 세션)
 ├── system/          # 권한 확인과 설정 화면 인텐트
@@ -206,7 +232,10 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 
 아직 연결하지 않은 것:
 
-- **실제 인증** — 로그인 화면은 레이아웃과 상태까지입니다. Firebase Auth·소셜 SDK 미연결.
+- **소셜 프로바이더 설정** — 코드는 붙었지만 Supabase 대시보드에서 Google · Kakao OAuth 앱을
+  등록해야 실제로 로그인됩니다(위 "로그인" 절 참고).
+- **비밀번호 찾기** — 링크만 있고 재설정 메일은 보내지 않습니다.
+- **서버 동기화** — 계정에 귀속만 해 두고, 설정·기록을 서버에 올리는 건 다음 단계입니다.
 - **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.
 
 쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.

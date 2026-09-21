@@ -97,16 +97,20 @@ fun PrimaryButton(
     shape: Shape = RoundedCornerShape(SlDimen.RadiusCta),
     containerColor: Color = SlColor.Brand,
     contentColor: Color = SlColor.OnBrand,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(height),
+        enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
+            disabledContainerColor = SlColor.TrackOff,
+            disabledContentColor = SlColor.TextSecondary,
         ),
         contentPadding = PaddingValues(0.dp),
     ) {

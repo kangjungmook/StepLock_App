@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.steplock.app.data.AuthRepository
 import com.steplock.app.data.AuthState
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
@@ -13,6 +14,8 @@ import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
+import com.steplock.app.ui.components.SocialProvider
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +34,13 @@ data class StepLockUiState(
     val authState: AuthState,
 )
 
+enum class LoginError { InvalidEmail, ShortPassword, SignInFailed, SignUpFailed, SocialFailed }
+
+data class LoginUiState(
+    val submitting: Boolean = false,
+    val error: LoginError? = null,
+)
+
 data class PomodoroUiState(
     val remainingMs: Long,
     val progress: Float,
@@ -44,9 +54,13 @@ class StepLockViewModel(
     private val repository: SettingsRepository,
     stepTracker: StepTracker,
     private val sleepRepository: SleepRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     val apps = BlockedAppCatalog.apps
+
+    var loginState by mutableStateOf(LoginUiState())
+        private set
 
     val sleepReadPermission: String get() = sleepRepository.readPermission
 
@@ -97,6 +111,25 @@ class StepLockViewModel(
 
     init {
         viewModelScope.launch { repository.ensureDeviceUuid() }
+
+        // 세션은 Supabase가 복구해 주고, 우리는 계정 귀속만 따라갑니다.
+        viewModelScope.launch {
+            authRepository.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated -> {
+                        val user = status.session.user
+                        val accountId = user?.id
+                        if (accountId != null) {
+                            repository.setAccount(accountId = accountId, email = user.email)
+                            loginState = LoginUiState()
+                        }
+                    }
+
+                    is SessionStatus.NotAuthenticated -> repository.clearAccount()
+                    else -> Unit
+                }
+            }
+        }
 
         // 서비스가 죽은 채로 시간이 지난 세션도 앱을 열면 집계됩니다.
         viewModelScope.launch {
@@ -178,6 +211,60 @@ class StepLockViewModel(
         it.copy(blockedAppIds = if (appId in blocked) blocked - appId else blocked + appId)
     }
 
+    fun signIn(email: String, password: String) = submitCredentials(email, password) { mail, pass ->
+        authRepository.signInWithEmail(mail, pass) to LoginError.SignInFailed
+    }
+
+    fun signUp(email: String, password: String) = submitCredentials(email, password) { mail, pass ->
+        authRepository.signUpWithEmail(mail, pass) to LoginError.SignUpFailed
+    }
+
+    fun signInWithSocial(provider: SocialProvider) {
+        loginState = LoginUiState(submitting = true)
+        viewModelScope.launch {
+            val result = when (provider) {
+                SocialProvider.Google -> authRepository.signInWithGoogle()
+                SocialProvider.Kakao -> authRepository.signInWithKakao()
+                SocialProvider.Apple -> authRepository.signInWithApple()
+            }
+            loginState = if (result.isSuccess) {
+                LoginUiState()
+            } else {
+                LoginUiState(error = LoginError.SocialFailed)
+            }
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch { authRepository.signOut() }
+    }
+
+    fun dismissLoginError() {
+        loginState = loginState.copy(error = null)
+    }
+
+    private fun submitCredentials(
+        email: String,
+        password: String,
+        request: suspend (String, String) -> Pair<Result<Unit>, LoginError>,
+    ) {
+        val trimmed = email.trim()
+        val validationError = when {
+            !trimmed.contains('@') || trimmed.length < 5 -> LoginError.InvalidEmail
+            password.length < 6 -> LoginError.ShortPassword
+            else -> null
+        }
+        if (validationError != null) {
+            loginState = LoginUiState(error = validationError)
+            return
+        }
+        loginState = LoginUiState(submitting = true)
+        viewModelScope.launch {
+            val (result, failure) = request(trimmed, password)
+            loginState = if (result.isSuccess) LoginUiState() else LoginUiState(error = failure)
+        }
+    }
+
     fun continueAsGuest() {
         viewModelScope.launch { repository.setGuest() }
     }
@@ -221,6 +308,7 @@ class StepLockViewModel(
                     repository = repository,
                     stepTracker = StepTracker(app, repository),
                     sleepRepository = SleepRepository(app, repository),
+                    authRepository = AuthRepository(),
                 )
             }
         }

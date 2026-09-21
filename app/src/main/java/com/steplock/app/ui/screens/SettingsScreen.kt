@@ -39,6 +39,7 @@ import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.SlSwitch
+import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.components.appBadgeColor
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -51,6 +52,9 @@ import com.steplock.app.ui.util.sleepGoalLabel
 fun SettingsScreen(
     settings: LockSettings,
     apps: List<BlockedApp>,
+    accountEmail: String?,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
     onBack: () -> Unit,
     onStepsEnabledChange: (Boolean) -> Unit,
     onSleepEnabledChange: (Boolean) -> Unit,
@@ -100,6 +104,18 @@ fun SettingsScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Column {
+                SectionLabel(
+                    text = stringResource(R.string.settings_section_account),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                AccountRow(
+                    accountEmail = accountEmail,
+                    onSignIn = onSignIn,
+                    onSignOut = onSignOut,
+                )
+            }
+
             val stepsTitle = stringResource(R.string.condition_steps)
             val sleepTitle = stringResource(R.string.condition_sleep)
             val pomodoroTitle = stringResource(R.string.condition_pomodoro)
@@ -199,6 +215,49 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SlDimen.RadiusCard))
+            .background(SlColor.SurfaceAlt)
+            .padding(start = SlDimen.PanelPadding, top = 8.dp, end = 8.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = accountEmail ?: stringResource(R.string.settings_account_guest),
+                style = SlText.RowTitle,
+                color = SlColor.TextPrimary,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = if (accountEmail != null) {
+                    stringResource(R.string.settings_account_synced)
+                } else {
+                    stringResource(R.string.settings_account_guest_desc)
+                },
+                style = SlText.Caption,
+                color = SlColor.TextSecondary,
+            )
+        }
+        TextLink(
+            text = if (accountEmail != null) {
+                stringResource(R.string.settings_account_sign_out)
+            } else {
+                stringResource(R.string.settings_account_sign_in)
+            },
+            onClick = if (accountEmail != null) onSignOut else onSignIn,
+            style = SlText.LinkSm,
+            color = SlColor.BrandInk,
+            underline = false,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+    }
+}
+
+@Composable
 private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
@@ -237,6 +296,9 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             settings = SampleData.settings,
             apps = SampleData.apps,
+            accountEmail = "jiwoo@example.com",
+            onSignIn = {},
+            onSignOut = {},
             onBack = {},
             onStepsEnabledChange = {},
             onSleepEnabledChange = {},

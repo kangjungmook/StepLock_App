@@ -50,6 +50,7 @@ class SettingsRepository(context: Context) {
         val deviceUuid = stringPreferencesKey("device_uuid")
         val accountId = stringPreferencesKey("account_id")
         val displayName = stringPreferencesKey("display_name")
+        val accountEmail = stringPreferencesKey("account_email")
         val guest = booleanPreferencesKey("guest")
         val onboardingCompleted = booleanPreferencesKey("onboarding_completed")
         val stepGoal = intPreferencesKey("step_goal")
@@ -102,6 +103,26 @@ class SettingsRepository(context: Context) {
 
     suspend fun setGuest() {
         store.edit { it[Keys.guest] = true }
+    }
+
+    /** 로그인 성공 — 이 기기의 로컬 레코드를 계정에 귀속시킵니다. */
+    suspend fun setAccount(accountId: String, email: String?) {
+        store.edit { prefs ->
+            prefs[Keys.accountId] = accountId
+            if (email != null) {
+                prefs[Keys.accountEmail] = email
+                prefs[Keys.displayName] = email.substringBefore('@')
+            }
+            prefs.remove(Keys.guest)
+        }
+    }
+
+    suspend fun clearAccount() {
+        store.edit { prefs ->
+            prefs.remove(Keys.accountId)
+            prefs.remove(Keys.accountEmail)
+            prefs.remove(Keys.displayName)
+        }
     }
 
     suspend fun startPomodoro(durationMs: Long = Pomodoro.SESSION_MS) {
@@ -195,6 +216,7 @@ class SettingsRepository(context: Context) {
         return defaults.copy(
             accountId = this[Keys.accountId],
             displayName = this[Keys.displayName],
+            accountEmail = this[Keys.accountEmail],
             stepGoal = this[Keys.stepGoal] ?: defaults.stepGoal,
             sleepGoalHours = this[Keys.sleepGoalHours] ?: defaults.sleepGoalHours,
             pomodoroGoal = this[Keys.pomodoroGoal] ?: defaults.pomodoroGoal,

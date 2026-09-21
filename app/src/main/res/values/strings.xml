@@ -32,6 +32,12 @@
     <string name="login_signup_prompt">계정이 없으신가요?</string>
     <string name="login_signup_action">회원가입</string>
     <string name="login_guest">로그인 없이 둘러보기</string>
+    <string name="login_submitting">로그인 중…</string>
+    <string name="login_error_email">이메일 주소를 다시 확인해 주세요</string>
+    <string name="login_error_password">비밀번호는 6자 이상이어야 해요</string>
+    <string name="login_error_sign_in">이메일 또는 비밀번호가 맞지 않아요</string>
+    <string name="login_error_sign_up">회원가입에 실패했어요. 잠시 후 다시 시도해 주세요</string>
+    <string name="login_error_social">소셜 로그인에 실패했어요. 잠시 후 다시 시도해 주세요</string>
 
     <!-- 온보딩 -->
     <string name="onboarding_tagline">하루의 습관을 채워야\n쇼츠와 릴스의 잠금이 풀립니다.</string>
@@ -112,6 +118,12 @@
     <string name="settings_strict_desc">끄면 켜둔 조건 중 하나만 채워도 해제됩니다.</string>
     <string name="settings_section_apps">차단할 앱</string>
     <string name="settings_save">저장하기</string>
+    <string name="settings_section_account">계정</string>
+    <string name="settings_account_synced">설정과 기록이 이 계정에 저장됩니다</string>
+    <string name="settings_account_guest">로그인하지 않았어요</string>
+    <string name="settings_account_guest_desc">로그인하면 다른 기기에서도 같은 설정을 씁니다</string>
+    <string name="settings_account_sign_in">로그인하기</string>
+    <string name="settings_account_sign_out">로그아웃</string>
     <string name="sleep_health_connect_missing">수면 조건은 Health Connect가 필요해요. 설치한 뒤 다시 켜 주세요</string>
     <string name="sleep_permission_denied">수면 데이터 읽기를 허용하면 조건을 켤 수 있어요</string>
 

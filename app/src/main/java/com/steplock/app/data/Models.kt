@@ -12,6 +12,7 @@ data class LockSettings(
     val accountId: String? = null,
     /** 로그인 전에는 비어 있고, 계정이 붙으면 채워집니다. */
     val displayName: String? = null,
+    val accountEmail: String? = null,
     val stepGoal: Int = 8000,
     val sleepGoalHours: Float = 7f,
     val pomodoroGoal: Int = 3,
