@@ -53,6 +53,8 @@ data class AppPreferences(
     val pomodoro: PomodoroState,
     /** Health Connect에서 마지막으로 읽어 둔 오늘의 수면 분. */
     val sleepMinutesToday: Int,
+    /** 통계용 일별 기록. 오래된 날부터 정렬됩니다. */
+    val history: List<DailyStat>,
 )
 
 /**

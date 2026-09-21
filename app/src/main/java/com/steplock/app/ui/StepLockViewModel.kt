@@ -25,6 +25,8 @@ import java.time.LocalDate
 data class StepLockUiState(
     val settings: LockSettings,
     val today: DailyStat,
+    /** 오늘까지 7일, 기록이 없는 날은 0으로 채웁니다. */
+    val weekly: List<DailyStat>,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
 )
@@ -51,16 +53,18 @@ class StepLockViewModel(
     /** 설정이 DataStore에서 올라오기 전에는 null입니다. */
     val uiState: StateFlow<StepLockUiState?> =
         combine(repository.preferences, stepTracker.todaySteps()) { prefs, steps ->
+            val today = DailyStat(
+                deviceUuid = prefs.settings.deviceUuid,
+                accountId = prefs.settings.accountId,
+                date = LocalDate.now(),
+                steps = steps,
+                sleepMinutes = prefs.sleepMinutesToday,
+                pomodoroSessions = prefs.pomodoro.sessionsToday,
+            )
             StepLockUiState(
                 settings = prefs.settings,
-                today = DailyStat(
-                    deviceUuid = prefs.settings.deviceUuid,
-                    accountId = prefs.settings.accountId,
-                    date = LocalDate.now(),
-                    steps = steps,
-                    sleepMinutes = prefs.sleepMinutesToday,
-                    pomodoroSessions = prefs.pomodoro.sessionsToday,
-                ),
+                today = today,
+                weekly = lastSevenDays(prefs.history, today),
                 onboardingCompleted = prefs.onboardingCompleted,
                 authState = prefs.authState,
             )
@@ -182,8 +186,30 @@ class StepLockViewModel(
         viewModelScope.launch { repository.setOnboardingCompleted(true) }
     }
 
+    /** 통계에 쓰이도록 오늘 값을 이력에 적어 둡니다. 값이 같으면 쓰지 않습니다. */
+    fun recordToday() {
+        viewModelScope.launch {
+            uiState.value?.let { repository.recordDay(it.today) }
+        }
+    }
+
     private fun edit(transform: (LockSettings) -> LockSettings) {
         viewModelScope.launch { repository.updateSettings(transform) }
+    }
+
+    private fun lastSevenDays(history: List<DailyStat>, today: DailyStat): List<DailyStat> {
+        val byDate = history.associateBy { it.date } + (today.date to today)
+        return (6L downTo 0L).map { offset ->
+            val date = today.date.minusDays(offset)
+            byDate[date] ?: DailyStat(
+                deviceUuid = today.deviceUuid,
+                accountId = today.accountId,
+                date = date,
+                steps = 0,
+                sleepMinutes = 0,
+                pomodoroSessions = 0,
+            )
+        }
     }
 
     companion object {

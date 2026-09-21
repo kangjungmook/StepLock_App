@@ -24,6 +24,7 @@
 | **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
+| **Stats** | 최근 7일 걸음 막대 차트와 조건별 달성 일수 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
 화면 이동: `Login → Onboarding → Home`, 홈에서 설정·잠금 오버레이로 진입합니다.
 온보딩을 마친 기기는 로그인을 건너뛰고 홈으로 시작합니다 (`StepLockViewModel.startDestination`).
@@ -134,6 +135,7 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 | `SocialLoginButton` | 구글 · 카카오 · 애플 44dp 원형 버튼. |
 | `SlSwitch` · `CheckboxMark` | 시안 규격(52×32 트랙, 24dp 체크박스)에 맞춘 선택 컨트롤. |
 | `BottomNavBar` | 홈 · 통계 · 설정 탭. 라벨 표시를 끌 수 있습니다. |
+| `WeeklyBarChart` | 일별 막대 하나에 값 하나. 영점에서 시작하고 목표는 점선으로만 표시합니다. |
 | `SlPanel` · `SectionLabel` · `PrimaryButton` · `TextLink` · `IconTile` · `AppBadge` | 공통 레이아웃 조각. |
 
 ---
@@ -149,6 +151,8 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 - `SettingsRepository` — DataStore Preferences에 목표값·조건 토글·차단 앱·기기 UUID·온보딩 완료
   여부와 걸음 기준점·수면 분·집중 세션을 저장하고 `Flow<AppPreferences>`로 흘려보냅니다.
 - `StepTracker` · `SleepRepository` — 센서와 Health Connect에서 오늘의 값을 만듭니다.
+- 일별 이력 — 통계용으로 하루 한 줄(`날짜|걸음|수면분|세션`)씩 최근 30일만 DataStore에 남깁니다.
+  주·월 단위 집계까지 가면 Room으로 옮기는 게 맞습니다.
 - `StepLockViewModel` — 저장된 설정과 센서 걸음 수를 합쳐 `StateFlow<StepLockUiState?>`로 냅니다.
   설정에서 걸음 목표를 바꾸면 홈 게이지와 잠금 화면 문구가 함께 갱신됩니다.
 
@@ -187,13 +191,13 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 
 ## 구현 범위
 
-동작하는 것 — 여섯 화면, 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
-25분 집중 세션), 차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분.
+동작하는 것 — 일곱 화면, 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
+25분 집중 세션), 차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분,
+최근 7일 통계.
 
 아직 연결하지 않은 것:
 
 - **실제 인증** — 로그인 화면은 레이아웃과 상태까지입니다. Firebase Auth·소셜 SDK 미연결.
-- **통계 탭** — 화면이 없어 탭을 눌러도 이동하지 않습니다.
 - **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.
 
 쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.

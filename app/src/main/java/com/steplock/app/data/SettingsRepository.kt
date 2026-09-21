@@ -22,6 +22,26 @@ private val Context.stepLockStore: DataStore<Preferences> by preferencesDataStor
 /** 걸음 센서는 부팅 이후 누적값을 주므로, 날짜별 기준점을 따로 보관합니다. */
 data class StepBaseline(val date: LocalDate, val counter: Long)
 
+private const val HISTORY_DAYS = 30
+
+private fun encodeDay(stat: DailyStat): String =
+    "${stat.date}|${stat.steps}|${stat.sleepMinutes}|${stat.pomodoroSessions}"
+
+private fun decodeDay(raw: String, deviceUuid: String, accountId: String?): DailyStat? {
+    val parts = raw.split('|')
+    if (parts.size != 4) return null
+    return runCatching {
+        DailyStat(
+            deviceUuid = deviceUuid,
+            accountId = accountId,
+            date = LocalDate.parse(parts[0]),
+            steps = parts[1].toInt(),
+            sleepMinutes = parts[2].toInt(),
+            pomodoroSessions = parts[3].toInt(),
+        )
+    }.getOrNull()
+}
+
 class SettingsRepository(context: Context) {
 
     private val store = context.applicationContext.stepLockStore
@@ -48,6 +68,7 @@ class SettingsRepository(context: Context) {
         val pomodoroSessionsCount = intPreferencesKey("pomodoro_sessions_count")
         val sleepMinutesDate = stringPreferencesKey("sleep_minutes_date")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
+        val dailyHistory = stringSetPreferencesKey("daily_history")
     }
 
     val preferences: Flow<AppPreferences> = store.data.map { it.toAppPreferences() }
@@ -131,6 +152,23 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    /**
+     * 하루 한 줄씩 `날짜|걸음|수면분|세션` 형식으로 보관합니다.
+     * 통계가 주·월 단위를 넘어가면 Room으로 옮기는 게 맞습니다.
+     */
+    suspend fun recordDay(stat: DailyStat) {
+        store.edit { prefs ->
+            val encoded = encodeDay(stat)
+            val existing = prefs[Keys.dailyHistory].orEmpty()
+            val sameDay = existing.firstOrNull { it.startsWith("${stat.date}|") }
+            if (sameDay == encoded) return@edit
+            prefs[Keys.dailyHistory] = (existing - setOfNotNull(sameDay) + encoded)
+                .sortedByDescending { it.substringBefore('|') }
+                .take(HISTORY_DAYS)
+                .toSet()
+        }
+    }
+
     suspend fun writeSleepMinutes(date: LocalDate, minutes: Int) {
         store.edit { prefs ->
             prefs[Keys.sleepMinutesDate] = date.toString()
@@ -184,6 +222,9 @@ class SettingsRepository(context: Context) {
             } else {
                 0
             },
+            history = this[Keys.dailyHistory].orEmpty()
+                .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }
+                .sortedBy { it.date },
             pomodoro = PomodoroState(
                 endsAt = this[Keys.pomodoroEndsAt],
                 pausedRemainingMs = this[Keys.pomodoroPausedRemaining],

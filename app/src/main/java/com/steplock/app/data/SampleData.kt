@@ -22,4 +22,22 @@ object SampleData {
         sleepMinutes = 440,
         pomodoroSessions = 2,
     )
+
+    val weekly: List<DailyStat> = listOf(
+        Triple(6420, 390, 1),
+        Triple(8210, 445, 3),
+        Triple(3180, 420, 0),
+        Triple(9040, 470, 2),
+        Triple(7650, 400, 4),
+        Triple(0, 505, 0),
+        Triple(5240, 440, 2),
+    ).mapIndexed { index, (steps, sleepMinutes, sessions) ->
+        DailyStat(
+            deviceUuid = PREVIEW_UUID,
+            date = LocalDate.now().minusDays((6 - index).toLong()),
+            steps = steps,
+            sleepMinutes = sleepMinutes,
+            pomodoroSessions = sessions,
+        )
+    }
 }

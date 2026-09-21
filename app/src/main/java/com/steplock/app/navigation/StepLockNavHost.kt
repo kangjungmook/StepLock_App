@@ -41,6 +41,7 @@ import com.steplock.app.ui.screens.LoginScreen
 import com.steplock.app.ui.screens.OnboardingScreen
 import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
+import com.steplock.app.ui.screens.StatsScreen
 import com.steplock.app.ui.theme.SlColor
 
 object Route {
@@ -48,6 +49,7 @@ object Route {
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val STATS = "stats"
     const val POMODORO = "pomodoro"
     const val LOCK = "lock/{appId}"
 
@@ -125,7 +127,10 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.HOME) {
-            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshSleep() }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshSleep()
+                viewModel.recordToday()
+            }
             HomeScreen(
                 userName = state.settings.displayName,
                 stat = state.today,
@@ -133,11 +138,31 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 apps = viewModel.apps,
                 selectedTab = NavTab.Home,
                 onTabSelected = { tab ->
-                    if (tab == NavTab.Settings) navController.navigate(Route.SETTINGS)
+                    when (tab) {
+                        NavTab.Home -> Unit
+                        NavTab.Stats -> navController.navigate(Route.STATS)
+                        NavTab.Settings -> navController.navigate(Route.SETTINGS)
+                    }
                 },
                 onManageLocks = { navController.navigate(Route.SETTINGS) },
                 onAppClick = { app -> navController.navigate(Route.lock(app.id)) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
+            )
+        }
+
+        composable(Route.STATS) {
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.recordToday() }
+            StatsScreen(
+                weekly = state.weekly,
+                settings = state.settings,
+                selectedTab = NavTab.Stats,
+                onTabSelected = { tab ->
+                    when (tab) {
+                        NavTab.Stats -> Unit
+                        NavTab.Home -> navController.popBackStack(Route.HOME, false)
+                        NavTab.Settings -> navController.navigate(Route.SETTINGS)
+                    }
+                },
             )
         }
 
