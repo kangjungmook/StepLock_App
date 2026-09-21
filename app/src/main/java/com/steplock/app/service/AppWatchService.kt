@@ -81,7 +81,7 @@ class AppWatchService : Service() {
                     date = LocalDate.now(),
                     steps = steps.value,
                     sleepMinutes = 0,
-                    pomodoroSessions = 0,
+                    pomodoroSessions = current.pomodoro.sessionsToday,
                 )
                 if (!UnlockEvaluator.isUnlocked(current.settings, stat)) {
                     shownForAppId = blockedApp.id

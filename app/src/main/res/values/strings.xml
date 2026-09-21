@@ -49,6 +49,20 @@
     <string name="permission_cta_overlay">화면 위 표시 허용하기</string>
     <string name="permission_cta_start">스텝락 시작하기</string>
 
+    <!-- 집중 타이머 -->
+    <string name="pomodoro_start">%1$d분 집중 시작하기</string>
+    <string name="pomodoro_pause">잠시 멈추기</string>
+    <string name="pomodoro_resume">이어서 집중하기</string>
+    <string name="pomodoro_reset">처음부터 다시</string>
+    <string name="pomodoro_ring_caption">남은 시간</string>
+    <string name="pomodoro_sessions">완료 %1$d / 목표 %2$d 세션</string>
+    <string name="pomodoro_hint">%1$d분을 채우면 세션 하나가 쌓여요</string>
+    <string name="pomodoro_channel_name">집중 타이머</string>
+    <string name="pomodoro_notification_running">집중 중 · %1$s 남음</string>
+    <string name="pomodoro_notification_paused">잠시 멈춤 · %1$s 남음</string>
+    <string name="pomodoro_notification_done_title">집중 세션을 마쳤어요</string>
+    <string name="pomodoro_notification_done_text">오늘 완료한 세션이 홈에 반영됐어요</string>
+
     <!-- 잠금 감시 알림 -->
     <string name="watch_channel_name">잠금 감시</string>
     <string name="watch_notification_title">스텝락이 잠금을 지키고 있어요</string>

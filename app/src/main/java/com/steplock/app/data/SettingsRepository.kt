@@ -42,6 +42,10 @@ class SettingsRepository(context: Context) {
         val blockedAppIds = stringSetPreferencesKey("blocked_app_ids")
         val stepBaselineDate = stringPreferencesKey("step_baseline_date")
         val stepBaselineCounter = longPreferencesKey("step_baseline_counter")
+        val pomodoroEndsAt = longPreferencesKey("pomodoro_ends_at")
+        val pomodoroPausedRemaining = longPreferencesKey("pomodoro_paused_remaining")
+        val pomodoroSessionsDate = stringPreferencesKey("pomodoro_sessions_date")
+        val pomodoroSessionsCount = intPreferencesKey("pomodoro_sessions_count")
     }
 
     val preferences: Flow<AppPreferences> = store.data.map { it.toAppPreferences() }
@@ -75,6 +79,54 @@ class SettingsRepository(context: Context) {
 
     suspend fun setGuest() {
         store.edit { it[Keys.guest] = true }
+    }
+
+    suspend fun startPomodoro(durationMs: Long = Pomodoro.SESSION_MS) {
+        store.edit { prefs ->
+            prefs[Keys.pomodoroEndsAt] = System.currentTimeMillis() + durationMs
+            prefs.remove(Keys.pomodoroPausedRemaining)
+        }
+    }
+
+    suspend fun pausePomodoro() {
+        store.edit { prefs ->
+            val endsAt = prefs[Keys.pomodoroEndsAt] ?: return@edit
+            val remaining = (endsAt - System.currentTimeMillis()).coerceAtLeast(0L)
+            prefs[Keys.pomodoroPausedRemaining] = remaining
+            prefs.remove(Keys.pomodoroEndsAt)
+        }
+    }
+
+    suspend fun resumePomodoro() {
+        store.edit { prefs ->
+            val remaining = prefs[Keys.pomodoroPausedRemaining] ?: return@edit
+            prefs[Keys.pomodoroEndsAt] = System.currentTimeMillis() + remaining
+            prefs.remove(Keys.pomodoroPausedRemaining)
+        }
+    }
+
+    suspend fun resetPomodoro() {
+        store.edit { prefs ->
+            prefs.remove(Keys.pomodoroEndsAt)
+            prefs.remove(Keys.pomodoroPausedRemaining)
+        }
+    }
+
+    /** 진행 중이던 세션만 한 번 집계합니다 — 화면과 서비스가 동시에 불러도 중복되지 않게. */
+    suspend fun completePomodoroSession() {
+        store.edit { prefs ->
+            if (prefs[Keys.pomodoroEndsAt] == null) return@edit
+            val today = LocalDate.now().toString()
+            val sameDay = prefs[Keys.pomodoroSessionsDate] == today
+            prefs[Keys.pomodoroSessionsDate] = today
+            prefs[Keys.pomodoroSessionsCount] = if (sameDay) {
+                (prefs[Keys.pomodoroSessionsCount] ?: 0) + 1
+            } else {
+                1
+            }
+            prefs.remove(Keys.pomodoroEndsAt)
+            prefs.remove(Keys.pomodoroPausedRemaining)
+        }
     }
 
     suspend fun readStepBaseline(): StepBaseline? {
@@ -118,6 +170,15 @@ class SettingsRepository(context: Context) {
                 this[Keys.guest] == true -> AuthState.Guest
                 else -> AuthState.Unknown
             },
+            pomodoro = PomodoroState(
+                endsAt = this[Keys.pomodoroEndsAt],
+                pausedRemainingMs = this[Keys.pomodoroPausedRemaining],
+                sessionsToday = if (this[Keys.pomodoroSessionsDate] == LocalDate.now().toString()) {
+                    this[Keys.pomodoroSessionsCount] ?: 0
+                } else {
+                    0
+                },
+            ),
         )
     }
 }

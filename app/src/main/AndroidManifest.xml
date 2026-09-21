@@ -51,6 +51,15 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="차단한 앱이 열리는지 확인해 잠금 화면을 표시합니다" />
         </service>
+
+        <service
+            android:name=".service.PomodoroService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="사용자가 시작한 집중 세션의 남은 시간을 세고 알림에 표시합니다" />
+        </service>
     </application>
 
 </manifest>

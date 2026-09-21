@@ -1,7 +1,7 @@
 # 스텝락 (StepLock)
 
 > 걸음 수 · 수면 시간 · 집중 타이머 중 하나를 채워야 쇼츠·릴스·틱톡의 잠금이 풀리는 습관 관리 앱.
-> Kotlin + Jetpack Compose. 다섯 화면과 함께 **설정 영구 저장 · 걸음 수 집계 · 차단 앱 감지와
+> Kotlin + Jetpack Compose. **설정 영구 저장 · 걸음 수 집계 · 집중 타이머 · 차단 앱 감지와
 > 잠금 오버레이**까지 동작합니다.
 
 디자인 시안(OKLCH 토큰 기반 HTML 프로토타입)을 Compose로 이식하면서, 색·간격·타이포·터치 영역을
@@ -23,6 +23,7 @@
 | **Home** | 오늘의 달성 현황, 잠금 상태 배너, 차단 중인 앱 목록 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
 | **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
+| **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 
 화면 이동: `Login → Onboarding → Home`, 홈에서 설정·잠금 오버레이로 진입합니다.
 온보딩을 마친 기기는 로그인을 건너뛰고 홈으로 시작합니다 (`StepLockViewModel.startDestination`).
@@ -42,6 +43,11 @@
 
 걸음 수는 `TYPE_STEP_COUNTER`의 부팅 후 누적값에서 그날 첫 값을 기준점으로 빼 계산하고,
 기준점은 DataStore에 날짜와 함께 저장합니다. 재부팅으로 누적값이 줄면 기준점을 다시 잡습니다.
+
+집중 세션은 남은 시간이 아니라 **종료 시각**을 저장합니다. 그래서 앱이나 서비스가 죽어도
+남은 시간을 다시 계산할 수 있고, 시간이 지난 세션은 앱을 여는 순간 집계됩니다.
+멈춘 세션만 남은 시간으로 보관합니다. 완료 세션은 날짜와 함께 쌓여 자정에 0으로 돌아가고,
+`UnlockEvaluator`의 집중 타이머 조건에 그대로 쓰입니다.
 
 **감지 방식 선택** — 접근성 서비스가 더 빠르고 정확하지만 Play 스토어에서 민감 권한으로 분류돼
 심사 설명을 요구합니다. 그래서 심사 부담이 작은 사용 정보 접근(`PACKAGE_USAGE_STATS`) +
@@ -151,7 +157,7 @@ app/src/main/java/com/steplock/app
 ├── MainActivity.kt
 ├── data/            # 모델 · SettingsRepository(DataStore) · StepTracker · UnlockEvaluator
 ├── navigation/      # Route · StepLockNavHost
-├── service/         # AppWatchService — 전경 앱 감시
+├── service/         # AppWatchService(전경 앱 감시) · PomodoroService(집중 세션)
 ├── system/          # 권한 확인과 설정 화면 인텐트
 └── ui/
     ├── LockActivity.kt
@@ -172,13 +178,12 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 
 ## 구현 범위
 
-동작하는 것 — 다섯 화면, 설정 영구 저장, 걸음 수 집계, 차단 앱 감지와 잠금 오버레이,
-조건 판정(하나만 / 전부 만족), 임시 허용 5분.
+동작하는 것 — 여섯 화면, 설정 영구 저장, 걸음 수 집계, 25분 집중 세션 타이머,
+차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분.
 
 아직 연결하지 않은 것:
 
 - **수면 시간** — Health Connect 연동이 필요해 조건 기본값을 꺼 두었습니다.
-- **집중 타이머** — 포그라운드 서비스 타이머와 알림이 필요합니다. 목표 세션만 저장됩니다.
 - **실제 인증** — 로그인 화면은 레이아웃과 상태까지입니다. Firebase Auth·소셜 SDK 미연결.
 - **통계 탭** — 화면이 없어 탭을 눌러도 이동하지 않습니다.
 - **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.

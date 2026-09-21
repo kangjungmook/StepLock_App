@@ -34,6 +34,12 @@ fun durationLabel(minutes: Int): String {
 
 fun sleepGoalMinutes(hours: Float): Int = (hours * 60).roundToInt()
 
+/** 타이머 표시용 mm:ss. */
+fun formatCountdown(remainingMs: Long): String {
+    val totalSeconds = (remainingMs / 1000).coerceAtLeast(0L)
+    return "%02d:%02d".format(Locale.KOREA, totalSeconds / 60, totalSeconds % 60)
+}
+
 /** 받침 유무에 따라 은/는을 붙입니다. "쇼츠는", "틱톡은". */
 fun withTopicParticle(word: String): String {
     val last = word.lastOrNull() ?: return word

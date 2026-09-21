@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.service.AppWatchService
+import com.steplock.app.service.PomodoroService
 import com.steplock.app.system.AppPermissions
 import com.steplock.app.system.PermissionStep
 import com.steplock.app.system.nextPermissionStep
@@ -35,6 +36,7 @@ import com.steplock.app.ui.screens.HomeScreen
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.screens.LoginScreen
 import com.steplock.app.ui.screens.OnboardingScreen
+import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
 import com.steplock.app.ui.theme.SlColor
 
@@ -43,6 +45,7 @@ object Route {
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val POMODORO = "pomodoro"
     const val LOCK = "lock/{appId}"
 
     fun lock(appId: String) = "lock/$appId"
@@ -130,7 +133,35 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 },
                 onManageLocks = { navController.navigate(Route.SETTINGS) },
                 onAppClick = { app -> navController.navigate(Route.lock(app.id)) },
+                onPomodoroClick = { navController.navigate(Route.POMODORO) },
             )
+        }
+
+        composable(Route.POMODORO) {
+            val context = LocalContext.current
+            val pomodoro by viewModel.pomodoro.collectAsStateWithLifecycle()
+            val pomodoroState = pomodoro
+            if (pomodoroState == null) {
+                Box(Modifier.fillMaxSize().background(SlColor.Background))
+            } else {
+                PomodoroScreen(
+                    state = pomodoroState,
+                    onBack = { navController.popBackStack() },
+                    onStart = {
+                        viewModel.startPomodoro()
+                        PomodoroService.start(context)
+                    },
+                    onPause = { viewModel.pausePomodoro() },
+                    onResume = {
+                        viewModel.resumePomodoro()
+                        PomodoroService.start(context)
+                    },
+                    onReset = {
+                        viewModel.resetPomodoro()
+                        PomodoroService.stop(context)
+                    },
+                )
+            }
         }
 
         composable(Route.SETTINGS) {

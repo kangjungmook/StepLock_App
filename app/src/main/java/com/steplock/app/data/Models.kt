@@ -50,7 +50,26 @@ data class AppPreferences(
     val settings: LockSettings,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
+    val pomodoro: PomodoroState,
 )
+
+/**
+ * 진행 중인 세션은 종료 시각으로, 멈춘 세션은 남은 시간으로 저장합니다.
+ * 앱이 죽어도 종료 시각만 있으면 남은 시간을 다시 계산할 수 있습니다.
+ */
+data class PomodoroState(
+    val endsAt: Long? = null,
+    val pausedRemainingMs: Long? = null,
+    val sessionsToday: Int = 0,
+) {
+    val isRunning: Boolean get() = endsAt != null
+    val isPaused: Boolean get() = endsAt == null && pausedRemainingMs != null
+}
+
+object Pomodoro {
+    const val SESSION_MINUTES = 25
+    const val SESSION_MS = SESSION_MINUTES * 60_000L
+}
 
 /**
  * 차단 대상 후보. 쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.

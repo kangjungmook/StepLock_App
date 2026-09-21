@@ -9,11 +9,14 @@ import com.steplock.app.data.AuthState
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
+import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.StepTracker
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -23,6 +26,15 @@ data class StepLockUiState(
     val today: DailyStat,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
+)
+
+data class PomodoroUiState(
+    val remainingMs: Long,
+    val progress: Float,
+    val running: Boolean,
+    val paused: Boolean,
+    val sessionsToday: Int,
+    val goal: Int,
 )
 
 class StepLockViewModel(
@@ -43,15 +55,66 @@ class StepLockViewModel(
                     date = LocalDate.now(),
                     steps = steps,
                     sleepMinutes = 0,
-                    pomodoroSessions = 0,
+                    pomodoroSessions = prefs.pomodoro.sessionsToday,
                 ),
                 onboardingCompleted = prefs.onboardingCompleted,
                 authState = prefs.authState,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    private val secondTicker = flow {
+        while (true) {
+            emit(Unit)
+            delay(1_000)
+        }
+    }
+
+    val pomodoro: StateFlow<PomodoroUiState?> =
+        combine(repository.preferences, secondTicker) { prefs, _ ->
+            val state = prefs.pomodoro
+            val remaining = when {
+                state.endsAt != null -> (state.endsAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                state.pausedRemainingMs != null -> state.pausedRemainingMs
+                else -> Pomodoro.SESSION_MS
+            }
+            PomodoroUiState(
+                remainingMs = remaining,
+                progress = 1f - (remaining.toFloat() / Pomodoro.SESSION_MS).coerceIn(0f, 1f),
+                running = state.isRunning,
+                paused = state.isPaused,
+                sessionsToday = state.sessionsToday,
+                goal = prefs.settings.pomodoroGoal,
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     init {
         viewModelScope.launch { repository.ensureDeviceUuid() }
+
+        // 서비스가 죽은 채로 시간이 지난 세션도 앱을 열면 집계됩니다.
+        viewModelScope.launch {
+            combine(repository.preferences, secondTicker) { prefs, _ -> prefs.pomodoro.endsAt }
+                .collect { endsAt ->
+                    if (endsAt != null && endsAt <= System.currentTimeMillis()) {
+                        repository.completePomodoroSession()
+                    }
+                }
+        }
+    }
+
+    fun startPomodoro() {
+        viewModelScope.launch { repository.startPomodoro() }
+    }
+
+    fun pausePomodoro() {
+        viewModelScope.launch { repository.pausePomodoro() }
+    }
+
+    fun resumePomodoro() {
+        viewModelScope.launch { repository.resumePomodoro() }
+    }
+
+    fun resetPomodoro() {
+        viewModelScope.launch { repository.resetPomodoro() }
     }
 
     fun setStepsEnabled(enabled: Boolean) = edit { it.copy(stepsEnabled = enabled) }

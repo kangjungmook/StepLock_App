@@ -65,6 +65,7 @@ fun HomeScreen(
     onTabSelected: (NavTab) -> Unit,
     onManageLocks: () -> Unit,
     onAppClick: (BlockedApp) -> Unit,
+    onPomodoroClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lockedApps = apps.filter { it.id in settings.blockedAppIds }
@@ -182,6 +183,7 @@ fun HomeScreen(
                         stat.pomodoroSessions,
                         settings.pomodoroGoal,
                     ),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onPomodoroClick),
                     leading = {
                         IconTile(
                             icon = SlIcons.Timer,
@@ -289,6 +291,7 @@ private fun HomeScreenPreview() {
             onTabSelected = {},
             onManageLocks = {},
             onAppClick = {},
+            onPomodoroClick = {},
         )
     }
 }
