@@ -6,6 +6,11 @@
 디자인 시안(OKLCH 토큰 기반 HTML 프로토타입)을 Compose로 이식하면서, 색·간격·타이포·터치 영역을
 토큰으로 정리하고 화면을 재사용 컴포저블 단위로 분리했습니다.
 
+**웹 미리보기** — [`docs/index.html`](docs/index.html)에 다섯 화면을 Android 프레임으로 옮겨 두었습니다.
+로그인 진입점 문구, 비밀번호 표시 토글, 설정의 토글·스테퍼가 실제로 동작하고 홈 게이지와 잠금 화면
+문구까지 함께 갱신됩니다. 저장소 Settings → Pages에서 `main` 브랜치 `/docs` 폴더를 켜면
+링크로 바로 열 수 있습니다.
+
 ---
 
 ## 화면
@@ -130,6 +135,7 @@ app/src/main/java/com/steplock/app
 ```
 
 Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 볼 수 있습니다.
+빌드 없이 화면만 보려면 `docs/index.html`을 브라우저에서 열면 됩니다.
 
 ## 구현 범위
 
