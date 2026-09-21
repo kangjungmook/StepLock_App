@@ -5,7 +5,6 @@
 
     <!-- 공통 -->
     <string name="action_back">뒤로 가기</string>
-    <string name="action_close">닫기</string>
     <string name="unit_steps">%1$s보</string>
     <string name="unit_sessions">%1$d회</string>
     <string name="duration_hours">%1$d시간</string>
