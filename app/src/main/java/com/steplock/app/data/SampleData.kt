@@ -12,8 +12,12 @@ object SampleData {
         deviceUuid = PREVIEW_UUID,
         displayName = "지우",
         // 프리뷰는 세 조건을 모두 켠 사용자를 기준으로 합니다.
+        // 전부 만족 모드까지 켜 둔 이유: 걸음(진행 중)과 수면(달성)이 한 화면에
+        // 같이 보여서 조건 링의 두 상태를 모두 확인할 수 있고, 홈과 잠금 화면이
+        // 같은 데이터에서 같은 결론(아직 잠김)을 내놓습니다.
         sleepEnabled = true,
         pomodoroEnabled = true,
+        requireAllConditions = true,
         blockedAppIds = setOf("shorts", "reels", "tiktok"),
     )
 
