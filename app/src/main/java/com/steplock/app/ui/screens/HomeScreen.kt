@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +41,7 @@ import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
+import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
@@ -271,6 +273,26 @@ fun HomeScreen(
         }
 
         BottomNavBar(selected = selectedTab, onSelect = onTabSelected)
+    }
+}
+
+/**
+ * 권한이 꺼지면 잠금은 아무것도 못 하는데 화면은 평소와 같아 보입니다.
+ * 그 상태를 눈에 띄게 알리고 바로 고치러 갈 수 있게 합니다.
+ */
+@Composable
+private fun PermissionWarning(title: String, description: String, onClick: () -> Unit) {
+    SlPanel(
+        borderColor = SlColor.Error,
+        contentPadding = PaddingValues(SlDimen.PanelPadding),
+    ) {
+        SlDetailRow(
+            title = title,
+            description = description,
+            modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
+            titleColor = SlColor.Error,
+            trailing = { SlChevron() },
+        )
     }
 }
 
