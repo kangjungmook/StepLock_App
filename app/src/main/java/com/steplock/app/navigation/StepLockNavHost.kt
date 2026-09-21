@@ -179,6 +179,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 userName = state.settings.displayName,
                 stat = state.today,
                 settings = state.settings,
+                weekly = state.weekly,
                 apps = viewModel.apps,
                 selectedTab = NavTab.Home,
                 onTabSelected = { tab ->

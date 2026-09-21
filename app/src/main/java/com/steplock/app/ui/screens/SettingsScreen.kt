@@ -253,6 +253,8 @@ private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: (
     SlPanel(
         containerColor = SlColor.SurfaceAlt,
         borderColor = Color.Transparent,
+        elevation = 0.dp,
+        shape = RoundedCornerShape(SlDimen.RadiusCard),
         contentPadding = PaddingValues(
             start = SlDimen.PanelPadding,
             top = 8.dp,
@@ -288,6 +290,8 @@ private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) 
     SlPanel(
         containerColor = SlColor.SurfaceAlt,
         borderColor = Color.Transparent,
+        elevation = 0.dp,
+        shape = RoundedCornerShape(SlDimen.RadiusCard),
         contentPadding = PaddingValues(SlDimen.PanelPadding),
     ) {
         SlDetailRow(
