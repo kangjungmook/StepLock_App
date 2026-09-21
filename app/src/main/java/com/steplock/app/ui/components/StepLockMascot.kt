@@ -91,8 +91,9 @@ fun StepLockMascot(
                 cap = StrokeCap.Round,
             )
         }
-        leg(hipX = 40f, angleDegrees = swing)
-        leg(hipX = 60f, angleDegrees = -swing)
+        // 두 다리가 서로 반대 방향으로 벌어져야 걷는 것처럼 보입니다. 같은 쪽으로 돌면 다리가 겹칩니다.
+        leg(hipX = 40f, angleDegrees = -swing)
+        leg(hipX = 60f, angleDegrees = swing)
 
         // 뒤쪽으로 살짝 밀려난 몸통이 입체감을 만듭니다.
         drawRoundRect(

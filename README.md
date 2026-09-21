@@ -23,6 +23,10 @@
 
 ## 캐릭터
 
+<p align="center">
+  <img src="docs/screens/mascot-walk.gif" width="120" alt="걷는 자물쇠 캐릭터 애니메이션" />
+</p>
+
 <p align="center"><img src="docs/screens/mascot-walk.png" width="70%" alt="걷는 자물쇠 캐릭터의 네 프레임" /></p>
 
 이름 그대로 걸어서 잠금을 푸는 앱이라, 다리가 달린 자물쇠를 마스코트로 씁니다.
