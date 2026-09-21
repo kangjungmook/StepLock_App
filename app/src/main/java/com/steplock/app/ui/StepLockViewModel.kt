@@ -35,11 +35,21 @@ data class StepLockUiState(
     val authState: AuthState,
 )
 
-enum class LoginError { InvalidEmail, ShortPassword, SignInFailed, SignUpFailed, SocialFailed }
+enum class LoginError {
+    InvalidEmail,
+    ShortPassword,
+    SignInFailed,
+    SignUpFailed,
+    SocialFailed,
+    ResetFailed,
+}
+
+enum class LoginNotice { PasswordResetSent }
 
 data class LoginUiState(
     val submitting: Boolean = false,
     val error: LoginError? = null,
+    val notice: LoginNotice? = null,
 )
 
 data class PomodoroUiState(
@@ -240,6 +250,22 @@ class StepLockViewModel(
 
     fun signOut() {
         viewModelScope.launch { authRepository.signOut() }
+    }
+
+    fun requestPasswordReset(email: String) {
+        val trimmed = email.trim()
+        if (!trimmed.contains('@') || trimmed.length < 5) {
+            loginState = LoginUiState(error = LoginError.InvalidEmail)
+            return
+        }
+        loginState = LoginUiState(submitting = true)
+        viewModelScope.launch {
+            loginState = if (authRepository.sendPasswordReset(trimmed).isSuccess) {
+                LoginUiState(notice = LoginNotice.PasswordResetSent)
+            } else {
+                LoginUiState(error = LoginError.ResetFailed)
+            }
+        }
     }
 
     fun dismissLoginError() {

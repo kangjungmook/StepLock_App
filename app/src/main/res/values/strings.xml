@@ -38,6 +38,8 @@
     <string name="login_error_sign_in">이메일 또는 비밀번호가 맞지 않아요</string>
     <string name="login_error_sign_up">회원가입에 실패했어요. 잠시 후 다시 시도해 주세요</string>
     <string name="login_error_social">소셜 로그인에 실패했어요. 잠시 후 다시 시도해 주세요</string>
+    <string name="login_error_reset">재설정 메일을 보내지 못했어요. 이메일을 확인해 주세요</string>
+    <string name="login_reset_sent">비밀번호 재설정 메일을 보냈어요. 메일함을 확인해 주세요</string>
 
     <!-- 온보딩 -->
     <string name="onboarding_tagline">하루의 습관을 채워야\n쇼츠와 릴스의 잠금이 풀립니다.</string>

@@ -42,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.ui.LoginError
+import com.steplock.app.ui.LoginNotice
 import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
@@ -70,6 +71,12 @@ internal fun LoginError.messageRes(): Int = when (this) {
     LoginError.SignInFailed -> R.string.login_error_sign_in
     LoginError.SignUpFailed -> R.string.login_error_sign_up
     LoginError.SocialFailed -> R.string.login_error_social
+    LoginError.ResetFailed -> R.string.login_error_reset
+}
+
+@StringRes
+internal fun LoginNotice.messageRes(): Int = when (this) {
+    LoginNotice.PasswordResetSent -> R.string.login_reset_sent
 }
 
 @Composable
@@ -78,11 +85,12 @@ fun LoginScreen(
     onSignUp: (email: String, password: String) -> Unit,
     onSocialLogin: (SocialProvider) -> Unit,
     onGuestContinue: () -> Unit,
-    onForgotPassword: () -> Unit,
+    onForgotPassword: (email: String) -> Unit,
     modifier: Modifier = Modifier,
     trigger: LoginTrigger = LoginTrigger.AppStart,
     submitting: Boolean = false,
     errorText: String? = null,
+    noticeText: String? = null,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -173,7 +181,7 @@ fun LoginScreen(
                 }
                 InlineTextButton(
                     text = stringResource(R.string.login_forgot),
-                    onClick = onForgotPassword,
+                    onClick = { onForgotPassword(email) },
                     style = SlText.Label,
                     color = SlColor.BrandInk,
                 )
@@ -184,6 +192,13 @@ fun LoginScreen(
                     text = errorText,
                     style = SlText.Label,
                     color = SlColor.Error,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else if (noticeText != null) {
+                Text(
+                    text = noticeText,
+                    style = SlText.Label,
+                    color = SlColor.BrandInk,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }

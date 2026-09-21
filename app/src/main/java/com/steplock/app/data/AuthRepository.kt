@@ -65,4 +65,12 @@ class AuthRepository {
     suspend fun signInWithApple(): Result<Unit> = runCatching { auth.signInWith(Apple) }
 
     suspend fun signOut(): Result<Unit> = runCatching { auth.signOut() }
+
+    /** 재설정 링크는 딥링크로 앱으로 돌아옵니다. */
+    suspend fun sendPasswordReset(email: String): Result<Unit> = runCatching {
+        auth.resetPasswordForEmail(
+            email = email,
+            redirectUrl = "$AUTH_CALLBACK_SCHEME://$AUTH_CALLBACK_HOST",
+        )
+    }
 }

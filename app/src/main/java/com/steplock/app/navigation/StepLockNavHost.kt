@@ -41,11 +41,11 @@ import com.steplock.app.ui.screens.HomeScreen
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.screens.LoginScreen
 import com.steplock.app.ui.screens.LoginTrigger
-import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.screens.OnboardingScreen
 import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
 import com.steplock.app.ui.screens.StatsScreen
+import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.theme.SlColor
 
 object Route {
@@ -121,10 +121,11 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                     viewModel.continueAsGuest()
                     navController.navigate(Route.ONBOARDING)
                 },
-                onForgotPassword = {},
+                onForgotPassword = viewModel::requestPasswordReset,
                 trigger = trigger,
                 submitting = loginState.submitting,
                 errorText = loginState.error?.let { stringResource(it.messageRes()) },
+                noticeText = loginState.notice?.let { stringResource(it.messageRes()) },
             )
         }
 
