@@ -7,10 +7,19 @@
 디자인 시안(OKLCH 토큰 기반 HTML 프로토타입)을 Compose로 이식하면서, 색·간격·타이포·터치 영역을
 토큰으로 정리하고 화면을 재사용 컴포저블 단위로 분리했습니다.
 
-**웹 미리보기** — [`docs/index.html`](docs/index.html)에 다섯 화면을 Android 프레임으로 옮겨 두었습니다.
-로그인 진입점 문구, 비밀번호 표시 토글, 설정의 토글·스테퍼가 실제로 동작하고 홈 게이지와 잠금 화면
-문구까지 함께 갱신됩니다. 저장소 Settings → Pages에서 `main` 브랜치 `/docs` 폴더를 켜면
-링크로 바로 열 수 있습니다.
+<p align="center">
+  <img src="docs/screens/03-home.png" width="30%" alt="홈 — 오늘의 달성 현황" />
+  <img src="docs/screens/05-lock.png" width="30%" alt="잠금 오버레이" />
+  <img src="docs/screens/07-stats.png" width="30%" alt="통계 — 최근 7일" />
+</p>
+<p align="center">
+  <img src="docs/screens/01-login.png" width="22%" alt="로그인" />
+  <img src="docs/screens/02-onboarding.png" width="22%" alt="온보딩" />
+  <img src="docs/screens/04-settings.png" width="22%" alt="잠금 조건 설정" />
+  <img src="docs/screens/06-pomodoro.png" width="22%" alt="집중 타이머" />
+</p>
+
+<p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다</sub></p>
 
 ---
 
@@ -19,17 +28,18 @@
 | 화면 | 역할 | 파일 |
 | --- | --- | --- |
 | **Login** | 앱 첫 화면. 밑줄형 입력 · 로그인 유지 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
-| **Onboarding** | 잠금 해제 조건 3가지 안내 + 손쉬운 사용 권한 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
+| **Onboarding** | 잠금 해제 조건 3가지 안내 + 권한 3단계 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
 | **Home** | 오늘의 달성 현황, 잠금 상태 배너, 차단 중인 앱 목록 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
 | **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 | **Stats** | 최근 7일 걸음 막대 차트와 조건별 달성 일수 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
-화면 이동: `Login → Onboarding → Home`, 홈에서 설정·잠금 오버레이로 진입합니다.
-온보딩을 마친 기기는 로그인을 건너뛰고 홈으로 시작합니다 (`StepLockViewModel.startDestination`).
+화면 이동: `Login → Onboarding → Home`, 홈에서 설정 · 집중 타이머 · 잠금 오버레이로 들어갑니다.
+하단 탭은 홈 · 통계 · 설정이고, 온보딩을 마친 기기는 다음 실행부터 로그인을 건너뛰고 홈에서 시작합니다.
 
 각 화면 파일 하단에 `@Preview`가 있어 Android Studio에서 412×892 프레임으로 바로 확인할 수 있습니다.
+위 이미지는 [`docs/screens/`](docs/screens)에 있습니다.
 
 ---
 
@@ -187,7 +197,6 @@ app/src/main/java/com/steplock/app
 ```
 
 Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 볼 수 있습니다.
-빌드 없이 화면만 보려면 `docs/index.html`을 브라우저에서 열면 됩니다.
 
 ## 구현 범위
 
