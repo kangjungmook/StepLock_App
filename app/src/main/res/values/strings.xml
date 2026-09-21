@@ -103,6 +103,8 @@
     <string name="settings_strict_desc">끄면 켜둔 조건 중 하나만 채워도 해제됩니다.</string>
     <string name="settings_section_apps">차단할 앱</string>
     <string name="settings_save">저장하기</string>
+    <string name="sleep_health_connect_missing">수면 조건은 Health Connect가 필요해요. 설치한 뒤 다시 켜 주세요</string>
+    <string name="sleep_permission_denied">수면 데이터 읽기를 허용하면 조건을 켤 수 있어요</string>
 
     <!-- 잠금 오버레이 -->
     <string name="lock_title">%1$s 잠겨있어요</string>

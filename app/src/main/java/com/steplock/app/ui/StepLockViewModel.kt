@@ -11,6 +11,7 @@ import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
+import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,9 +41,12 @@ data class PomodoroUiState(
 class StepLockViewModel(
     private val repository: SettingsRepository,
     stepTracker: StepTracker,
+    private val sleepRepository: SleepRepository,
 ) : ViewModel() {
 
     val apps = BlockedAppCatalog.apps
+
+    val sleepReadPermission: String get() = sleepRepository.readPermission
 
     /** 설정이 DataStore에서 올라오기 전에는 null입니다. */
     val uiState: StateFlow<StepLockUiState?> =
@@ -54,7 +58,7 @@ class StepLockViewModel(
                     accountId = prefs.settings.accountId,
                     date = LocalDate.now(),
                     steps = steps,
-                    sleepMinutes = 0,
+                    sleepMinutes = prefs.sleepMinutesToday,
                     pomodoroSessions = prefs.pomodoro.sessionsToday,
                 ),
                 onboardingCompleted = prefs.onboardingCompleted,
@@ -121,6 +125,34 @@ class StepLockViewModel(
 
     fun setSleepEnabled(enabled: Boolean) = edit { it.copy(sleepEnabled = enabled) }
 
+    fun isHealthConnectAvailable(): Boolean = sleepRepository.isAvailable()
+
+    fun refreshSleep() {
+        viewModelScope.launch { sleepRepository.refresh() }
+    }
+
+    /** 권한이 이미 있으면 바로 켜고, 없으면 화면이 권한을 요청하도록 알립니다. */
+    fun enableSleepIfPermitted(onNeedsPermission: () -> Unit) {
+        viewModelScope.launch {
+            if (sleepRepository.hasPermission()) {
+                enableSleepAndRefresh()
+            } else {
+                onNeedsPermission()
+            }
+        }
+    }
+
+    fun onSleepPermissionGranted() {
+        viewModelScope.launch {
+            if (sleepRepository.hasPermission()) enableSleepAndRefresh()
+        }
+    }
+
+    private suspend fun enableSleepAndRefresh() {
+        repository.updateSettings { it.copy(sleepEnabled = true) }
+        sleepRepository.refresh()
+    }
+
     fun setPomodoroEnabled(enabled: Boolean) = edit { it.copy(pomodoroEnabled = enabled) }
 
     fun setRequireAllConditions(enabled: Boolean) = edit { it.copy(requireAllConditions = enabled) }
@@ -159,7 +191,11 @@ class StepLockViewModel(
             initializer {
                 val app = context.applicationContext
                 val repository = SettingsRepository(app)
-                StepLockViewModel(repository, StepTracker(app, repository))
+                StepLockViewModel(
+                    repository = repository,
+                    stepTracker = StepTracker(app, repository),
+                    sleepRepository = SleepRepository(app, repository),
+                )
             }
         }
     }

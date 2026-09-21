@@ -1,8 +1,8 @@
 # 스텝락 (StepLock)
 
 > 걸음 수 · 수면 시간 · 집중 타이머 중 하나를 채워야 쇼츠·릴스·틱톡의 잠금이 풀리는 습관 관리 앱.
-> Kotlin + Jetpack Compose. **설정 영구 저장 · 걸음 수 집계 · 집중 타이머 · 차단 앱 감지와
-> 잠금 오버레이**까지 동작합니다.
+> Kotlin + Jetpack Compose. 세 조건(걸음 수 · 수면 시간 · 집중 타이머)이 실제 데이터로 판정되고,
+> **차단 앱 감지와 잠금 오버레이**까지 동작합니다.
 
 디자인 시안(OKLCH 토큰 기반 HTML 프로토타입)을 Compose로 이식하면서, 색·간격·타이포·터치 영역을
 토큰으로 정리하고 화면을 재사용 컴포저블 단위로 분리했습니다.
@@ -44,6 +44,12 @@
 걸음 수는 `TYPE_STEP_COUNTER`의 부팅 후 누적값에서 그날 첫 값을 기준점으로 빼 계산하고,
 기준점은 DataStore에 날짜와 함께 저장합니다. 재부팅으로 누적값이 줄면 기준점을 다시 잡습니다.
 
+수면은 Health Connect의 `SleepSessionRecord`를 지난 24시간 창으로 읽어 분으로 합칩니다.
+세션을 창에 맞춰 잘라 더하므로 자정을 넘긴 수면도 한 번만 셉니다. 매초 조회할 수는 없으니
+읽은 값은 DataStore에 캐시하고, 앱을 열 때와 감시 서비스가 10분마다 갱신합니다.
+권한은 온보딩을 막지 않고 **설정에서 수면 조건을 켤 때** 요청합니다 — Health Connect가 없거나
+거절하면 조건이 켜지지 않고 이유를 알려 줍니다.
+
 집중 세션은 남은 시간이 아니라 **종료 시각**을 저장합니다. 그래서 앱이나 서비스가 죽어도
 남은 시간을 다시 계산할 수 있고, 시간이 지난 세션은 앱을 여는 순간 집계됩니다.
 멈춘 세션만 남은 시간으로 보관합니다. 완료 세션은 날짜와 함께 쌓여 자정에 0으로 돌아가고,
@@ -60,6 +66,8 @@
 | `ACTIVITY_RECOGNITION` | 걸음 수 센서 읽기 (런타임 권한) |
 | 사용 정보 접근 | 전경 앱 확인 (설정 화면에서 허용) |
 | 화면 위 표시 | 다른 앱 위에 잠금 화면 띄우기 (설정 화면에서 허용) |
+
+수면 읽기(`health.READ_SLEEP`)는 선택 권한이라 이 흐름에 넣지 않고, 수면 조건을 켤 때만 묻습니다.
 
 ---
 
@@ -138,8 +146,9 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 - `LockSettings` · `DailyStat` — `deviceUuid: String`과 `accountId: String?`를 함께 보관.
   로그인 성공 시 `deviceUuid` 레코드를 계정에 귀속(claim)시키는 마이그레이션 훅용입니다.
 - `AuthState` — `Unknown` · `Guest` · `SignedIn(accountId)`.
-- `SettingsRepository` — DataStore Preferences에 목표값·조건 토글·차단 앱·기기 UUID·
-  온보딩 완료 여부와 걸음 기준점을 저장하고 `Flow<AppPreferences>`로 흘려보냅니다.
+- `SettingsRepository` — DataStore Preferences에 목표값·조건 토글·차단 앱·기기 UUID·온보딩 완료
+  여부와 걸음 기준점·수면 분·집중 세션을 저장하고 `Flow<AppPreferences>`로 흘려보냅니다.
+- `StepTracker` · `SleepRepository` — 센서와 Health Connect에서 오늘의 값을 만듭니다.
 - `StepLockViewModel` — 저장된 설정과 센서 걸음 수를 합쳐 `StateFlow<StepLockUiState?>`로 냅니다.
   설정에서 걸음 목표를 바꾸면 홈 게이지와 잠금 화면 문구가 함께 갱신됩니다.
 
@@ -148,7 +157,7 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 ## 기술 스택
 
 - Kotlin 2.0 · Jetpack Compose (Material 3) · Navigation Compose
-- DataStore Preferences · SensorManager · UsageStatsManager · 포그라운드 서비스
+- DataStore Preferences · SensorManager · Health Connect · UsageStatsManager · 포그라운드 서비스
 - Gradle KTS + 버전 카탈로그 (`gradle/libs.versions.toml`)
 - minSdk 26 / targetSdk 35 · edge-to-edge
 
@@ -178,12 +187,11 @@ Android Studio에서 열면 각 화면의 `@Preview`로 레이아웃을 바로 �
 
 ## 구현 범위
 
-동작하는 것 — 여섯 화면, 설정 영구 저장, 걸음 수 집계, 25분 집중 세션 타이머,
-차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분.
+동작하는 것 — 여섯 화면, 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
+25분 집중 세션), 차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분.
 
 아직 연결하지 않은 것:
 
-- **수면 시간** — Health Connect 연동이 필요해 조건 기본값을 꺼 두었습니다.
 - **실제 인증** — 로그인 화면은 레이아웃과 상태까지입니다. Firebase Auth·소셜 SDK 미연결.
 - **통계 탭** — 화면이 없어 탭을 눌러도 이동하지 않습니다.
 - **재부팅 후 자동 시작** — 지금은 앱을 한 번 열면 감시 서비스가 다시 붙습니다.

@@ -51,6 +51,8 @@ data class AppPreferences(
     val onboardingCompleted: Boolean,
     val authState: AuthState,
     val pomodoro: PomodoroState,
+    /** Health Connect에서 마지막으로 읽어 둔 오늘의 수면 분. */
+    val sleepMinutesToday: Int,
 )
 
 /**

@@ -19,6 +19,7 @@ import com.steplock.app.data.BlockedApp
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.SettingsRepository
+import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.UnlockEvaluator
 import com.steplock.app.ui.LockActivity
@@ -62,12 +63,23 @@ class AppWatchService : Service() {
     private suspend fun watchForegroundApp() {
         val usageStats = getSystemService(UsageStatsManager::class.java) ?: return
         val repository = SettingsRepository(this)
+        val sleepRepository = SleepRepository(this, repository)
         val preferences = repository.preferences.stateIn(scope)
         val steps = StepTracker(this, repository).todaySteps()
             .stateIn(scope, SharingStarted.Eagerly, 0)
+        var lastSleepRefreshAt = 0L
 
         while (currentCoroutineContext().isActive) {
             val current = preferences.value
+
+            // 수면은 Health Connect를 매초 읽을 수 없어 캐시를 주기적으로만 갱신합니다.
+            if (current.settings.sleepEnabled &&
+                System.currentTimeMillis() - lastSleepRefreshAt > SLEEP_REFRESH_MS
+            ) {
+                lastSleepRefreshAt = System.currentTimeMillis()
+                sleepRepository.refresh()
+            }
+
             val blockedApp = foregroundPackage(usageStats)
                 ?.let { BlockedAppCatalog.byPackage(it) }
                 ?.takeIf { it.id in current.settings.blockedAppIds }
@@ -80,7 +92,7 @@ class AppWatchService : Service() {
                     accountId = current.settings.accountId,
                     date = LocalDate.now(),
                     steps = steps.value,
-                    sleepMinutes = 0,
+                    sleepMinutes = current.sleepMinutesToday,
                     pomodoroSessions = current.pomodoro.sessionsToday,
                 )
                 if (!UnlockEvaluator.isUnlocked(current.settings, stat)) {
@@ -151,6 +163,7 @@ class AppWatchService : Service() {
         private const val NOTIFICATION_ID = 21
         private const val POLL_INTERVAL_MS = 1_000L
         private const val EVENT_WINDOW_MS = 10_000L
+        private const val SLEEP_REFRESH_MS = 10 * 60_000L
 
         private val temporaryAllowUntil = AtomicLong(0L)
 

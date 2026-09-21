@@ -46,6 +46,8 @@ class SettingsRepository(context: Context) {
         val pomodoroPausedRemaining = longPreferencesKey("pomodoro_paused_remaining")
         val pomodoroSessionsDate = stringPreferencesKey("pomodoro_sessions_date")
         val pomodoroSessionsCount = intPreferencesKey("pomodoro_sessions_count")
+        val sleepMinutesDate = stringPreferencesKey("sleep_minutes_date")
+        val sleepMinutes = intPreferencesKey("sleep_minutes")
     }
 
     val preferences: Flow<AppPreferences> = store.data.map { it.toAppPreferences() }
@@ -129,6 +131,13 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    suspend fun writeSleepMinutes(date: LocalDate, minutes: Int) {
+        store.edit { prefs ->
+            prefs[Keys.sleepMinutesDate] = date.toString()
+            prefs[Keys.sleepMinutes] = minutes
+        }
+    }
+
     suspend fun readStepBaseline(): StepBaseline? {
         val prefs = store.data.first()
         val date = prefs[Keys.stepBaselineDate] ?: return null
@@ -169,6 +178,11 @@ class SettingsRepository(context: Context) {
                 accountId != null -> AuthState.SignedIn(accountId)
                 this[Keys.guest] == true -> AuthState.Guest
                 else -> AuthState.Unknown
+            },
+            sleepMinutesToday = if (this[Keys.sleepMinutesDate] == LocalDate.now().toString()) {
+                this[Keys.sleepMinutes] ?: 0
+            } else {
+                0
             },
             pomodoro = PomodoroState(
                 endsAt = this[Keys.pomodoroEndsAt],

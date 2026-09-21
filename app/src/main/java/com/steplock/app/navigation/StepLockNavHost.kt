@@ -1,6 +1,7 @@
 package com.steplock.app.navigation
 
 import android.Manifest
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -14,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.steplock.app.R
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.service.PomodoroService
@@ -122,6 +125,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.HOME) {
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshSleep() }
             HomeScreen(
                 userName = state.settings.displayName,
                 stat = state.today,
@@ -165,12 +169,38 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
         }
 
         composable(Route.SETTINGS) {
+            val context = LocalContext.current
+            val sleepPermissionRequest = rememberLauncherForActivityResult(
+                PermissionController.createRequestPermissionResultContract(),
+            ) { granted ->
+                if (viewModel.sleepReadPermission in granted) {
+                    viewModel.onSleepPermissionGranted()
+                } else {
+                    Toast.makeText(context, R.string.sleep_permission_denied, Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+
             SettingsScreen(
                 settings = state.settings,
                 apps = viewModel.apps,
                 onBack = { navController.popBackStack() },
                 onStepsEnabledChange = viewModel::setStepsEnabled,
-                onSleepEnabledChange = viewModel::setSleepEnabled,
+                onSleepEnabledChange = { enabled ->
+                    when {
+                        !enabled -> viewModel.setSleepEnabled(false)
+
+                        !viewModel.isHealthConnectAvailable() -> Toast.makeText(
+                            context,
+                            R.string.sleep_health_connect_missing,
+                            Toast.LENGTH_LONG,
+                        ).show()
+
+                        else -> viewModel.enableSleepIfPermitted {
+                            sleepPermissionRequest.launch(setOf(viewModel.sleepReadPermission))
+                        }
+                    }
+                },
                 onPomodoroEnabledChange = viewModel::setPomodoroEnabled,
                 onRequireAllChange = viewModel::setRequireAllConditions,
                 onStepGoalChange = viewModel::changeStepGoal,
