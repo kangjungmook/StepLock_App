@@ -1,0 +1,274 @@
+package com.steplock.app.ui.screens
+
+import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.steplock.app.R
+import com.steplock.app.ui.components.CheckboxMark
+import com.steplock.app.ui.components.PrimaryButton
+import com.steplock.app.ui.components.SlIcons
+import com.steplock.app.ui.components.SocialLoginButton
+import com.steplock.app.ui.components.SocialProvider
+import com.steplock.app.ui.components.TextLink
+import com.steplock.app.ui.components.UnderlineTextField
+import com.steplock.app.ui.components.Wordmark
+import com.steplock.app.ui.theme.SlColor
+import com.steplock.app.ui.theme.SlDimen
+import com.steplock.app.ui.theme.SlText
+import com.steplock.app.ui.theme.StepLockTheme
+
+/** 같은 화면을 앱 시작·구독·동기화·친구초대 시점에 재사용하고, 안내 문구만 바꿉니다. */
+enum class LoginTrigger(@StringRes val noteRes: Int) {
+    AppStart(R.string.login_note_app_start),
+    Subscription(R.string.login_note_subscription),
+    Sync(R.string.login_note_sync),
+    Social(R.string.login_note_social),
+}
+
+@Composable
+fun LoginScreen(
+    onLogin: (email: String, password: String, rememberMe: Boolean) -> Unit,
+    onSocialLogin: (SocialProvider) -> Unit,
+    onGuestContinue: () -> Unit,
+    onForgotPassword: () -> Unit,
+    onSignUp: () -> Unit,
+    modifier: Modifier = Modifier,
+    trigger: LoginTrigger = LoginTrigger.AppStart,
+) {
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var rememberMe by rememberSaveable { mutableStateOf(true) }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(SlColor.Surface)
+            .safeDrawingPadding()
+            .imePadding(),
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp, vertical = 24.dp),
+        ) {
+            Wordmark(text = stringResource(R.string.app_wordmark))
+
+            Spacer(Modifier.height(44.dp))
+            Text(
+                text = stringResource(R.string.login_title),
+                style = SlText.LoginHeading,
+                color = SlColor.Brand,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(trigger.noteRes),
+                style = SlText.LoginNote,
+                color = SlColor.TextSecondary,
+            )
+
+            Spacer(Modifier.height(28.dp))
+            UnderlineTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = stringResource(R.string.login_email_label),
+                placeholder = stringResource(R.string.login_email_placeholder),
+                leadingIcon = SlIcons.Mail,
+                keyboardType = KeyboardType.Email,
+            )
+
+            Spacer(Modifier.height(24.dp))
+            UnderlineTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = stringResource(R.string.login_password_label),
+                placeholder = stringResource(R.string.login_password_label),
+                leadingIcon = SlIcons.PasswordLock,
+                isPassword = true,
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = SlDimen.TouchTarget),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .toggleable(
+                            value = rememberMe,
+                            role = Role.Checkbox,
+                            onValueChange = { rememberMe = it },
+                        )
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CheckboxMark(
+                        checked = rememberMe,
+                        size = 18.dp,
+                        cornerRadius = 5.dp,
+                        borderWidth = 1.5.dp,
+                        checkIcon = SlIcons.CheckExtraBold,
+                        checkSize = 11.dp,
+                    )
+                    Text(
+                        text = stringResource(R.string.login_remember),
+                        style = SlText.Label,
+                        color = SlColor.TextSecondary,
+                    )
+                }
+                InlineTextButton(
+                    text = stringResource(R.string.login_forgot),
+                    onClick = onForgotPassword,
+                    style = SlText.Label,
+                    color = SlColor.BrandInk,
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            PrimaryButton(
+                text = stringResource(R.string.login_submit),
+                onClick = { onLogin(email, password, rememberMe) },
+                height = SlDimen.ButtonHeight,
+                shape = CircleShape,
+            )
+
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text = stringResource(R.string.login_social_divider),
+                style = SlText.Label,
+                color = SlColor.TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            ) {
+                SocialProvider.entries.forEach { provider ->
+                    SocialLoginButton(provider = provider, onClick = { onSocialLogin(provider) })
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.login_signup_prompt),
+                    style = SlText.Signup,
+                    color = SlColor.TextSecondary,
+                )
+                InlineTextButton(
+                    text = stringResource(R.string.login_signup_action),
+                    onClick = onSignUp,
+                    style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
+                    color = SlColor.BrandInk,
+                    underline = true,
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+            TextLink(
+                text = stringResource(R.string.login_guest),
+                onClick = onGuestContinue,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun InlineTextButton(
+    text: String,
+    onClick: () -> Unit,
+    style: TextStyle,
+    color: Color,
+    underline: Boolean = false,
+) {
+    Text(
+        text = text,
+        style = style,
+        color = color,
+        textDecoration = if (underline) TextDecoration.Underline else null,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+    )
+}
+
+@Preview(widthDp = 412, heightDp = 892)
+@Composable
+private fun LoginScreenPreview() {
+    StepLockTheme {
+        LoginScreen(
+            onLogin = { _, _, _ -> },
+            onSocialLogin = {},
+            onGuestContinue = {},
+            onForgotPassword = {},
+            onSignUp = {},
+        )
+    }
+}
+
+@Preview(widthDp = 412, heightDp = 892)
+@Composable
+private fun LoginScreenSyncPreview() {
+    StepLockTheme {
+        LoginScreen(
+            onLogin = { _, _, _ -> },
+            onSocialLogin = {},
+            onGuestContinue = {},
+            onForgotPassword = {},
+            onSignUp = {},
+            trigger = LoginTrigger.Sync,
+        )
+    }
+}

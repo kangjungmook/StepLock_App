@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- oklch(96% 0.012 90) — Compose 토큰(SlColor.Background)과 같은 값 -->
+    <color name="steplock_background">#F5F2E9</color>
+    <!-- oklch(58% 0.13 165) — 브랜드 그린 -->
+    <color name="steplock_brand">#009267</color>
+</resources>
