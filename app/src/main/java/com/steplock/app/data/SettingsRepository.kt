@@ -44,9 +44,34 @@ private fun decodeDay(raw: String, deviceUuid: String, accountId: String?): Dail
     }.getOrNull()
 }
 
+/**
+ * 잠금 조건 한 벌의 키 묶음.
+ *
+ * 같은 구조를 두 벌 보관합니다 — 접두사 없는 쪽이 **적용 중**, `desired_` 쪽이
+ * **사용자가 정해 둔 값**입니다. 완화를 기다리는 동안 둘이 달라집니다.
+ * 접두사 없는 이름을 그대로 둔 덕에 기존 설치의 값이 그대로 읽힙니다.
+ */
+private class ConditionKeys(prefix: String) {
+    val stepGoal = intPreferencesKey("${prefix}step_goal")
+    val sleepGoalHours = floatPreferencesKey("${prefix}sleep_goal_hours")
+    val pomodoroGoal = intPreferencesKey("${prefix}pomodoro_goal")
+    val stepsEnabled = booleanPreferencesKey("${prefix}steps_enabled")
+    val sleepEnabled = booleanPreferencesKey("${prefix}sleep_enabled")
+    val pomodoroEnabled = booleanPreferencesKey("${prefix}pomodoro_enabled")
+    val requireAll = booleanPreferencesKey("${prefix}require_all_conditions")
+    val blockedAppIds = stringSetPreferencesKey("${prefix}blocked_app_ids")
+    val relaxDelayDays = intPreferencesKey("${prefix}relax_delay_days")
+}
+
 class SettingsRepository(context: Context) {
 
     private val store = context.applicationContext.stepLockStore
+
+    /** 실제로 적용 중인 조건. 잠금 판정이 쓰는 값입니다. */
+    private val effective = ConditionKeys("")
+
+    /** 사용자가 정해 둔 조건. 완화 대기 중이면 [effective] 보다 느슨합니다. */
+    private val desired = ConditionKeys("desired_")
 
     private object Keys {
         val deviceUuid = stringPreferencesKey("device_uuid")
@@ -55,14 +80,8 @@ class SettingsRepository(context: Context) {
         val accountEmail = stringPreferencesKey("account_email")
         val guest = booleanPreferencesKey("guest")
         val onboardingCompleted = booleanPreferencesKey("onboarding_completed")
-        val stepGoal = intPreferencesKey("step_goal")
-        val sleepGoalHours = floatPreferencesKey("sleep_goal_hours")
-        val pomodoroGoal = intPreferencesKey("pomodoro_goal")
-        val stepsEnabled = booleanPreferencesKey("steps_enabled")
-        val sleepEnabled = booleanPreferencesKey("sleep_enabled")
-        val pomodoroEnabled = booleanPreferencesKey("pomodoro_enabled")
-        val requireAll = booleanPreferencesKey("require_all_conditions")
-        val blockedAppIds = stringSetPreferencesKey("blocked_app_ids")
+        /** 예약된 완화가 적용되는 날(ISO). 없으면 예약이 없습니다. */
+        val settingsApplyOn = stringPreferencesKey("settings_apply_on")
         val stepBaselineDate = stringPreferencesKey("step_baseline_date")
         val stepBaselineCounter = longPreferencesKey("step_baseline_counter")
         val pomodoroEndsAt = longPreferencesKey("pomodoro_ends_at")
@@ -88,19 +107,74 @@ class SettingsRepository(context: Context) {
         }
     }[Keys.deviceUuid].orEmpty()
 
+    /**
+     * 설정을 바꿉니다. **엄해지는 변경은 즉시, 느슨해지는 변경은 대기 기간 뒤에**
+     * 적용됩니다.
+     *
+     * [transform] 은 사용자가 화면에서 보고 있는 값(= 예약 포함)을 받습니다.
+     * 결과가 적용 중인 값보다 느슨하면 예약만 걸고 적용 중인 값은 건드리지 않습니다.
+     *
+     * 대기 기간은 **적용 중인 설정**의 것을 씁니다. 방금 줄인 기간을 쓰면
+     * "7일 → 0일"로 바꾸는 변경이 스스로 0일 뒤에 적용되어 장치가 뚫립니다.
+     */
     suspend fun updateSettings(transform: (LockSettings) -> LockSettings) {
         store.edit { prefs ->
-            prefs.writeSettings(transform(prefs.toSettings()))
+            prefs.materializeDueRelaxation()
+
+            val current = prefs.readConditions(effective)
+            val next = transform(prefs.readConditions(desired))
+            val delayDays = current.relaxDelay.days
+
+            if (delayDays == 0 || !next.isLooserThan(current)) {
+                prefs.writeConditions(effective, next)
+                prefs.writeConditions(desired, next)
+                prefs.remove(Keys.settingsApplyOn)
+            } else {
+                // 느슨해질 때마다 대기가 처음부터 다시 시작됩니다. 예약 중에 조건을
+                // 더 풀어 두고 원래 날짜에 한꺼번에 받는 걸 막습니다.
+                prefs.writeConditions(desired, next)
+                prefs[Keys.settingsApplyOn] = LocalDate.now().plusDays(delayDays.toLong()).toString()
+            }
+
+            prefs.writeAccountFields(next)
             prefs[Keys.settingsUpdatedAt] = System.currentTimeMillis()
         }
     }
 
-    /** 서버 값이 더 최신일 때 통째로 덮어씁니다. 서버의 시각을 그대로 보관합니다. */
+    /**
+     * 서버 값이 더 최신일 때 통째로 덮어씁니다. 서버의 시각을 그대로 보관합니다.
+     *
+     * 서버 스냅샷은 그 자체가 결론이라 예약을 남겨 두지 않습니다 — 적용 중인 값과
+     * 정해 둔 값을 모두 서버 값으로 맞추고 예약을 지웁니다.
+     */
     suspend fun applyRemoteSettings(settings: LockSettings, updatedAt: Long) {
         store.edit { prefs ->
-            prefs.writeSettings(settings)
+            prefs.writeConditions(effective, settings)
+            prefs.writeConditions(desired, settings)
+            prefs.remove(Keys.settingsApplyOn)
+            prefs.writeAccountFields(settings)
             prefs[Keys.settingsUpdatedAt] = updatedAt
         }
+    }
+
+    /** 대기 기간만 바꿉니다 — 늘리면 즉시, 줄이면 현재 기간을 기다립니다. */
+    suspend fun setRelaxDelay(delay: RelaxDelay) {
+        updateSettings { it.copy(relaxDelay = delay) }
+    }
+
+    /**
+     * 예약 날짜가 지났으면 적용 중인 값을 정해 둔 값으로 맞춥니다.
+     *
+     * 읽기(Flow)는 저장소를 고칠 수 없으므로 [toAppPreferences] 는 같은 판단을
+     * 계산으로만 합니다. 여기서는 다음 쓰기 때 실제로 정리해 둡니다 — 그래야
+     * 다음 비교가 낡은 값을 기준으로 이뤄지지 않습니다.
+     */
+    private fun MutablePreferences.materializeDueRelaxation() {
+        val applyOn = this[Keys.settingsApplyOn]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?: return
+        if (LocalDate.now() < applyOn) return
+        writeConditions(effective, readConditions(desired))
+        remove(Keys.settingsApplyOn)
     }
 
     /** 원격에만 있던 날짜를 채웁니다. 로컬에 있는 날짜는 건드리지 않습니다. */
@@ -119,15 +193,20 @@ class SettingsRepository(context: Context) {
         }
     }
 
-    private fun MutablePreferences.writeSettings(next: LockSettings) {
-        this[Keys.stepGoal] = next.stepGoal
-        this[Keys.sleepGoalHours] = next.sleepGoalHours
-        this[Keys.pomodoroGoal] = next.pomodoroGoal
-        this[Keys.stepsEnabled] = next.stepsEnabled
-        this[Keys.sleepEnabled] = next.sleepEnabled
-        this[Keys.pomodoroEnabled] = next.pomodoroEnabled
-        this[Keys.requireAll] = next.requireAllConditions
-        this[Keys.blockedAppIds] = next.blockedAppIds
+    private fun MutablePreferences.writeConditions(keys: ConditionKeys, next: LockSettings) {
+        this[keys.stepGoal] = next.stepGoal
+        this[keys.sleepGoalHours] = next.sleepGoalHours
+        this[keys.pomodoroGoal] = next.pomodoroGoal
+        this[keys.stepsEnabled] = next.stepsEnabled
+        this[keys.sleepEnabled] = next.sleepEnabled
+        this[keys.pomodoroEnabled] = next.pomodoroEnabled
+        this[keys.requireAll] = next.requireAllConditions
+        this[keys.blockedAppIds] = next.blockedAppIds
+        this[keys.relaxDelayDays] = next.relaxDelay.days
+    }
+
+    /** 계정 정보는 잠금 조건이 아니라 예약 대상이 아닙니다 — 언제나 바로 씁니다. */
+    private fun MutablePreferences.writeAccountFields(next: LockSettings) {
         next.accountId?.let { this[Keys.accountId] = it }
         next.displayName?.let { this[Keys.displayName] = it }
     }
@@ -308,28 +387,57 @@ class SettingsRepository(context: Context) {
         }
     }
 
-    private fun Preferences.toSettings(): LockSettings {
+    /**
+     * 한 벌의 조건을 읽습니다.
+     *
+     * `desired_` 쪽은 처음에는 비어 있습니다. 그때는 적용 중인 값으로 떨어져야
+     * 설정 화면이 빈 기본값을 보여 주지 않습니다.
+     */
+    private fun Preferences.readConditions(keys: ConditionKeys): LockSettings {
         val defaults = LockSettings(deviceUuid = this[Keys.deviceUuid].orEmpty())
+
+        /**
+         * 이 벌에 값이 없으면 적용 중인 벌 → 기본값 순으로 떨어집니다.
+         *
+         * `desired_` 는 처음 한 번도 설정을 바꾸지 않은 기기에서는 비어 있습니다.
+         * 그때 기본값으로 떨어지면, 이미 목표를 바꿔 둔 사람의 설정 화면이
+         * 갑자기 8,000보로 보입니다.
+         */
+        fun <T> read(own: (ConditionKeys) -> Preferences.Key<T>, fallback: T): T =
+            this[own(keys)] ?: this[own(effective)] ?: fallback
+
         return defaults.copy(
             accountId = this[Keys.accountId],
             displayName = this[Keys.displayName],
             accountEmail = this[Keys.accountEmail],
-            stepGoal = this[Keys.stepGoal] ?: defaults.stepGoal,
-            sleepGoalHours = this[Keys.sleepGoalHours] ?: defaults.sleepGoalHours,
-            pomodoroGoal = this[Keys.pomodoroGoal] ?: defaults.pomodoroGoal,
-            stepsEnabled = this[Keys.stepsEnabled] ?: defaults.stepsEnabled,
-            sleepEnabled = this[Keys.sleepEnabled] ?: defaults.sleepEnabled,
-            pomodoroEnabled = this[Keys.pomodoroEnabled] ?: defaults.pomodoroEnabled,
-            requireAllConditions = this[Keys.requireAll] ?: defaults.requireAllConditions,
-            blockedAppIds = this[Keys.blockedAppIds] ?: defaults.blockedAppIds,
+            stepGoal = read({ it.stepGoal }, defaults.stepGoal),
+            sleepGoalHours = read({ it.sleepGoalHours }, defaults.sleepGoalHours),
+            pomodoroGoal = read({ it.pomodoroGoal }, defaults.pomodoroGoal),
+            stepsEnabled = read({ it.stepsEnabled }, defaults.stepsEnabled),
+            sleepEnabled = read({ it.sleepEnabled }, defaults.sleepEnabled),
+            pomodoroEnabled = read({ it.pomodoroEnabled }, defaults.pomodoroEnabled),
+            requireAllConditions = read({ it.requireAll }, defaults.requireAllConditions),
+            blockedAppIds = read({ it.blockedAppIds }, defaults.blockedAppIds),
+            relaxDelay = RelaxDelay.fromDays(
+                read({ it.relaxDelayDays }, defaults.relaxDelay.days),
+            ),
         )
     }
 
     private fun Preferences.toAppPreferences(): AppPreferences {
-        val settings = toSettings()
+        val desiredSettings = readConditions(desired)
+        val applyOn = this[Keys.settingsApplyOn]
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        // 날짜가 지났으면 읽는 시점에 이미 적용된 것으로 봅니다. 읽기(Flow)는
+        // 저장소를 고칠 수 없어서 계산으로 맞추고, 실제 정리는 다음 쓰기 때
+        // materializeDueRelaxation() 이 합니다. 앱을 안 열어도 날이 지나면 풀립니다.
+        val due = applyOn != null && !LocalDate.now().isBefore(applyOn)
+        val settings = if (due) desiredSettings else readConditions(effective)
         val accountId = this[Keys.accountId]
         return AppPreferences(
             settings = settings,
+            desiredSettings = desiredSettings,
+            settingsApplyOn = applyOn?.takeIf { !due },
             onboardingCompleted = this[Keys.onboardingCompleted] ?: false,
             authState = when {
                 accountId != null -> AuthState.SignedIn(accountId)

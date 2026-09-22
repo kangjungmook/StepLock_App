@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,6 +33,7 @@ import com.steplock.app.ads.Ads
 import com.steplock.app.ads.findActivity
 import com.steplock.app.data.BlockedApp
 import com.steplock.app.data.LockSettings
+import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.SampleData
 import com.steplock.app.ui.components.AppListItem
 import com.steplock.app.ui.components.CheckboxMark
@@ -44,6 +47,7 @@ import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.SlSegmented
 import com.steplock.app.ui.components.SlSwitch
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.components.appBadgeColor
@@ -53,10 +57,20 @@ import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.theme.StepLockTheme
 import com.steplock.app.ui.util.formatThousands
 import com.steplock.app.ui.util.sleepGoalLabel
+import java.time.LocalDate
 
+/**
+ * 잠금 조건 설정.
+ *
+ * [settings] 는 **사용자가 정해 둔 값**(예약 포함)입니다 — 방금 누른 게 화면에
+ * 반영돼 보여야 하니까요. 실제로 적용되는 시점은 [settingsApplyOn] 이 알려 줍니다.
+ */
 @Composable
 fun SettingsScreen(
     settings: LockSettings,
+    /** 예약된 완화가 적용되는 날. null 이면 정해 둔 값이 이미 적용 중입니다. */
+    settingsApplyOn: LocalDate?,
+    onRelaxDelayChange: (RelaxDelay) -> Unit,
     apps: List<BlockedApp>,
     accountEmail: String?,
     onSignIn: () -> Unit,
@@ -116,6 +130,12 @@ fun SettingsScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // 맨 위에 둡니다. 목표를 낮췄는데 홈에서 아무 변화가 없으면 고장으로
+            // 보이므로, 설정 화면을 열자마자 언제 적용되는지 알려 줘야 합니다.
+            if (settingsApplyOn != null) {
+                PendingRelaxNotice(applyOn = settingsApplyOn)
+            }
+
             Column {
                 SectionLabel(
                     text = stringResource(R.string.settings_section_account),
@@ -220,6 +240,11 @@ fun SettingsScreen(
                 }
             }
 
+            RelaxDelaySection(
+                selected = settings.relaxDelay,
+                onSelect = onRelaxDelayChange,
+            )
+
             AdsSection()
         }
 
@@ -253,6 +278,94 @@ fun SettingsScreen(
             errorText = deleteAccountErrorText,
             busy = deleteAccountDeleting,
         )
+    }
+}
+
+/**
+ * 예약된 완화 안내.
+ *
+ * 앰버 팔레트를 씁니다 — 오류(빨강)가 아니고, 다 됐다는 신호(초록)도 아니라
+ * "기다리는 중"이라는 세 번째 상태입니다. 잠금 화면의 남은 조건 안내와 같은 색입니다.
+ */
+@Composable
+private fun PendingRelaxNotice(applyOn: LocalDate) {
+    val today = LocalDate.now()
+    val whenText = if (applyOn == today.plusDays(1)) {
+        stringResource(R.string.settings_pending_tomorrow)
+    } else {
+        stringResource(R.string.settings_pending_date, applyOn.monthValue, applyOn.dayOfMonth)
+    }
+
+    SlPanel(
+        containerColor = SlColor.AmberSurface,
+        borderColor = SlColor.AmberBorder,
+        contentPadding = PaddingValues(SlDimen.PanelPadding),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_pending_title, whenText),
+            style = SlText.RowTitle,
+            color = SlColor.AmberText,
+        )
+        Text(
+            text = stringResource(R.string.settings_pending_desc),
+            style = SlText.RowValue,
+            color = SlColor.AmberSubText,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
+/**
+ * 완화 대기 기간 고르기.
+ *
+ * 이 값을 **줄이는 것도** 대기 대상이라, 7일로 뒀다가 마음이 바뀌면 0으로
+ * 돌아가는 데도 7일이 걸립니다. 그 사실을 아래 줄에 미리 적습니다 — 나중에
+ * 알게 되면 앱이 고장 난 것처럼 느껴집니다.
+ */
+@Composable
+private fun RelaxDelaySection(selected: RelaxDelay, onSelect: (RelaxDelay) -> Unit) {
+    val options = listOf(
+        RelaxDelay.Immediate to stringResource(R.string.settings_relax_immediate),
+        RelaxDelay.NextDay to stringResource(R.string.settings_relax_next_day),
+        RelaxDelay.ThreeDays to stringResource(R.string.settings_relax_three_days),
+        RelaxDelay.SevenDays to stringResource(R.string.settings_relax_seven_days),
+    )
+
+    Column {
+        SectionLabel(
+            text = stringResource(R.string.settings_section_relax),
+            modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+        )
+        SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
+            Text(
+                text = stringResource(R.string.settings_relax_title),
+                style = SlText.RowTitle,
+                color = SlColor.TextPrimary,
+            )
+            Text(
+                text = stringResource(R.string.settings_relax_desc),
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Spacer(Modifier.height(16.dp))
+            SlSegmented(
+                options = options.map { it.second },
+                selectedIndex = options.indexOfFirst { it.first == selected }.coerceAtLeast(0),
+                onSelect = { onSelect(options[it].first) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            // 지금이 "바로"면 아직 스스로를 묶지 않은 상태라, 자기 참조 규칙을
+            // 미리 꺼낼 필요가 없습니다.
+            if (selected != RelaxDelay.Immediate) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.settings_relax_self_note),
+                    style = SlText.Caption,
+                    color = SlColor.TextTertiary,
+                )
+            }
+        }
     }
 }
 
@@ -363,6 +476,44 @@ private fun SettingsScreenPreview() {
     StepLockTheme {
         SettingsScreen(
             settings = SampleData.settings,
+            settingsApplyOn = null,
+            onRelaxDelayChange = {},
+            apps = SampleData.apps,
+            accountEmail = "jiwoo@example.com",
+            onSignIn = {},
+            onSignOut = {},
+            onBack = {},
+            onDeleteAccount = {},
+            onDeleteAccountConfirm = {},
+            onDeleteAccountDismiss = {},
+            deleteAccountConfirming = false,
+            deleteAccountDeleting = false,
+            deleteAccountErrorText = null,
+            onStepsEnabledChange = {},
+            onSleepEnabledChange = {},
+            onPomodoroEnabledChange = {},
+            onRequireAllChange = {},
+            onStepGoalChange = {},
+            onSleepGoalChange = {},
+            onPomodoroGoalChange = {},
+            onToggleApp = {},
+            onSave = {},
+        )
+    }
+}
+
+/** 목표를 낮춰서 완화가 예약된 상태. 맨 위 안내와 대기 기간 칸을 같이 확인합니다. */
+@Preview(widthDp = 412, heightDp = 892)
+@Composable
+private fun SettingsScreenPendingPreview() {
+    StepLockTheme {
+        SettingsScreen(
+            settings = SampleData.settings.copy(
+                stepGoal = 5000,
+                relaxDelay = RelaxDelay.ThreeDays,
+            ),
+            settingsApplyOn = LocalDate.now().plusDays(3),
+            onRelaxDelayChange = {},
             apps = SampleData.apps,
             accountEmail = "jiwoo@example.com",
             onSignIn = {},

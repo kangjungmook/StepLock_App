@@ -277,7 +277,12 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             }
 
             SettingsScreen(
-                settings = state.settings,
+                // 설정 화면은 **정해 둔 값**을 보여 줍니다 — 방금 누른 게 반영돼
+                // 보이지 않으면 눌리지 않은 것처럼 느껴집니다. 실제 적용 시점은
+                // settingsApplyOn 이 안내합니다.
+                settings = state.desiredSettings,
+                settingsApplyOn = state.settingsApplyOn,
+                onRelaxDelayChange = viewModel::setRelaxDelay,
                 apps = viewModel.apps,
                 accountEmail = state.settings.accountEmail,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },

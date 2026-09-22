@@ -7,6 +7,39 @@ import kotlin.math.roundToInt
  * 로컬 레코드는 기기별 UUID로 저장하고, 로그인 후 서버 계정에 귀속(claim)시킬 수 있도록
  * accountId를 nullable로 함께 들고 갑니다.
  */
+/**
+ * 조건을 **느슨하게** 바꿀 때 기다리는 기간.
+ *
+ * 엄하게 바꾸는 것(목표 올리기, 조건 켜기, 앱 추가)은 언제나 즉시 적용됩니다.
+ * 느슨하게 바꾸는 것만 기다립니다 — 막고 싶은 건 "지금 보고 싶어서" 설정을 고치는
+ * 행동이고, 스스로를 더 옥죄는 방향은 막을 이유가 없습니다.
+ *
+ * **이 기간을 줄이는 것도 "느슨하게"에 들어갑니다.** 그러지 않으면 기간을 0으로
+ * 바꾼 다음 아무거나 풀 수 있어서 장치 전체가 무의미해집니다. 7일로 두었다가
+ * 마음이 바뀌면, 0으로 돌아가는 데도 7일이 걸립니다.
+ */
+enum class RelaxDelay(val days: Int) {
+    Immediate(0),
+    NextDay(1),
+    ThreeDays(3),
+    SevenDays(7),
+    ;
+
+    companion object {
+        /**
+         * 기본값은 **즉시**입니다.
+         *
+         * 이건 스스로를 묶는 장치라 사용자가 직접 고르는 편이 맞습니다. 기본으로
+         * 켜 두면 처음 설치해서 목표를 자기에게 맞게 낮추는 사람이 영문도 모르고
+         * 하루를 기다리게 되고, 그 사람은 앱을 지웁니다.
+         */
+        val Default = Immediate
+
+        /** 저장은 일수로 합니다 — 항목 순서가 바뀌어도 값이 어긋나지 않습니다. */
+        fun fromDays(days: Int): RelaxDelay = entries.firstOrNull { it.days == days } ?: Default
+    }
+}
+
 data class LockSettings(
     val deviceUuid: String,
     val accountId: String? = null,
@@ -22,7 +55,29 @@ data class LockSettings(
     val pomodoroEnabled: Boolean = false,
     val requireAllConditions: Boolean = false,
     val blockedAppIds: Set<String> = setOf("shorts", "reels", "tiktok"),
+    val relaxDelay: RelaxDelay = RelaxDelay.Default,
 )
+
+/**
+ * [other] 보다 느슨한 항목이 하나라도 있으면 true.
+ *
+ * 하나라도 느슨해지면 변경 전체를 대기로 돌립니다. 설정 화면은 버튼·스위치 하나가
+ * 한 번의 변경이라 느슨함과 엄함이 섞인 변경은 사실상 생기지 않고, 섞였다면
+ * 기다리는 쪽이 안전합니다.
+ *
+ * `blockedAppIds` 는 **빠진 앱이 있는지**로 봅니다 — 잠글 앱을 목록에서 빼는 건
+ * 그 앱의 잠금을 푸는 것과 같습니다.
+ */
+fun LockSettings.isLooserThan(other: LockSettings): Boolean =
+    stepGoal < other.stepGoal ||
+        sleepGoalHours < other.sleepGoalHours ||
+        pomodoroGoal < other.pomodoroGoal ||
+        (!stepsEnabled && other.stepsEnabled) ||
+        (!sleepEnabled && other.sleepEnabled) ||
+        (!pomodoroEnabled && other.pomodoroEnabled) ||
+        (!requireAllConditions && other.requireAllConditions) ||
+        !blockedAppIds.containsAll(other.blockedAppIds) ||
+        relaxDelay.days < other.relaxDelay.days
 
 data class DailyStat(
     val deviceUuid: String,
@@ -48,7 +103,15 @@ sealed interface AuthState {
 }
 
 data class AppPreferences(
+    /** **실제로 적용 중인** 설정. 잠금 판정과 홈 화면이 이걸 씁니다. */
     val settings: LockSettings,
+    /**
+     * 사용자가 설정 화면에서 정해 둔 값. 예약된 완화가 있으면 [settings] 와 다릅니다.
+     * 설정 화면은 이걸 보여 줘야 방금 누른 게 반영돼 보입니다.
+     */
+    val desiredSettings: LockSettings,
+    /** 예약된 완화가 적용되는 날. null 이면 예약이 없습니다. */
+    val settingsApplyOn: LocalDate?,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
     val pomodoro: PomodoroState,

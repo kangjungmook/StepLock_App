@@ -163,6 +163,25 @@
     <string name="settings_strict_title">조건을 모두 만족해야 해제</string>
     <string name="settings_strict_desc">끄면 켜둔 조건 중 하나만 채워도 해제됩니다.</string>
     <string name="settings_section_apps">차단할 앱</string>
+
+    <!--
+      완화 대기. 조건을 느슨하게 바꿀 때만 기다리게 해서, "지금 보고 싶어서" 설정을
+      고치는 걸 막습니다. 문구는 무엇이 언제 적용되는지를 먼저 말합니다.
+    -->
+    <string name="settings_section_relax">마음이 바뀔 때</string>
+    <string name="settings_relax_title">조건을 느슨하게 바꾸면</string>
+    <string name="settings_relax_desc">목표를 낮추거나 조건을 끄면 이만큼 기다린 뒤 적용됩니다. 엄하게 바꾸는 건 언제나 바로 적용돼요.</string>
+    <string name="settings_relax_immediate">바로</string>
+    <string name="settings_relax_next_day">내일부터</string>
+    <string name="settings_relax_three_days">3일 뒤</string>
+    <string name="settings_relax_seven_days">7일 뒤</string>
+    <string name="settings_relax_self_note">이 대기 기간을 줄이는 것도 기다려야 합니다 — 그러지 않으면 기간을 없앤 뒤 무엇이든 풀 수 있어요.</string>
+
+    <!-- 예약된 완화가 있을 때 설정 화면 맨 위에 붙는 안내 -->
+    <string name="settings_pending_title">바꾼 조건은 %1$s에 적용돼요</string>
+    <string name="settings_pending_desc">그때까지는 지금 조건이 그대로 유지됩니다</string>
+    <string name="settings_pending_date">%1$d월 %2$d일</string>
+    <string name="settings_pending_tomorrow">내일</string>
     <string name="settings_save">저장하기</string>
     <string name="settings_section_account">계정</string>
     <string name="settings_account_synced">설정과 기록이 이 계정에 저장됩니다</string>

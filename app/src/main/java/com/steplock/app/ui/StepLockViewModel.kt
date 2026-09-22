@@ -15,6 +15,7 @@ import com.steplock.app.data.DailyStat
 import com.steplock.app.data.HISTORY_DAYS
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.Pomodoro
+import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StreakCalculator
@@ -32,7 +33,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 data class StepLockUiState(
+    /** 적용 중인 설정 — 잠금 판정과 홈 화면이 씁니다. */
     val settings: LockSettings,
+    /** 설정 화면에 보여 줄 값. 예약된 완화가 있으면 [settings] 보다 느슨합니다. */
+    val desiredSettings: LockSettings,
+    /** 예약된 완화가 적용되는 날. null 이면 예약이 없습니다. */
+    val settingsApplyOn: LocalDate?,
     val today: DailyStat,
     /** 오늘까지 7일, 기록이 없는 날은 0으로 채웁니다. */
     val weekly: List<DailyStat>,
@@ -118,6 +124,8 @@ class StepLockViewModel(
             val withToday = prefs.history.filter { it.date != today.date } + today
             StepLockUiState(
                 settings = prefs.settings,
+                desiredSettings = prefs.desiredSettings,
+                settingsApplyOn = prefs.settingsApplyOn,
                 today = today,
                 weekly = lastDays(7, prefs.history, today),
                 monthly = lastDays(HISTORY_DAYS, prefs.history, today),
@@ -240,6 +248,11 @@ class StepLockViewModel(
     fun setPomodoroEnabled(enabled: Boolean) = edit { it.copy(pomodoroEnabled = enabled) }
 
     fun setRequireAllConditions(enabled: Boolean) = edit { it.copy(requireAllConditions = enabled) }
+
+    /** 대기 기간 변경. 늘리면 즉시, 줄이면 현재 기간을 기다립니다. */
+    fun setRelaxDelay(delay: RelaxDelay) {
+        viewModelScope.launch { repository.setRelaxDelay(delay) }
+    }
 
     fun changeStepGoal(delta: Int) = edit {
         it.copy(stepGoal = (it.stepGoal + delta).coerceIn(1000, 20000))
