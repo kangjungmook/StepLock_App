@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,12 +30,9 @@ import com.steplock.app.BuildConfig
 import com.steplock.app.R
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.findActivity
-import com.steplock.app.data.BlockedApp
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.SampleData
-import com.steplock.app.ui.components.AppListItem
-import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.ConditionSettingCard
 import com.steplock.app.ui.components.IconTapTarget
 import com.steplock.app.ui.components.PrimaryButton
@@ -50,7 +46,6 @@ import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.SlSegmented
 import com.steplock.app.ui.components.SlSwitch
 import com.steplock.app.ui.components.TextLink
-import com.steplock.app.ui.components.appBadgeColor
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -71,7 +66,9 @@ fun SettingsScreen(
     /** 예약된 완화가 적용되는 날. null 이면 정해 둔 값이 이미 적용 중입니다. */
     settingsApplyOn: LocalDate?,
     onRelaxDelayChange: (RelaxDelay) -> Unit,
-    apps: List<BlockedApp>,
+    /** 지금 고른 앱 개수. 목록은 별도 화면에서 고릅니다. */
+    blockedCount: Int,
+    onPickApps: () -> Unit,
     accountEmail: String?,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
@@ -89,7 +86,6 @@ fun SettingsScreen(
     onStepGoalChange: (Int) -> Unit,
     onSleepGoalChange: (Float) -> Unit,
     onPomodoroGoalChange: (Int) -> Unit,
-    onToggleApp: (String) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -218,25 +214,21 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_section_apps),
                     modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
                 )
+                // 목록을 여기 펼치지 않습니다 — 기기에 깔린 앱이 수십 개라
+                // 설정 화면이 그 목록에 잡아먹힙니다. 고르기는 별도 화면에서.
                 SlPanel {
-                    apps.forEachIndexed { index, app ->
-                        if (index > 0) SlDivider()
-                        val checked = app.id in settings.blockedAppIds
-                        AppListItem(
-                            name = app.name,
-                            badgeInitial = app.initial,
-                            badgeColor = appBadgeColor(app.id),
-                            badgeSize = 36.dp,
-                            nameStyle = SlText.ListItem,
-                            verticalPadding = 12.dp,
-                            modifier = Modifier.toggleable(
-                                value = checked,
-                                role = Role.Checkbox,
-                                onValueChange = { onToggleApp(app.id) },
-                            ),
-                            trailing = { CheckboxMark(checked = checked) },
-                        )
-                    }
+                    SlDetailRow(
+                        title = stringResource(R.string.settings_apps_pick),
+                        description = if (blockedCount == 0) {
+                            stringResource(R.string.settings_apps_none)
+                        } else {
+                            stringResource(R.string.settings_apps_count, blockedCount)
+                        },
+                        modifier = Modifier
+                            .clickable(role = Role.Button, onClick = onPickApps)
+                            .padding(vertical = 16.dp),
+                        trailing = { SlChevron() },
+                    )
                 }
             }
 
@@ -478,7 +470,8 @@ private fun SettingsScreenPreview() {
             settings = SampleData.settings,
             settingsApplyOn = null,
             onRelaxDelayChange = {},
-            apps = SampleData.apps,
+            blockedCount = SampleData.settings.blockedAppIds.size,
+            onPickApps = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
@@ -496,7 +489,6 @@ private fun SettingsScreenPreview() {
             onStepGoalChange = {},
             onSleepGoalChange = {},
             onPomodoroGoalChange = {},
-            onToggleApp = {},
             onSave = {},
         )
     }
@@ -514,7 +506,8 @@ private fun SettingsScreenPendingPreview() {
             ),
             settingsApplyOn = LocalDate.now().plusDays(3),
             onRelaxDelayChange = {},
-            apps = SampleData.apps,
+            blockedCount = SampleData.settings.blockedAppIds.size,
+            onPickApps = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
@@ -532,7 +525,6 @@ private fun SettingsScreenPendingPreview() {
             onStepGoalChange = {},
             onSleepGoalChange = {},
             onPomodoroGoalChange = {},
-            onToggleApp = {},
             onSave = {},
         )
     }

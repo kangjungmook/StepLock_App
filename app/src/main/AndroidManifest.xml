@@ -23,9 +23,21 @@
         android:name="android.hardware.sensor.stepcounter"
         android:required="false" />
 
-    <!-- Android 13 이하에서 Health Connect는 별도 앱이라 조회 대상으로 선언해야 합니다. -->
     <queries>
+        <!-- Android 13 이하에서 Health Connect는 별도 앱이라 조회 대상으로 선언해야 합니다. -->
         <package android:name="com.google.android.apps.healthdata" />
+
+        <!--
+          잠글 앱을 사용자가 직접 고르므로 **실행 아이콘이 있는 앱**이 보여야 합니다.
+          Android 11 부터 다른 앱은 기본적으로 보이지 않습니다.
+
+          QUERY_ALL_PACKAGES 대신 이 인텐트 선언을 씁니다 — 그 권한은 플레이가 용도를
+          따로 심사하고, 잠글 앱을 고르는 데는 실행 가능한 앱만 있으면 충분합니다.
+        -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application

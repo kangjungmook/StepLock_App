@@ -4,10 +4,6 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 /**
- * 로컬 레코드는 기기별 UUID로 저장하고, 로그인 후 서버 계정에 귀속(claim)시킬 수 있도록
- * accountId를 nullable로 함께 들고 갑니다.
- */
-/**
  * 조건을 **느슨하게** 바꿀 때 기다리는 기간.
  *
  * 엄하게 바꾸는 것(목표 올리기, 조건 켜기, 앱 추가)은 언제나 즉시 적용됩니다.
@@ -40,6 +36,10 @@ enum class RelaxDelay(val days: Int) {
     }
 }
 
+/**
+ * 로컬 레코드는 기기별 UUID로 저장하고, 로그인 후 서버 계정에 귀속(claim)시킬 수 있도록
+ * accountId를 nullable로 함께 들고 갑니다.
+ */
 data class LockSettings(
     val deviceUuid: String,
     val accountId: String? = null,
@@ -54,7 +54,8 @@ data class LockSettings(
     val sleepEnabled: Boolean = false,
     val pomodoroEnabled: Boolean = false,
     val requireAllConditions: Boolean = false,
-    val blockedAppIds: Set<String> = setOf("shorts", "reels", "tiktok"),
+    /** 잠글 앱의 **패키지 이름**. 사용자가 기기에 깔린 앱에서 직접 고릅니다. */
+    val blockedAppIds: Set<String> = emptySet(),
     val relaxDelay: RelaxDelay = RelaxDelay.Default,
 )
 
@@ -86,14 +87,6 @@ data class DailyStat(
     val steps: Int,
     val sleepMinutes: Int,
     val pomodoroSessions: Int,
-)
-
-data class BlockedApp(
-    val id: String,
-    val name: String,
-    val subtitle: String,
-    val initial: String,
-    val packageName: String,
 )
 
 sealed interface AuthState {
@@ -179,22 +172,6 @@ data class PomodoroState(
 object Pomodoro {
     const val SESSION_MINUTES = 25
     const val SESSION_MS = SESSION_MINUTES * 60_000L
-}
-
-/**
- * 차단 대상 후보. 쇼츠·릴스는 각각 YouTube·Instagram 앱 안에 있어 앱 단위로 잠깁니다.
- */
-object BlockedAppCatalog {
-    val apps = listOf(
-        BlockedApp("shorts", "쇼츠", "YouTube · 짧은 영상", "S", "com.google.android.youtube"),
-        BlockedApp("reels", "릴스", "Instagram · 짧은 영상", "R", "com.instagram.android"),
-        BlockedApp("tiktok", "틱톡", "TikTok · 짧은 영상", "T", "com.zhiliaoapp.musically"),
-        BlockedApp("x", "엑스", "X · 짧은 영상", "X", "com.twitter.android"),
-    )
-
-    fun byId(id: String): BlockedApp? = apps.firstOrNull { it.id == id }
-
-    fun byPackage(packageName: String): BlockedApp? = apps.firstOrNull { it.packageName == packageName }
 }
 
 /** 켜 둔 조건만 계산합니다. 전부 만족 모드가 꺼져 있으면 하나만 채워도 해제됩니다. */

@@ -183,6 +183,24 @@
     <string name="settings_strict_title">조건을 모두 만족해야 해제</string>
     <string name="settings_strict_desc">끄면 켜둔 조건 중 하나만 채워도 해제됩니다.</string>
     <string name="settings_section_apps">차단할 앱</string>
+    <string name="settings_apps_pick">잠글 앱 고르기</string>
+    <string name="settings_apps_count">%1$d개 골랐어요</string>
+    <string name="settings_apps_none">아직 고르지 않았어요</string>
+
+    <!--
+      잠글 앱을 기기에 깔린 앱에서 직접 고릅니다. 전에는 네 개를 코드에 박아 뒀고
+      패키지 이름으로 맞췄기 때문에, 틱톡 라이트처럼 패키지가 다른 앱은 골라도
+      걸리지 않았습니다.
+    -->
+    <string name="app_picker_title">잠글 앱</string>
+    <string name="app_picker_selected">%1$d개</string>
+    <string name="app_picker_search_label">앱 찾기</string>
+    <string name="app_picker_search_hint">앱 이름 또는 패키지 이름</string>
+    <string name="app_picker_hint">고른 앱이 열리면 잠금 화면이 뜹니다</string>
+    <string name="app_picker_no_match_title">찾는 앱이 없어요</string>
+    <string name="app_picker_no_match_desc">이름의 일부만 넣어 보거나, 패키지 이름으로 찾아 보세요</string>
+    <string name="app_picker_none_title">목록을 읽지 못했어요</string>
+    <string name="app_picker_none_desc">실행 아이콘이 있는 앱만 보입니다. 앱을 다시 시작해 보세요</string>
 
     <!--
       완화 대기. 조건을 느슨하게 바꿀 때만 기다리게 해서, "지금 보고 싶어서" 설정을

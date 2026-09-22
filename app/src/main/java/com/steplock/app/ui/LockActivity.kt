@@ -18,7 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.rememberRewardedAd
-import com.steplock.app.data.BlockedAppCatalog
+import com.steplock.app.data.InstalledAppsRepository
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.theme.SlColor
 import kotlinx.coroutines.launch
@@ -33,8 +33,10 @@ class LockActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val app = BlockedAppCatalog.byId(intent.getStringExtra(EXTRA_APP_ID).orEmpty())
-            ?: BlockedAppCatalog.apps.first()
+        // 사용자가 고른 앱이라 이름은 기기에서 읽습니다. 못 읽으면(막 지운 앱)
+        // 패키지 이름을 그대로 보여 줍니다 — 빈 제목보다는 낫습니다.
+        val blockedPackage = intent.getStringExtra(EXTRA_PACKAGE).orEmpty()
+        val appLabel = InstalledAppsRepository(this).label(blockedPackage) ?: blockedPackage
 
         onBackPressedDispatcher.addCallback(this) { goHome() }
 
@@ -58,7 +60,7 @@ class LockActivity : ComponentActivity() {
                 Box(Modifier.fillMaxSize().background(SlColor.Dark.Background))
             } else {
                 LockOverlayScreen(
-                    appName = app.name,
+                    appName = appLabel,
                     stat = loaded.today,
                     settings = loaded.settings,
                     temporaryAllowRemaining = loaded.temporaryAllowRemaining,
@@ -98,11 +100,11 @@ class LockActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val EXTRA_APP_ID = "app_id"
+        private const val EXTRA_PACKAGE = "blocked_package"
 
-        fun intent(context: Context, appId: String): Intent =
+        fun intent(context: Context, blockedPackage: String): Intent =
             Intent(context, LockActivity::class.java)
-                .putExtra(EXTRA_APP_ID, appId)
+                .putExtra(EXTRA_PACKAGE, blockedPackage)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 }

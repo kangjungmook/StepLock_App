@@ -15,8 +15,6 @@ import android.os.IBinder
 import androidx.core.content.ContextCompat
 import com.steplock.app.MainActivity
 import com.steplock.app.R
-import com.steplock.app.data.BlockedApp
-import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
@@ -79,13 +77,15 @@ class AppWatchService : Service() {
                 sleepRepository.refresh()
             }
 
-            val blockedApp = foregroundPackage(usageStats)
-                ?.let { BlockedAppCatalog.byPackage(it) }
-                ?.takeIf { it.id in current.settings.blockedAppIds }
+            // 고른 앱의 패키지 이름을 그대로 비교합니다. 예전에는 코드에 박아 둔
+            // 네 개 중에서만 찾았기 때문에, 틱톡 라이트처럼 패키지가 다른 앱은
+            // 골라도 걸리지 않았습니다.
+            val blockedPackage = foregroundPackage(usageStats)
+                ?.takeIf { it in current.settings.blockedAppIds }
 
-            if (blockedApp == null) {
+            if (blockedPackage == null) {
                 shownForAppId = null
-            } else if (shownForAppId != blockedApp.id && !current.temporaryAllow.isActive()) {
+            } else if (shownForAppId != blockedPackage && !current.temporaryAllow.isActive()) {
                 val stat = DailyStat(
                     deviceUuid = current.settings.deviceUuid,
                     accountId = current.settings.accountId,
@@ -95,8 +95,8 @@ class AppWatchService : Service() {
                     pomodoroSessions = current.pomodoro.sessionsToday,
                 )
                 if (!UnlockEvaluator.isUnlocked(current.settings, stat)) {
-                    shownForAppId = blockedApp.id
-                    showLock(blockedApp)
+                    shownForAppId = blockedPackage
+                    startActivity(LockActivity.intent(this, blockedPackage))
                 }
             }
             delay(POLL_INTERVAL_MS)
@@ -115,10 +115,6 @@ class AppWatchService : Service() {
             }
         }
         return packageName
-    }
-
-    private fun showLock(app: BlockedApp) {
-        startActivity(LockActivity.intent(this, app.id))
     }
 
     private fun startWatchNotification() {

@@ -112,6 +112,16 @@ object SlIcons {
 
     val Plus = strokeVector("Plus", 2.2f, listOf("M5 12h14", "M12 5v14"))
 
+    /** 잠글 앱 고르기 화면의 검색 칸. 돋보기 — 원 하나와 손잡이. */
+    val Search = strokeVector(
+        "Search",
+        2f,
+        listOf(
+            "M10.5 3.5a7 7 0 1 1 0 14 7 7 0 0 1 0-14z",
+            "m15.6 15.6 4.9 4.9",
+        ),
+    )
+
     val Home = strokeVector(
         name = "Home",
         strokeWidth = 2f,

@@ -76,7 +76,6 @@ object SlText {
     val RowValue = slStyle(FontWeight.Normal, 13f, 18f)
     val LoginNote = slStyle(FontWeight.Normal, 13.5f, 22f)
     val Input = slStyle(FontWeight.Normal, 14f, 20f)
-    val AppSubtitle = slStyle(FontWeight.Normal, 12f, 16f)
     val Caption = slStyle(FontWeight.Normal, 12f, 19f)
     val Signup = slStyle(FontWeight.Normal, 13f, 20f)
 

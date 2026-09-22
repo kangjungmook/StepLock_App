@@ -28,12 +28,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
-import com.steplock.app.data.BlockedApp
+import com.steplock.app.data.InstalledApp
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.SampleData
 import com.steplock.app.data.UnlockEvaluator
-import com.steplock.app.ui.components.AppListItem
+import com.steplock.app.ui.components.AppIcon
 import com.steplock.app.ui.components.BottomNavBar
 import com.steplock.app.ui.components.ConditionRow
 import com.steplock.app.ui.components.MascotMood
@@ -47,7 +47,6 @@ import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.StepTrack
-import com.steplock.app.ui.components.appBadgeColor
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -74,11 +73,12 @@ fun HomeScreen(
     userName: String?,
     stat: DailyStat,
     settings: LockSettings,
-    apps: List<BlockedApp>,
+    /** 잠그고 있는 앱. 이미 걸러진 목록입니다. */
+    apps: List<InstalledApp>,
     selectedTab: NavTab,
     onTabSelected: (NavTab) -> Unit,
     onManageLocks: () -> Unit,
-    onAppClick: (BlockedApp) -> Unit,
+    onAppClick: (InstalledApp) -> Unit,
     onPomodoroClick: () -> Unit,
     streak: Int,
     /** 권한이 꺼져 감시가 멈춘 경우의 제목·설명. 정상이면 둘 다 null입니다. */
@@ -87,7 +87,8 @@ fun HomeScreen(
     onWarningClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val lockedApps = apps.filter { it.id in settings.blockedAppIds }
+    // 걸러는 뷰모델이 합니다 — 화면은 이름과 아이콘만 그립니다.
+    val lockedApps = apps
     val conditions = enabledConditions(settings)
     val unlocked = UnlockEvaluator.isUnlocked(settings, stat)
 
@@ -255,19 +256,25 @@ fun HomeScreen(
             } else {
                 lockedApps.forEachIndexed { index, app ->
                     if (index > 0) SlDivider()
-                    AppListItem(
-                        name = app.name,
-                        badgeInitial = app.initial,
-                        badgeColor = appBadgeColor(app.id),
-                        badgeSize = 36.dp,
-                        nameStyle = SlText.ListItem,
-                        verticalPadding = 12.dp,
-                        modifier = Modifier.clickable(
-                            role = Role.Button,
-                            onClick = { onAppClick(app) },
-                        ),
-                        trailing = { SlChevron() },
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button, onClick = { onAppClick(app) })
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // 기기에서 읽은 실제 아이콘. 첫 글자 뱃지로는 "라이트" 같은
+                        // 변종을 구분할 수 없습니다.
+                        AppIcon(packageName = app.packageName, label = app.label, size = 36.dp)
+                        Text(
+                            text = app.label,
+                            style = SlText.ListItem,
+                            color = SlColor.TextPrimary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        SlChevron()
+                    }
                 }
             }
         }

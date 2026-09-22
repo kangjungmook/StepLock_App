@@ -38,13 +38,6 @@ object SlColor {
     val Shadow = Color(0xFF414853) // oklch(40% 0.02 260)
 
     /** 앱 뱃지는 식별을 위해 각 서비스 색을 유지합니다. */
-    object AppBadge {
-        val Shorts = Color(0xFFDB4241) // oklch(60% 0.19 25)
-        val Reels = Color(0xFFBF4392) // oklch(58% 0.18 345)
-        val TikTok = Color(0xFF313B4A) // oklch(35% 0.03 260)
-        val X = Color(0xFF2A75BA) // oklch(55% 0.13 250)
-    }
-
     object Social {
         val GoogleBlue = Color(0xFF4285F4)
         val GoogleGreen = Color(0xFF34A853)

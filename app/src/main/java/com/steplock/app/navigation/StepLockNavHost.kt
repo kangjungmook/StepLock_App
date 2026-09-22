@@ -27,7 +27,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.steplock.app.R
 import com.steplock.app.data.AuthState
-import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.service.PomodoroService
 import com.steplock.app.system.AppPermissions
@@ -38,6 +37,7 @@ import com.steplock.app.system.permissionStates
 import com.steplock.app.ui.StepLockUiState
 import com.steplock.app.ui.StepLockViewModel
 import com.steplock.app.ui.components.NavTab
+import com.steplock.app.ui.screens.AppPickerScreen
 import com.steplock.app.ui.screens.HomeScreen
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.screens.LoginScreen
@@ -56,11 +56,14 @@ object Route {
     const val SETTINGS = "settings"
     const val STATS = "stats"
     const val POMODORO = "pomodoro"
-    const val LOCK = "lock/{appId}"
+    const val APP_PICKER = "app-picker"
+
+    // 패키지 이름에 점이 들어가서 경로 조각(lock/{x})으로는 못 씁니다 — 쿼리로 받습니다.
+    const val LOCK = "lock?package={package}"
 
     fun login(trigger: LoginTrigger = LoginTrigger.AppStart) = "login?trigger=${trigger.name}"
 
-    fun lock(appId: String) = "lock/$appId"
+    fun lock(packageName: String) = "lock?package=$packageName"
 }
 
 @Composable
@@ -181,7 +184,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 userName = state.settings.displayName,
                 stat = state.today,
                 settings = state.settings,
-                apps = viewModel.apps,
+                apps = state.blockedApps,
                 selectedTab = NavTab.Home,
                 onTabSelected = { tab ->
                     when (tab) {
@@ -190,8 +193,9 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                         NavTab.Settings -> navController.navigate(Route.SETTINGS)
                     }
                 },
-                onManageLocks = { navController.navigate(Route.SETTINGS) },
-                onAppClick = { app -> navController.navigate(Route.lock(app.id)) },
+                // 홈의 "잠글 앱" 은 설정을 거치지 않고 바로 고르는 화면으로 갑니다.
+                onManageLocks = { navController.navigate(Route.APP_PICKER) },
+                onAppClick = { app -> navController.navigate(Route.lock(app.packageName)) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
                 streak = state.streak,
                 // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
@@ -285,7 +289,8 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 settings = state.desiredSettings,
                 settingsApplyOn = state.settingsApplyOn,
                 onRelaxDelayChange = viewModel::setRelaxDelay,
-                apps = viewModel.apps,
+                blockedCount = state.desiredSettings.blockedAppIds.size,
+                onPickApps = { navController.navigate(Route.APP_PICKER) },
                 accountEmail = state.settings.accountEmail,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,
@@ -318,19 +323,38 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 onStepGoalChange = viewModel::changeStepGoal,
                 onSleepGoalChange = viewModel::changeSleepGoal,
                 onPomodoroGoalChange = viewModel::changePomodoroGoal,
-                onToggleApp = viewModel::toggleBlockedApp,
                 onSave = { navController.popBackStack() },
+            )
+        }
+
+        composable(Route.APP_PICKER) {
+            AppPickerScreen(
+                // 목록을 읽는 데 잠깐 걸려서 ViewModel 이 한 번만 읽어 들고 있습니다.
+                apps = viewModel.availableApps,
+                // 고른 값이 바로 체크로 보여야 하니 **정해 둔 값**을 씁니다.
+                selected = state.desiredSettings.blockedAppIds,
+                onToggle = viewModel::toggleBlockedApp,
+                onBack = { navController.popBackStack() },
             )
         }
 
         composable(
             route = Route.LOCK,
-            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("package") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
         ) { entry ->
-            val appId = entry.arguments?.getString("appId").orEmpty()
-            val app = BlockedAppCatalog.byId(appId) ?: BlockedAppCatalog.apps.first()
+            // 앱 안에서 미리보기로 열 때의 경로입니다. 실제 잠금은 LockActivity 가 띄웁니다.
+            val blockedPackage = entry.arguments?.getString("package").orEmpty()
+            val appName = state.blockedApps
+                .firstOrNull { it.packageName == blockedPackage }
+                ?.label
+                ?: blockedPackage
             LockOverlayScreen(
-                appName = app.name,
+                appName = appName,
                 stat = state.today,
                 settings = state.settings,
                 temporaryAllowRemaining = state.temporaryAllowRemaining,

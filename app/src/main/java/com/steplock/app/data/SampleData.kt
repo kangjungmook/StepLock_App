@@ -6,7 +6,12 @@ import java.time.LocalDate
 object SampleData {
     private const val PREVIEW_UUID = "preview-device"
 
-    val apps = BlockedAppCatalog.apps
+    /** 프리뷰용 차단 앱. 실제 목록은 기기에서 읽습니다. */
+    val apps = listOf(
+        InstalledApp("com.google.android.youtube", "YouTube"),
+        InstalledApp("com.instagram.android", "Instagram"),
+        InstalledApp("com.ss.android.ugc.tiktok.lite", "TikTok Lite"),
+    )
 
     val settings = LockSettings(
         deviceUuid = PREVIEW_UUID,
@@ -18,7 +23,11 @@ object SampleData {
         sleepEnabled = true,
         pomodoroEnabled = true,
         requireAllConditions = true,
-        blockedAppIds = setOf("shorts", "reels", "tiktok"),
+        blockedAppIds = setOf(
+            "com.google.android.youtube",
+            "com.instagram.android",
+            "com.ss.android.ugc.tiktok.lite",
+        ),
     )
 
     val today = DailyStat(

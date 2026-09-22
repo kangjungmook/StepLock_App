@@ -417,7 +417,10 @@ class SettingsRepository(context: Context) {
             sleepEnabled = read({ it.sleepEnabled }, defaults.sleepEnabled),
             pomodoroEnabled = read({ it.pomodoroEnabled }, defaults.pomodoroEnabled),
             requireAllConditions = read({ it.requireAll }, defaults.requireAllConditions),
-            blockedAppIds = read({ it.blockedAppIds }, defaults.blockedAppIds),
+            // 예전 자체 id("shorts" 등)를 패키지 이름으로 옮겨 읽습니다.
+            blockedAppIds = LegacyBlockedApps.migrate(
+                read({ it.blockedAppIds }, defaults.blockedAppIds),
+            ),
             relaxDelay = RelaxDelay.fromDays(
                 read({ it.relaxDelayDays }, defaults.relaxDelay.days),
             ),

@@ -10,9 +10,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.steplock.app.data.AuthRepository
 import com.steplock.app.data.AuthState
-import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.HISTORY_DAYS
+import com.steplock.app.data.InstalledApp
+import com.steplock.app.data.InstalledAppsRepository
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.RelaxDelay
@@ -56,6 +57,8 @@ data class StepLockUiState(
     val temporaryAllowRemaining: Int,
     /** 광고를 봐서 더 받을 수 있는 횟수. 0이면 광고 버튼도 사라집니다. */
     val temporaryAllowBonusRemaining: Int,
+    /** 지금 잠그고 있는 앱. 이름은 기기에서 읽어 채웁니다. */
+    val blockedApps: List<InstalledApp>,
 )
 
 enum class LoginError {
@@ -97,9 +100,16 @@ class StepLockViewModel(
     private val sleepRepository: SleepRepository,
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
+    private val installedApps: InstalledAppsRepository,
 ) : ViewModel() {
 
-    val apps = BlockedAppCatalog.apps
+    /**
+     * 기기에 깔린 앱 목록. 고르기 화면이 씁니다.
+     *
+     * PackageManager 조회라 값이 잘 바뀌지 않으니 한 번 읽어 둡니다 — 앱을 새로
+     * 설치했으면 스텝락을 다시 켜야 목록에 나타납니다.
+     */
+    val availableApps: List<InstalledApp> by lazy { installedApps.launchableApps() }
 
     var loginState by mutableStateOf(LoginUiState())
         private set
@@ -135,6 +145,7 @@ class StepLockViewModel(
                 longestStreak = StreakCalculator.longest(withToday, prefs.settings),
                 temporaryAllowRemaining = prefs.temporaryAllow.remainingToday,
                 temporaryAllowBonusRemaining = prefs.temporaryAllow.bonusRemaining,
+                blockedApps = installedApps.resolve(prefs.settings.blockedAppIds),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -266,9 +277,16 @@ class StepLockViewModel(
         it.copy(pomodoroGoal = (it.pomodoroGoal + delta).coerceIn(1, 8))
     }
 
-    fun toggleBlockedApp(appId: String) = edit {
+    /** 잠글 앱 켜고 끄기. 빼는 건 완화라서 대기 기간이 걸려 있으면 기다립니다. */
+    fun toggleBlockedApp(packageName: String) = edit {
         val blocked = it.blockedAppIds
-        it.copy(blockedAppIds = if (appId in blocked) blocked - appId else blocked + appId)
+        it.copy(
+            blockedAppIds = if (packageName in blocked) {
+                blocked - packageName
+            } else {
+                blocked + packageName
+            },
+        )
     }
 
     fun signIn(email: String, password: String) = submitCredentials(email, password) { mail, pass ->
@@ -430,6 +448,7 @@ class StepLockViewModel(
                     sleepRepository = SleepRepository(app, repository),
                     authRepository = AuthRepository(),
                     syncRepository = SyncRepository(repository),
+                    installedApps = InstalledAppsRepository(app),
                 )
             }
         }

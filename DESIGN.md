@@ -97,7 +97,7 @@ val Background = Color(0xFFF5F2E9) // oklch(96% 0.012 90)
 - `Error` 위의 흰 글자 대비는 **5.2:1**로 측정해 두었습니다 (`Color.kt` 주석).
 
 **식별 목적으로 브랜드 색을 유지하는 예외** **[코드]**
-앱 뱃지(쇼츠 `#DB4241`, 릴스 `#BF4392`, 틱톡 `#313B4A`, 엑스 `#2A75BA`)와
+잠글 앱은 `PackageManager` 에서 읽은 실제 아이콘을 쓰고(`AppIcon`),
 소셜 로그인 아이콘(구글 4색, 카카오 `#F6D653`)만 각 서비스 색을 씁니다.
 **팔레트 규칙의 예외이고, 새로 늘리지 않습니다.**
 
@@ -522,7 +522,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 
 - 버튼은 **무엇이 일어나는지** 적습니다. "확인"/"취소"를 쓰지 않습니다.
   → "손쉬운 사용 권한 허용하기", "계정과 기록 삭제하기", "그대로 두기", "알겠어요, 닫기"
-- 한국어 조사를 받침에 따라 붙입니다 — "쇼츠**는**", "틱톡**은**" (`withTopicParticle`)
+- 한국어 조사를 받침에 따라 붙입니다 — "유튜브**는**", "틱톡**은**" (`withTopicParticle`)
 - 재촉하지 않습니다. 지금 당장 할 수 없는 조건(수면)은 숫자로 남은 양을 보여주지 않습니다.
 
 ## 5-3. iOS 대응 **[제안 · 시작값]**
@@ -583,7 +583,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 [ScreenPaddingWide 24dp · Dark.Background]
         [캐릭터 80×99 · Dark.GreenIcon]        ← 다크 전용 그린 (반전 아님)
                     ↕ 24dp
-        쇼츠는 잠겨있어요                       ← LockTitle 25sp Black / Dark.TextPrimary
+        유튜브는 잠겨있어요                     ← LockTitle 25sp Black / Dark.TextPrimary
                     ↕ 8dp
         2,760보만 더 걸으면 열려요              ← Remaining 14sp Bold / Dark.AmberText
                     ↕ 32dp
