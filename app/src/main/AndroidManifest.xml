@@ -13,6 +13,11 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <!--
+      광고 ID. AdMob 이 광고를 고르는 데 씁니다. 이 권한을 선언하면 플레이 콘솔
+      데이터 안전성에서도 "광고 ID 수집"을 함께 밝혀야 합니다(docs/play-store-checklist.md).
+    -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
     <uses-feature
         android:name="android.hardware.sensor.stepcounter"
@@ -30,6 +35,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.StepLock">
+
+        <!--
+          AdMob 앱 ID. **이 항목이 없으면 앱이 실행 즉시 죽습니다.**
+          값은 admob.properties 나 STEPLOCK_ADMOB_APP_ID 로 주입되고,
+          없으면 구글 공식 테스트 ID가 들어갑니다(app/build.gradle.kts).
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+        <!-- 초기화·광고 로딩을 백그라운드로 밀어 메인 스레드가 멈추지 않게 합니다. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true" />
 
         <activity
             android:name=".MainActivity"

@@ -21,6 +21,30 @@ val hasReleaseSigning = listOf(
     releaseKeyPassword,
 ).all { !it.isNullOrBlank() }
 
+/**
+ * AdMob 식별자. 비밀값은 아니지만(APK 안에 그대로 들어갑니다) 계정마다 달라서
+ * admob.properties 나 환경변수로 받고, 없으면 **구글 공식 테스트 ID** 로 떨어집니다.
+ *
+ * 테스트 ID로 빌드된 앱은 항상 테스트 광고만 띄웁니다. 실수로 실 광고를 직접 눌러
+ * 계정이 정지되는 사고가 이 기본값 덕에 일어나지 않습니다.
+ * https://developers.google.com/admob/android/test-ads
+ */
+val admobProperties = Properties().apply {
+    val file = rootProject.file("admob.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun admobId(key: String, env: String, testId: String): String =
+    admobProperties.getProperty(key)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(env)?.takeIf { it.isNotBlank() }
+        ?: testId
+
+val admobAppId = admobId("appId", "STEPLOCK_ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+val admobRewardedUnit =
+    admobId("rewardedUnitId", "STEPLOCK_ADMOB_REWARDED", "ca-app-pub-3940256099942544/5224354917")
+val admobBannerUnit =
+    admobId("bannerUnitId", "STEPLOCK_ADMOB_BANNER", "ca-app-pub-3940256099942544/6300978111")
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -48,6 +72,19 @@ android {
                 "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoY2Nodm13a2dmaHFxenBvbm54Iiwicm9sZSI6ImFub24i" +
                 "LCJpYXQiOjE3ODk5NjE3MzksImV4cCI6MjEwNTUzNzczOX0." +
                 "qceCUQgCg8uTKXaF1YtZ8DJtPIdQ-S2a5t4chQJrFPY\"",
+        )
+
+        // 앱 ID는 매니페스트 meta-data 로만 읽히므로 플레이스홀더로 넣습니다.
+        // 이 값이 비면 앱이 실행 즉시 죽습니다(AdMob SDK가 던집니다).
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "ADMOB_REWARDED_UNIT", "\"$admobRewardedUnit\"")
+        buildConfigField("String", "ADMOB_BANNER_UNIT", "\"$admobBannerUnit\"")
+        // 테스트 ID로 빌드됐는지 앱이 알 수 있게 해 둡니다 —
+        // 설정 화면에서 "테스트 광고" 라고 밝히는 데 씁니다.
+        buildConfigField(
+            "boolean",
+            "ADMOB_TEST_IDS",
+            (admobAppId.startsWith("ca-app-pub-3940256099942544")).toString(),
         )
     }
 
@@ -102,6 +139,8 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.play.services.ads)
+    implementation(libs.user.messaging.platform)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

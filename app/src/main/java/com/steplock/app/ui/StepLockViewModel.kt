@@ -42,6 +42,8 @@ data class StepLockUiState(
     val longestStreak: Int,
     /** 오늘 남은 임시 허용 횟수. 0이면 잠금 화면에서 버튼이 사라집니다. */
     val temporaryAllowRemaining: Int,
+    /** 광고를 봐서 더 받을 수 있는 횟수. 0이면 광고 버튼도 사라집니다. */
+    val temporaryAllowBonusRemaining: Int,
 )
 
 enum class LoginError {
@@ -117,6 +119,7 @@ class StepLockViewModel(
                 streak = StreakCalculator.current(withToday, prefs.settings, today.date),
                 longestStreak = StreakCalculator.longest(withToday, prefs.settings),
                 temporaryAllowRemaining = prefs.temporaryAllow.remainingToday,
+                temporaryAllowBonusRemaining = prefs.temporaryAllow.bonusRemaining,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -274,6 +277,14 @@ class StepLockViewModel(
 
     /** 잠금 화면에서 호출합니다. 하루 한도를 넘으면 false — 화면을 닫지 않아야 합니다. */
     suspend fun useTemporaryAllow(): Boolean = repository.useTemporaryAllow()
+
+    /**
+     * 리워드 광고를 끝까지 본 뒤 호출합니다. 횟수만 늘려 두고 잠금은 그대로 둡니다 —
+     * 얻은 횟수를 지금 쓸지는 사용자가 한 번 더 누르며 정합니다.
+     */
+    fun grantTemporaryAllowBonus() {
+        viewModelScope.launch { repository.grantTemporaryAllowBonus() }
+    }
 
     fun signOut() {
         viewModelScope.launch { authRepository.signOut() }

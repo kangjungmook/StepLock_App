@@ -13,3 +13,7 @@ local.properties
 /keystore.properties
 *.jks
 *.keystore
+
+# AdMob 식별자 — 비밀값은 아니지만(APK 에 그대로 들어갑니다) 계정마다 다릅니다.
+# 없으면 구글 공식 테스트 ID로 빌드됩니다. admob.properties.example 을 참고하세요.
+/admob.properties

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
+import com.steplock.app.ads.SlBannerAd
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.SampleData
@@ -192,6 +193,13 @@ fun StatsScreen(
                     achievedByDay = weekly.map { it.pomodoroSessions >= settings.pomodoroGoal },
                 )
             }
+        }
+
+        // 배너는 이 화면에만 둡니다. 통계는 들여다보는 화면이라 광고가 가로막는
+        // 작업이 없습니다. 기록이 하나도 없을 때는 붙이지 않습니다 —
+        // 처음 켠 사람에게 빈 통계와 광고만 보이면 앱의 첫인상이 광고가 됩니다.
+        if (hasRecords) {
+            SlBannerAd()
         }
 
         BottomNavBar(selected = selectedTab, onSelect = onTabSelected)

@@ -62,6 +62,13 @@ fun LockOverlayScreen(
     onDismiss: () -> Unit,
     onTemporaryAllow: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 광고를 봐서 임시 허용을 더 받을 수 있는 남은 횟수. */
+    adBonusRemaining: Int = 0,
+    /**
+     * 광고를 보고 임시 허용을 한 번 더 받는 선택지. 받아 둔 광고가 없으면 null 이고,
+     * 그럴 때 이 줄은 나타나지 않습니다 — 눌러도 안 되는 줄을 남기지 않습니다.
+     */
+    onWatchAdForBonus: (() -> Unit)? = null,
 ) {
     val sleepAchieved = UnlockCondition.Sleep.isAchieved(stat, settings)
     val pomodoroAchieved = UnlockCondition.Pomodoro.isAchieved(stat, settings)
@@ -198,8 +205,11 @@ fun LockOverlayScreen(
         )
         // 한도를 다 쓰면 링크 자체를 없앱니다. 눌러도 안 되는 버튼을 남기면
         // 왜 안 되는지 알 수 없습니다.
-        if (temporaryAllowRemaining > 0) {
-            TextLink(
+        //
+        // 광고 줄은 기본 한도를 **다 쓴 뒤에만** 나타납니다. 아직 쓸 수 있는데
+        // 광고를 먼저 권하면, 그냥 쓰면 되는 걸 광고로 팔는 화면이 됩니다.
+        when {
+            temporaryAllowRemaining > 0 -> TextLink(
                 text = stringResource(
                     R.string.lock_temporary_allow,
                     TemporaryAllow.MINUTES,
@@ -210,8 +220,20 @@ fun LockOverlayScreen(
                 style = SlText.LinkSm,
                 color = SlColor.Dark.TextLink,
             )
-        } else {
-            Text(
+
+            onWatchAdForBonus != null && adBonusRemaining > 0 -> TextLink(
+                text = stringResource(
+                    R.string.lock_temporary_allow_ad,
+                    TemporaryAllow.MINUTES,
+                    adBonusRemaining,
+                ),
+                onClick = onWatchAdForBonus,
+                modifier = Modifier.fillMaxWidth(),
+                style = SlText.LinkSm,
+                color = SlColor.Dark.TextLink,
+            )
+
+            else -> Text(
                 text = stringResource(R.string.lock_temporary_allow_exhausted),
                 style = SlText.LinkSm,
                 color = SlColor.Dark.TextLink,
@@ -234,5 +256,21 @@ private fun LockOverlayScreenPreview() {
         temporaryAllowRemaining = TemporaryAllow.DAILY_LIMIT,
         onDismiss = {},
         onTemporaryAllow = {},
+    )
+}
+
+/** 기본 한도를 다 써서 광고 줄로 바뀐 상태. */
+@Preview(widthDp = 412, heightDp = 892)
+@Composable
+private fun LockOverlayScreenAdBonusPreview() {
+    LockOverlayScreen(
+        appName = "쇼츠",
+        stat = SampleData.today,
+        settings = SampleData.settings,
+        temporaryAllowRemaining = 0,
+        onDismiss = {},
+        onTemporaryAllow = {},
+        adBonusRemaining = TemporaryAllow.AD_BONUS_LIMIT,
+        onWatchAdForBonus = {},
     )
 }

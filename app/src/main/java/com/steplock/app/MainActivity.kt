@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.steplock.app.ads.Ads
 import com.steplock.app.data.SupabaseProvider
 import com.steplock.app.navigation.StepLockNavHost
 import com.steplock.app.service.AppWatchService
@@ -18,6 +19,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         SupabaseProvider.client.handleDeeplinks(intent)
+        // 동의 확인 → SDK 초기화. 잠금 화면에서 리워드 광고를 쓸 수 있으려면
+        // 그보다 먼저 여기서 끝나 있어야 합니다.
+        Ads.prepare(this)
         setContent {
             StepLockTheme {
                 StepLockNavHost()

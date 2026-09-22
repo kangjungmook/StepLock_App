@@ -1,6 +1,7 @@
 package com.steplock.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +20,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.steplock.app.BuildConfig
 import com.steplock.app.R
+import com.steplock.app.ads.Ads
+import com.steplock.app.ads.findActivity
 import com.steplock.app.data.BlockedApp
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.SampleData
@@ -33,6 +38,7 @@ import com.steplock.app.ui.components.ConditionSettingCard
 import com.steplock.app.ui.components.IconTapTarget
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SectionLabel
+import com.steplock.app.ui.components.SlChevron
 import com.steplock.app.ui.components.SlConfirmDialog
 import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
@@ -213,6 +219,8 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            AdsSection()
         }
 
         Column(modifier = Modifier.background(SlColor.Surface)) {
@@ -245,6 +253,52 @@ fun SettingsScreen(
             errorText = deleteAccountErrorText,
             busy = deleteAccountDeleting,
         )
+    }
+}
+
+/**
+ * 광고에 관해 사용자가 할 수 있는 일과 알아야 할 사실만 둡니다.
+ *
+ * 보여 줄 게 없으면 섹션 자체가 나타나지 않습니다. 동의 재설정은 그게 필요한
+ * 지역에서만 뜨고, 테스트 광고 안내는 테스트 ID로 빌드했을 때만 뜹니다 —
+ * 한국에서 실 광고로 배포하면 이 섹션은 보이지 않습니다.
+ */
+@Composable
+private fun AdsSection() {
+    val context = LocalContext.current
+    val showConsentRow = Ads.privacyOptionsRequired
+    val showTestNotice = BuildConfig.ADMOB_TEST_IDS
+    if (!showConsentRow && !showTestNotice) return
+
+    Column {
+        SectionLabel(
+            text = stringResource(R.string.settings_section_ads),
+            modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+        )
+        SlPanel {
+            if (showConsentRow) {
+                SlDetailRow(
+                    title = stringResource(R.string.settings_ads_consent),
+                    description = stringResource(R.string.settings_ads_consent_desc),
+                    modifier = Modifier
+                        .clickable(role = Role.Button) {
+                            // Activity 가 없으면(이론상) 아무것도 하지 않습니다 —
+                            // 동의 폼은 Activity 위에만 뜹니다.
+                            context.findActivity()?.let { Ads.showPrivacyOptions(it) }
+                        }
+                        .padding(vertical = 16.dp),
+                    trailing = { SlChevron() },
+                )
+            }
+            if (showConsentRow && showTestNotice) SlDivider()
+            if (showTestNotice) {
+                SlDetailRow(
+                    title = stringResource(R.string.settings_ads_test_title),
+                    description = stringResource(R.string.settings_ads_test_desc),
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+            }
+        }
     }
 }
 

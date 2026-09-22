@@ -74,6 +74,7 @@ class SettingsRepository(context: Context) {
         val tempAllowUntil = longPreferencesKey("temp_allow_until")
         val tempAllowDate = stringPreferencesKey("temp_allow_date")
         val tempAllowCount = intPreferencesKey("temp_allow_count")
+        val tempAllowBonus = intPreferencesKey("temp_allow_bonus")
         val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
     }
 
@@ -213,16 +214,40 @@ class SettingsRepository(context: Context) {
         var granted = false
         store.edit { prefs ->
             val today = LocalDate.now().toString()
-            val usedToday = if (prefs[Keys.tempAllowDate] == today) {
-                prefs[Keys.tempAllowCount] ?: 0
-            } else {
-                0
-            }
-            if (usedToday >= TemporaryAllow.DAILY_LIMIT) return@edit
+            val sameDay = prefs[Keys.tempAllowDate] == today
+            val usedToday = if (sameDay) prefs[Keys.tempAllowCount] ?: 0 else 0
+            val bonusToday = if (sameDay) prefs[Keys.tempAllowBonus] ?: 0 else 0
+            if (usedToday >= TemporaryAllow.DAILY_LIMIT + bonusToday) return@edit
             prefs[Keys.tempAllowDate] = today
             prefs[Keys.tempAllowCount] = usedToday + 1
+            // 날짜 키 하나가 사용 횟수와 보너스의 유효 기간을 함께 쥐고 있어서,
+            // 날짜를 새로 쓸 때 보너스도 같은 기준으로 다시 적어 둡니다.
+            prefs[Keys.tempAllowBonus] = bonusToday
             prefs[Keys.tempAllowUntil] =
                 System.currentTimeMillis() + TemporaryAllow.MINUTES * 60_000L
+            granted = true
+        }
+        return granted
+    }
+
+    /**
+     * 리워드 광고를 **끝까지 본 뒤에** 호출합니다. 임시 허용 횟수를 한 번 늘려 주고,
+     * 하루 보너스 한도를 넘으면 아무것도 바꾸지 않고 false 를 돌려줍니다.
+     *
+     * 허용을 바로 쓰지는 않습니다 — 횟수만 늘려 두고, 실제로 쓸지는 사용자가
+     * [useTemporaryAllow] 로 한 번 더 결정합니다.
+     */
+    suspend fun grantTemporaryAllowBonus(): Boolean {
+        var granted = false
+        store.edit { prefs ->
+            val today = LocalDate.now().toString()
+            val sameDay = prefs[Keys.tempAllowDate] == today
+            val bonusToday = if (sameDay) prefs[Keys.tempAllowBonus] ?: 0 else 0
+            if (bonusToday >= TemporaryAllow.AD_BONUS_LIMIT) return@edit
+            val usedToday = if (sameDay) prefs[Keys.tempAllowCount] ?: 0 else 0
+            prefs[Keys.tempAllowDate] = today
+            prefs[Keys.tempAllowCount] = usedToday
+            prefs[Keys.tempAllowBonus] = bonusToday + 1
             granted = true
         }
         return granted
@@ -319,14 +344,14 @@ class SettingsRepository(context: Context) {
             history = this[Keys.dailyHistory].orEmpty()
                 .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }
                 .sortedBy { it.date },
-            temporaryAllow = TemporaryAllowState(
-                allowedUntil = this[Keys.tempAllowUntil],
-                usedToday = if (this[Keys.tempAllowDate] == LocalDate.now().toString()) {
-                    this[Keys.tempAllowCount] ?: 0
-                } else {
-                    0
-                },
-            ),
+            temporaryAllow = run {
+                val sameDay = this[Keys.tempAllowDate] == LocalDate.now().toString()
+                TemporaryAllowState(
+                    allowedUntil = this[Keys.tempAllowUntil],
+                    usedToday = if (sameDay) this[Keys.tempAllowCount] ?: 0 else 0,
+                    bonusEarnedToday = if (sameDay) this[Keys.tempAllowBonus] ?: 0 else 0,
+                )
+            },
             pomodoro = PomodoroState(
                 endsAt = this[Keys.pomodoroEndsAt],
                 pausedRemainingMs = this[Keys.pomodoroPausedRemaining],

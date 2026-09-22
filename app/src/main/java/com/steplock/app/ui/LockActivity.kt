@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.steplock.app.ads.Ads
+import com.steplock.app.ads.rememberRewardedAd
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.theme.SlColor
@@ -36,11 +38,19 @@ class LockActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this) { goHome() }
 
+        // 이미 받아 둔 동의만 확인합니다. 여기서 동의 폼을 띄우면, 차단된 앱을
+        // 열었을 뿐인데 처음 보는 화면이 덮여 무슨 일인지 알 수 없습니다.
+        Ads.refreshWithoutForm(this)
+
         setContent {
             val context = LocalContext.current
             val stepLockViewModel: StepLockViewModel =
                 viewModel(factory = StepLockViewModel.factory(context))
             val state by stepLockViewModel.uiState.collectAsStateWithLifecycle()
+
+            // 화면이 열릴 때 미리 한 편 받아 둡니다. 누른 뒤에 불러오면
+            // 몇 초간 아무 반응이 없어 고장처럼 보입니다.
+            val rewardedAd = rememberRewardedAd()
 
             val scope = rememberCoroutineScope()
             val loaded = state
@@ -59,6 +69,19 @@ class LockActivity : ComponentActivity() {
                         scope.launch {
                             if (stepLockViewModel.useTemporaryAllow()) finish()
                         }
+                    },
+                    adBonusRemaining = loaded.temporaryAllowBonusRemaining,
+                    // 받아 둔 광고가 없으면 선택지를 아예 주지 않습니다.
+                    onWatchAdForBonus = if (rewardedAd.ready) {
+                        {
+                            rewardedAd.show(this@LockActivity) {
+                                // 끝까지 본 경우에만 불립니다. 횟수만 늘어나고
+                                // 잠금은 그대로 — 쓸지는 한 번 더 눌러 정합니다.
+                                stepLockViewModel.grantTemporaryAllowBonus()
+                            }
+                        }
+                    } else {
+                        null
                     },
                 )
             }

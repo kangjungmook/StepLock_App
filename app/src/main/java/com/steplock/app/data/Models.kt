@@ -75,15 +75,32 @@ data class AppPreferences(
 data class TemporaryAllowState(
     val allowedUntil: Long? = null,
     val usedToday: Int = 0,
+    /** 광고를 끝까지 봐서 오늘 추가로 얻은 횟수. [TemporaryAllow.AD_BONUS_LIMIT] 까지. */
+    val bonusEarnedToday: Int = 0,
 ) {
     fun isActive(now: Long = System.currentTimeMillis()): Boolean =
         allowedUntil != null && now < allowedUntil
 
-    val remainingToday: Int get() = (TemporaryAllow.DAILY_LIMIT - usedToday).coerceAtLeast(0)
+    /** 오늘 더 쓸 수 있는 횟수 — 기본 한도에 광고로 얻은 보너스를 더한 값입니다. */
+    val remainingToday: Int
+        get() = (TemporaryAllow.DAILY_LIMIT + bonusEarnedToday - usedToday).coerceAtLeast(0)
+
+    /** 광고로 더 받을 수 있는 횟수. 0이면 광고 버튼도 사라집니다. */
+    val bonusRemaining: Int
+        get() = (TemporaryAllow.AD_BONUS_LIMIT - bonusEarnedToday).coerceAtLeast(0)
 }
 
 object TemporaryAllow {
     const val DAILY_LIMIT = 3
+
+    /**
+     * 광고로 늘릴 수 있는 한도. 기본 3회 + 보너스 2회 = **하루 최대 5회**입니다.
+     *
+     * 상한이 없으면 광고를 계속 보면서 잠금을 무력화할 수 있고, 그러면 이 앱이
+     * 하려던 일이 사라집니다. 광고 수익보다 앱의 목적이 먼저라서 여기서 끊습니다.
+     */
+    const val AD_BONUS_LIMIT = 2
+
     const val MINUTES = 5
 }
 
