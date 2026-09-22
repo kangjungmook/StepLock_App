@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 스플래시 화면 아이콘. StepLockMascot 의 Resting 자세를 벡터로 옮긴 것으로,
+     scratchpad/splash_vector.py 가 같은 변환식으로 생성했습니다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <path
+        android:pathData="M127.4,212.94 L127.4,243.84"
+        android:strokeColor="#009267"
+        android:strokeWidth="22.66"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M168.6,212.94 L168.6,243.84"
+        android:strokeColor="#009267"
+        android:strokeWidth="22.66"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M100.62,114.06 H170.66000000000003 A39.14,39.14 0 0 1 209.8,153.2 V186.16000000000003 A39.14,39.14 0 0 1 170.66000000000003,225.3 H100.62 A39.14,39.14 0 0 1 61.48,186.16000000000003 V153.2 A39.14,39.14 0 0 1 100.62,114.06 Z"
+        android:fillColor="#006944" />
+    <path
+        android:pathData="M106.8,118.18 L106.8,85.22 A41.2,41.2 0 0 1 189.2,85.22 L189.2,118.18"
+        android:strokeColor="#006944"
+        android:strokeWidth="22.66"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M115.04,118.18 L115.04,85.22 A41.2,41.2 0 0 1 197.44,85.22 L197.44,118.18"
+        android:strokeColor="#009267"
+        android:strokeWidth="22.66"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M117.1,109.94 H187.14 A39.14,39.14 0 0 1 226.28,149.07999999999998 V182.04000000000002 A39.14,39.14 0 0 1 187.14,221.18 H117.1 A39.14,39.14 0 0 1 77.96,182.04000000000002 V149.07999999999998 A39.14,39.14 0 0 1 117.1,109.94 Z"
+        android:fillColor="#009267" />
+    <path
+        android:pathData="M126.16,163.5 L145.12,163.5"
+        android:strokeColor="#005A38"
+        android:strokeWidth="4.94"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M171.48,159.38 L190.44,159.38"
+        android:strokeColor="#005A38"
+        android:strokeWidth="4.94"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.steplock.app.ads.Ads
 import com.steplock.app.data.SupabaseProvider
 import com.steplock.app.navigation.StepLockNavHost
@@ -16,6 +17,9 @@ import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // super.onCreate 보다 먼저 불러야 스플래시가 화면을 이어받습니다.
+        // 뒤로 밀면 흰 화면이 한 번 스쳤다가 스플래시가 뜹니다.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         SupabaseProvider.client.handleDeeplinks(intent)

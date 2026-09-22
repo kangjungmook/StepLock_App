@@ -26,9 +26,11 @@ import com.steplock.app.R
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.ui.PomodoroUiState
 import com.steplock.app.ui.components.IconTapTarget
+import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SlIcons
+import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -79,6 +81,14 @@ fun PomodoroScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            // 세션이 도는 동안 앉아서 함께 기다립니다. 멈추거나 끝나면 일어섭니다 —
+            // 자세 하나로 "지금 돌고 있는지"가 숫자를 읽지 않아도 보입니다.
+            StepLockMascot(
+                modifier = Modifier.size(width = 56.dp, height = 69.dp),
+                mood = if (state.running) MascotMood.Focusing else MascotMood.Resting,
+            )
+            Spacer(Modifier.height(20.dp))
+
             ProgressRing(
                 progress = state.progress,
                 size = 200.dp,
