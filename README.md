@@ -21,7 +21,7 @@
   <img src="docs/screens/06-pomodoro.png" width="22%" alt="집중 타이머" />
 </p>
 
-<p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다</sub></p>
+<p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다 (실기기 캡처가 아닙니다)</sub></p>
 
 ## 캐릭터
 
@@ -36,12 +36,31 @@
 
 앱 안에서는 비트맵을 쓰지 않고 100×124 좌표계로 **다시 그려**
 ([`StepLockMascot.kt`](app/src/main/java/com/steplock/app/ui/components/StepLockMascot.kt))
-다리 스윙과 상하 반동만 900ms 주기로 움직입니다. 어떤 크기에서도 선명하고, 색은 팔레트 토큰을
-그대로 받습니다.
+캔버스로 움직입니다. 어떤 크기에서도 선명하고, 색은 팔레트 토큰을 그대로 받습니다.
 
-- **온보딩** — 걸어 들어오는 첫 화면
-- **홈** — 맨 위 상태 카드 안에서 걷다가, 잠금이 풀리면 멈추고 눈을 감습니다(상태를 형태로 보여줌)
-- **잠금** — 어두운 배경용 그린으로 색만 바꿔 같은 도형을 씁니다. 아직 걷고 있다는 게 곧 아직 못 열었다는 뜻입니다
+**자세가 상태를 말합니다** — 글자를 읽지 않아도 지금 어떤 상태인지 보이게.
+
+| 자세 | 뜻 | 움직임 |
+| --- | --- | --- |
+| `Walking` | 목표까지 남음 | 다리 스윙 + 상하 반동, 900ms |
+| `Resting` | 달성 · 대기 | **완전 정지.** 애니메이션 값을 읽지 않습니다 |
+| `Focusing` | 집중 세션 진행 중 | 앉은 자세, 숨결만 2600ms 왕복 |
+
+`Resting`이 값을 아예 읽지 않는 건 의도입니다 — 멈춘 상태에 미세한 움직임이 남으면 그게 더
+눈에 걸리고, 매 프레임 다시 그리게 됩니다.
+
+쓰는 자리는 일곱 곳입니다. 로그인·설정·차트 안·달성 축하 연출에는 **넣지 않았습니다**
+(기준은 [DESIGN.md 4-4절](DESIGN.md)).
+
+| 자리 | 크기 | 자세 |
+| --- | --- | --- |
+| 온보딩 | 96×119dp | 걸어 들어오는 첫 화면 |
+| 홈 (`StepTrack` 위) | 44×55dp | 진행률을 **위치**로 — 걷다가 달성하면 멈춰 섭니다 |
+| 잠금 | 80×99dp | 어두운 배경용 그린. 아직 걷고 있다는 게 곧 아직 못 열었다는 뜻 |
+| 집중 타이머 | 56×69dp | 세션이 도는 동안 함께 앉아 있습니다 |
+| 빈 상태 | 36×45dp | 빈 화면이 고장처럼 보이지 않게 |
+| 스플래시 | 288×288 벡터 | 앱을 켤 때 (정지) |
+| 앱 · 알림 아이콘 | 적응형 / 24dp | 자물쇠 기호 (캐릭터가 아님) |
 
 ---
 
@@ -52,10 +71,10 @@
 | **Login** | 앱 첫 화면. 밑줄형 입력 · 로그인 유지 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
 | **Onboarding** | 잠금 해제 조건 3가지 안내 + 권한 3단계 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
 | **Home** | 맨 위에 오늘 잠금이 풀렸는지 한 장으로, 아래에 조건별 진행과 차단 앱 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
-| **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
+| **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택, 완화 대기 기간, 광고 안내 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
-| **Pomodoro** | 25분 집중 세션 타이머. 홈의 집중 타이머 줄에서 진입 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
-| **Stats** | 최근 7일 걸음 막대 차트와 조건별 달성 일수 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
+| **Pomodoro** | 25분 집중 세션 타이머. 세션이 도는 동안 캐릭터가 앉습니다 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
+| **Stats** | 7일 / 30일 전환, 걸음 차트와 요약 3칸, 조건별 일평균과 달성률 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
 화면 이동: `Login → Onboarding → Home`, 홈에서 설정 · 집중 타이머 · 잠금 오버레이로 들어갑니다.
 하단 탭은 홈 · 통계 · 설정이고, 온보딩을 마친 기기는 다음 실행부터 로그인을 건너뛰고 홈에서 시작합니다.
@@ -133,6 +152,10 @@
 화면에 반영돼 보이지 않으면 눌리지 않은 것처럼 느껴집니다. 언제 적용되는지는 설정 화면
 맨 위 앰버 패널이 알려 줍니다.
 
+<p align="center">
+  <img src="docs/screens/08-relax.png" width="46%" alt="설정 — 완화 대기 기간과 예약 안내" />
+</p>
+
 앱 삭제와 권한 끄기는 여전히 뚫립니다. 막을 방법이 없고, **막아서도 안 되는 안전장치**입니다.
 
 ---
@@ -207,6 +230,10 @@ Noto Sans KR 400/500/700/900. 화면에서 쓰는 스타일을 [`Type.kt`](app/s
 | `SlSwitch` · `CheckboxMark` | 시안 규격(52×32 트랙, 24dp 체크박스)에 맞춘 선택 컨트롤. |
 | `BottomNavBar` | 홈 · 통계 · 설정 탭. 라벨 표시를 끌 수 있습니다. |
 | `WeeklyBarChart` | 일별 막대 하나에 값 하나. 영점에서 시작하고 목표는 점선으로만 표시합니다. |
+| `StepTrack` | 진행률을 링이 아니라 캐릭터의 **위치**로 보여 줍니다. 지나온 길은 실선, 남은 길은 점선. |
+| `SlSegmented` | 2~4칸 전환 막대. **보는 범위만** 바꿉니다(통계 기간, 완화 대기) — 화면 이동은 하단 탭바. |
+| `SlEmptyState` | 빈 패널 안의 안내. 작은 캐릭터를 함께 두어 고장처럼 보이지 않게 합니다. |
+| `SlBannerAd` | 앵커드 어댑티브 배너. **통계 화면에만** 붙입니다. |
 | `SlPanel` · `SectionLabel` · `PrimaryButton` · `TextLink` · `IconTile` · `AppBadge` | 공통 레이아웃 조각. |
 
 ---
