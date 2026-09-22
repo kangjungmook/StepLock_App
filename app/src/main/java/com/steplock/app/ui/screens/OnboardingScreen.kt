@@ -37,6 +37,7 @@ import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.StepLockMascot
+import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -180,6 +181,19 @@ fun OnboardingScreen(
                     }
                 },
             )
+            // 남은 권한이 있어도 들어갈 수 있어야 합니다. 이 길이 없으면, 런타임
+            // 권한을 두 번 거절해 안드로이드가 대화상자를 더 띄우지 않는 사용자는
+            // **이 화면에서 영구히 막혀 앱을 아예 쓸 수 없습니다.** 권한 없이 들어가면
+            // 홈이 무엇이 꺼져 있는지 알려 주고 해당 설정 화면으로 보내 줍니다.
+            if (remaining > 0) {
+                Spacer(Modifier.height(4.dp))
+                TextLink(
+                    text = stringResource(R.string.onboarding_skip_permissions),
+                    onClick = onStart,
+                    underline = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Spacer(Modifier.height(14.dp))
             Text(
                 text = stringResource(R.string.onboarding_privacy),

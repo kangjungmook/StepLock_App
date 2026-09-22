@@ -94,6 +94,7 @@
     <string name="watch_channel_name">잠금 감시</string>
     <string name="watch_notification_title">스텝락이 잠금을 지키고 있어요</string>
     <string name="watch_notification_text">차단한 앱을 열면 조건 화면을 보여줍니다</string>
+    <string name="onboarding_skip_permissions">권한 없이 먼저 둘러보기</string>
     <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
 
     <!-- 홈 -->
@@ -201,6 +202,9 @@
     <string name="app_picker_no_match_desc">이름의 일부만 넣어 보거나, 패키지 이름으로 찾아 보세요</string>
     <string name="app_picker_none_title">목록을 읽지 못했어요</string>
     <string name="app_picker_none_desc">실행 아이콘이 있는 앱만 보입니다. 앱을 다시 시작해 보세요</string>
+    <string name="app_picker_still_blocked">해제를 기다리는 중 · 아직 막혀 있어요</string>
+    <string name="app_picker_pending_title">%1$d개는 %2$s에 풀려요</string>
+    <string name="app_picker_pending_desc">체크를 풀어도 완화 대기 기간이 지나야 실제로 열립니다</string>
 
     <!--
       완화 대기. 조건을 느슨하게 바꿀 때만 기다리게 해서, "지금 보고 싶어서" 설정을

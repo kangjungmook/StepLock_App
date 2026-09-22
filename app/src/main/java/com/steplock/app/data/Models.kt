@@ -69,6 +69,27 @@ data class LockSettings(
  * `blockedAppIds` 는 **빠진 앱이 있는지**로 봅니다 — 잠글 앱을 목록에서 빼는 건
  * 그 앱의 잠금을 푸는 것과 같습니다.
  */
+/**
+ * 이것과 [other] 중 **항목마다 더 엄한 쪽**을 골라 모은 값.
+ *
+ * 한 번의 저장에 엄해지는 변경과 느슨해지는 변경이 섞여 있으면, 엄한 쪽은 지금
+ * 적용하고 느슨한 쪽만 기다려야 합니다. 그러지 않으면 완화를 기다리는 동안 앱을
+ * 하나 추가해도 **대기가 끝날 때까지 그 앱이 막히지 않습니다** — 새로 막겠다고
+ * 고른 앱이 일주일 동안 열리는 셈이라, 장치가 거꾸로 작동합니다.
+ */
+fun LockSettings.strictestWith(other: LockSettings): LockSettings = copy(
+    stepGoal = maxOf(stepGoal, other.stepGoal),
+    sleepGoalHours = maxOf(sleepGoalHours, other.sleepGoalHours),
+    pomodoroGoal = maxOf(pomodoroGoal, other.pomodoroGoal),
+    stepsEnabled = stepsEnabled || other.stepsEnabled,
+    sleepEnabled = sleepEnabled || other.sleepEnabled,
+    pomodoroEnabled = pomodoroEnabled || other.pomodoroEnabled,
+    requireAllConditions = requireAllConditions || other.requireAllConditions,
+    // 앱은 합집합입니다 — 목록에서 빼는 건 느슨해지는 쪽이라 기다려야 합니다.
+    blockedAppIds = blockedAppIds + other.blockedAppIds,
+    relaxDelay = if (relaxDelay.days >= other.relaxDelay.days) relaxDelay else other.relaxDelay,
+)
+
 fun LockSettings.isLooserThan(other: LockSettings): Boolean =
     stepGoal < other.stepGoal ||
         sleepGoalHours < other.sleepGoalHours ||

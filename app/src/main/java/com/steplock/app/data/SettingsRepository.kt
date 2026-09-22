@@ -112,7 +112,8 @@ class SettingsRepository(context: Context) {
      * 적용됩니다.
      *
      * [transform] 은 사용자가 화면에서 보고 있는 값(= 예약 포함)을 받습니다.
-     * 결과가 적용 중인 값보다 느슨하면 예약만 걸고 적용 중인 값은 건드리지 않습니다.
+     * 결과는 **항목별로** 갈립니다 — 엄해진 항목은 바로 적용 중인 값에 들어가고,
+     * 느슨해진 항목만 예약으로 남습니다([LockSettings.strictestWith]).
      *
      * 대기 기간은 **적용 중인 설정**의 것을 씁니다. 방금 줄인 기간을 쓰면
      * "7일 → 0일"로 바꾸는 변경이 스스로 0일 뒤에 적용되어 장치가 뚫립니다.
@@ -122,18 +123,28 @@ class SettingsRepository(context: Context) {
             prefs.materializeDueRelaxation()
 
             val current = prefs.readConditions(effective)
-            val next = transform(prefs.readConditions(desired))
+            val previous = prefs.readConditions(desired)
+            val next = transform(previous)
             val delayDays = current.relaxDelay.days
 
-            if (delayDays == 0 || !next.isLooserThan(current)) {
-                prefs.writeConditions(effective, next)
-                prefs.writeConditions(desired, next)
-                prefs.remove(Keys.settingsApplyOn)
-            } else {
-                // 느슨해질 때마다 대기가 처음부터 다시 시작됩니다. 예약 중에 조건을
-                // 더 풀어 두고 원래 날짜에 한꺼번에 받는 걸 막습니다.
-                prefs.writeConditions(desired, next)
-                prefs[Keys.settingsApplyOn] = LocalDate.now().plusDays(delayDays.toLong()).toString()
+            // 엄해지는 항목은 지금 적용하고 느슨해지는 항목만 기다립니다.
+            // 통째로 미루면, 완화를 기다리는 동안 새로 고른 앱도 함께 밀려서
+            // 막으려고 고른 앱이 대기가 끝날 때까지 열립니다.
+            val immediate = if (delayDays == 0) next else next.strictestWith(current)
+
+            prefs.writeConditions(effective, immediate)
+            prefs.writeConditions(desired, next)
+
+            when {
+                // 기다릴 완화가 남지 않았습니다.
+                immediate == next -> prefs.remove(Keys.settingsApplyOn)
+
+                // 이미 기다리던 완화보다 **더** 느슨해졌으면 처음부터 다시 셉니다 —
+                // 예약 중에 하나씩 더 풀어 두고 원래 날짜에 한꺼번에 받는 걸
+                // 막습니다. 엄해지는 변경은 날짜를 건드리지 않습니다.
+                next.isLooserThan(previous) || prefs[Keys.settingsApplyOn] == null ->
+                    prefs[Keys.settingsApplyOn] =
+                        LocalDate.now().plusDays(delayDays.toLong()).toString()
             }
 
             prefs.writeAccountFields(next)

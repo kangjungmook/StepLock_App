@@ -140,17 +140,27 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 granted = permissionStates(context)
             }
+            // 두 번 거절하면 안드로이드가 대화상자를 더 띄우지 않습니다. 그때도
+            // 계속 launch() 만 부르면 눌러도 아무 일이 없어 고장처럼 보이므로,
+            // 거절당한 뒤에는 앱 정보 화면으로 보내 직접 켜게 합니다.
+            var runtimeDenied by remember { mutableStateOf(false) }
             // 걸음 수와 알림은 런타임 권한이라 **대화상자 하나로 함께** 물을 수 있습니다.
             val runtimeRequest = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestMultiplePermissions(),
-            ) { granted = permissionStates(context) }
+            ) { result ->
+                granted = permissionStates(context)
+                if (result.values.any { !it }) runtimeDenied = true
+            }
 
             OnboardingScreen(
                 permissions = PermissionGroup.entries.map { it to (granted[it] == true) },
                 onPermissionClick = { group ->
                     when (group) {
-                        PermissionGroup.Runtime ->
+                        PermissionGroup.Runtime -> if (runtimeDenied) {
+                            context.startActivity(AppPermissions.appDetailsSettings(context))
+                        } else {
                             runtimeRequest.launch(AppPermissions.runtimePermissions())
+                        }
 
                         PermissionGroup.UsageAccess ->
                             context.startActivity(AppPermissions.usageAccessSettings())
@@ -160,7 +170,12 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                     }
                 },
                 onStart = {
-                    AppWatchService.start(context)
+                    // 권한을 건너뛰고 들어올 수도 있습니다. 그때 감시 서비스를
+                    // 띄우면 아무것도 감지하지 못하는 알림만 남으니, 갖춰졌을 때만
+                    // 시작합니다 — 나중에 허용하면 MainActivity.onStart 가 띄웁니다.
+                    if (nextPermissionStep(context) == PermissionStep.Ready) {
+                        AppWatchService.start(context)
+                    }
                     viewModel.completeOnboarding()
                     navController.navigate(Route.HOME) {
                         popUpTo(startDestination) { inclusive = true }
@@ -333,6 +348,10 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 apps = viewModel.availableApps,
                 // 고른 값이 바로 체크로 보여야 하니 **정해 둔 값**을 씁니다.
                 selected = state.desiredSettings.blockedAppIds,
+                // 체크를 풀어도 완화 대기가 끝나야 실제로 열립니다 — 그 사이에
+                // 무엇이 아직 막혀 있는지 화면에서 알려 줘야 합니다.
+                stillBlocked = state.settings.blockedAppIds,
+                applyOn = state.settingsApplyOn,
                 onToggle = viewModel::toggleBlockedApp,
                 onBack = { navController.popBackStack() },
             )

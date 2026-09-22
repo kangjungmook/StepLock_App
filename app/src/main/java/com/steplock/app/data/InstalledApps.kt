@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import java.util.concurrent.ConcurrentHashMap
 
 /** 기기에 깔려 있고 실행 아이콘이 있는 앱 하나. */
 data class InstalledApp(
@@ -44,14 +45,26 @@ class InstalledAppsRepository(context: Context) {
             .distinctBy { it.packageName }
             .sortedBy { it.label }
             .toList()
+            // 여기서 읽은 이름을 캐시에 넣어 둡니다 — 목록을 한 번 본 뒤에는
+            // 홈·잠금 화면이 이름을 다시 조회하지 않습니다.
+            .onEach { labels[it.packageName] = it.label }
     }
 
-    /** 앱 이름. 지워졌거나 보이지 않는 패키지는 null 입니다. */
-    fun label(packageName: String): String? = runCatching {
-        packageManager.getApplicationLabel(
-            packageManager.getApplicationInfo(packageName, 0),
-        ).toString()
-    }.getOrNull()
+    /**
+     * 앱 이름. 지워졌거나 보이지 않는 패키지는 null 입니다.
+     *
+     * 한 번 읽은 이름은 [labels] 에 남겨 둡니다. [resolve] 가 홈 화면의 상태를
+     * 만들 때마다 불리는데(걸음 수가 올라갈 때마다 포함) 그게 메인 스레드에서
+     * 도는 프로세스 간 호출이라, 캐시가 없으면 걸을 때마다 화면이 끊깁니다.
+     */
+    fun label(packageName: String): String? =
+        labels.getOrPut(packageName) {
+            runCatching {
+                packageManager.getApplicationLabel(
+                    packageManager.getApplicationInfo(packageName, 0),
+                ).toString()
+            }.getOrDefault(NOT_FOUND)
+        }.takeIf { it != NOT_FOUND }
 
     fun icon(packageName: String): Drawable? = runCatching {
         packageManager.getApplicationIcon(packageName)
@@ -68,6 +81,21 @@ class InstalledAppsRepository(context: Context) {
         packageNames
             .map { InstalledApp(it, label(it) ?: it) }
             .sortedBy { it.label }
+
+    private companion object {
+        /**
+         * 패키지 이름 → 앱 이름. 프로세스가 사는 동안 유지합니다 — 앱 이름은
+         * 거의 바뀌지 않고, 바뀌어도 앱을 다시 열면 맞아집니다.
+         *
+         * 여러 곳에서 각자 이 저장소를 만들어 쓰므로(목록·아이콘·잠금 화면)
+         * 캐시는 인스턴스가 아니라 클래스에 둡니다. 배경 스레드에서도 읽으니
+         * 동시 접근이 안전한 맵이어야 합니다.
+         */
+        val labels = ConcurrentHashMap<String, String>()
+
+        /** 캐시는 null 을 담을 수 없어서 "못 찾음"을 값으로 표시합니다. */
+        const val NOT_FOUND = "\u0000"
+    }
 }
 
 /**
