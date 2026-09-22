@@ -292,12 +292,14 @@ https://thcchvmwkgfhqqzponnx.supabase.co/auth/v1/callback
 - Kotlin 2.0 · Jetpack Compose (Material 3) · Navigation Compose
 - Supabase Auth + Postgrest (supabase-kt) · DataStore Preferences · SensorManager ·
   Health Connect · UsageStatsManager · 포그라운드 서비스
+- Google AdMob (배너 · 리워드) + UMP 동의 관리
 - Gradle KTS + 버전 카탈로그 (`gradle/libs.versions.toml`)
 - minSdk 26 / targetSdk 35 · edge-to-edge
 
 ```
 app/src/main/java/com/steplock/app
 ├── MainActivity.kt
+├── ads/             # 동의(UMP) · 리워드 광고 · 배너
 ├── data/            # 모델 · SettingsRepository(DataStore) · AuthRepository · SyncRepository ·
 │                    # StepTracker · SleepRepository · UnlockEvaluator
 ├── navigation/      # Route · StepLockNavHost
@@ -329,6 +331,26 @@ main에 푸시될 때마다 새로 빌드해 같은 주소에 올립니다.
 디버그 키로 서명한 테스트 빌드라 "출처를 알 수 없는 앱" 설치를 허용해야 합니다.
 설치 후 **사용 정보 접근**과 **다른 앱 위에 표시**를 수동으로 켜야 잠금이 동작합니다.
 
+## 광고
+
+수익화가 앱의 목적을 깎아먹지 않도록, **사용자가 무엇을 하는 중인지**로 자리를
+정했습니다. 기준은 [DESIGN.md 7절](DESIGN.md#7-광고-배치-기준-코드)에 있습니다.
+
+| 자리 | 형태 | 조건 |
+| --- | --- | --- |
+| 통계 화면 하단 | 앵커드 어댑티브 배너 | 기록이 하나라도 있을 때만 |
+| 잠금 화면 하단 링크 | 리워드 광고 → 임시 허용 +5분 | 기본 3회를 **다 쓴 뒤에만** |
+
+잠금 화면·집중 타이머·온보딩·홈에는 넣지 않았고, 전면 광고는 아예 쓰지 않습니다.
+참거나 집중하는 중인 화면에 광고를 넣으면 앱이 하려는 일을 스스로 방해합니다.
+
+리워드 광고에는 **상한**이 있습니다 — 기본 3회 + 광고 2회 = 하루 최대 5회.
+무한히 늘릴 수 있으면 광고만 보면서 잠금을 무력화할 수 있습니다.
+
+식별자는 `admob.properties`(gitignore)나 환경변수로 받고, 없으면 **구글 공식 테스트
+ID**로 빌드됩니다([`admob.properties.example`](admob.properties.example)).
+실수로 자기 앱의 실 광고를 눌러 계정이 정지되는 사고를 이 기본값이 막아 줍니다.
+
 ## 출시 준비
 
 Play 스토어에 올리려면 코드 말고도 필요한 게 많아서 따로 정리해 두었습니다.
@@ -346,7 +368,7 @@ AAB 생성까지 준비돼 있습니다. 남은 것은 대부분 콘솔 작업�
 동작하는 것 — 일곱 화면, 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
 25분 집중 세션), 차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분,
 최근 7일 통계, 이메일·소셜 로그인과 비밀번호 재설정 메일, 계정 단위 서버 동기화,
-재부팅 후 감시 서비스 자동 복구, 계정·데이터 삭제.
+재부팅 후 감시 서비스 자동 복구, 계정·데이터 삭제, AdMob 배너·리워드 광고와 UMP 동의.
 
 아직 연결하지 않은 것:
 
