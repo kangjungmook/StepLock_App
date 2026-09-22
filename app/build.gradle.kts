@@ -22,11 +22,16 @@ val hasReleaseSigning = listOf(
 ).all { !it.isNullOrBlank() }
 
 /**
- * AdMob 식별자. 비밀값은 아니지만(APK 안에 그대로 들어갑니다) 계정마다 달라서
- * admob.properties 나 환경변수로 받고, 없으면 **구글 공식 테스트 ID** 로 떨어집니다.
+ * AdMob 식별자.
  *
- * 테스트 ID로 빌드된 앱은 항상 테스트 광고만 띄웁니다. 실수로 실 광고를 직접 눌러
- * 계정이 정지되는 사고가 이 기본값 덕에 일어나지 않습니다.
+ * **디버그 빌드는 언제나 테스트 ID를 씁니다.** 실 ID는 릴리스 빌드에만 들어갑니다.
+ * 자기 앱의 실 광고를 직접 누르면 AdMob 계정이 정지될 수 있는데, 폰에 깔아서
+ * 눌러 보는 건 늘 디버그 APK라서 이렇게 갈라 두면 그 사고가 구조적으로 막힙니다.
+ *
+ * 실 ID는 비밀값이 아닙니다(APK를 열면 그대로 보입니다). 저장소에 두지 않는 이유는
+ * 계정마다 다르고, 남이 받아 빌드했을 때 내 계정으로 노출이 집계되면 안 되기
+ * 때문입니다. admob.properties(로컬) 또는 환경변수(CI)로 받습니다.
+ *
  * https://developers.google.com/admob/android/test-ads
  */
 val admobProperties = Properties().apply {
@@ -34,16 +39,23 @@ val admobProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-fun admobId(key: String, env: String, testId: String): String =
+// 구글이 공개해 둔 테스트 ID. AdMob 계정이 없어도 동작하고, 항상 테스트 광고만 나옵니다.
+val testAdmobAppId = "ca-app-pub-3940256099942544~3347511713"
+val testAdmobRewarded = "ca-app-pub-3940256099942544/5224354917"
+val testAdmobBanner = "ca-app-pub-3940256099942544/6300978111"
+
+fun admobId(key: String, env: String): String? =
     admobProperties.getProperty(key)?.takeIf { it.isNotBlank() }
         ?: System.getenv(env)?.takeIf { it.isNotBlank() }
-        ?: testId
 
-val admobAppId = admobId("appId", "STEPLOCK_ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
-val admobRewardedUnit =
-    admobId("rewardedUnitId", "STEPLOCK_ADMOB_REWARDED", "ca-app-pub-3940256099942544/5224354917")
-val admobBannerUnit =
-    admobId("bannerUnitId", "STEPLOCK_ADMOB_BANNER", "ca-app-pub-3940256099942544/6300978111")
+val realAdmobAppId = admobId("appId", "STEPLOCK_ADMOB_APP_ID")
+val realAdmobRewarded = admobId("rewardedUnitId", "STEPLOCK_ADMOB_REWARDED")
+val realAdmobBanner = admobId("bannerUnitId", "STEPLOCK_ADMOB_BANNER")
+
+// 셋 중 하나라도 비어 있으면 릴리스도 테스트 ID로 빌드합니다 — 앱 ID만 실물이고
+// 광고 단위는 테스트인 뒤섞인 빌드가 나오면 원인을 찾기 어렵습니다.
+val hasRealAdmobIds = listOf(realAdmobAppId, realAdmobRewarded, realAdmobBanner)
+    .all { !it.isNullOrBlank() }
 
 plugins {
     alias(libs.plugins.android.application)
@@ -74,18 +86,15 @@ android {
                 "qceCUQgCg8uTKXaF1YtZ8DJtPIdQ-S2a5t4chQJrFPY\"",
         )
 
-        // 앱 ID는 매니페스트 meta-data 로만 읽히므로 플레이스홀더로 넣습니다.
+        // 기본값은 테스트 ID입니다. 릴리스에서만 아래 buildTypes 가 덮어씁니다.
+        // 앱 ID는 매니페스트 meta-data 로만 읽히므로 플레이스홀더로 넣습니다 —
         // 이 값이 비면 앱이 실행 즉시 죽습니다(AdMob SDK가 던집니다).
-        manifestPlaceholders["admobAppId"] = admobAppId
-        buildConfigField("String", "ADMOB_REWARDED_UNIT", "\"$admobRewardedUnit\"")
-        buildConfigField("String", "ADMOB_BANNER_UNIT", "\"$admobBannerUnit\"")
+        manifestPlaceholders["admobAppId"] = testAdmobAppId
+        buildConfigField("String", "ADMOB_REWARDED_UNIT", "\"$testAdmobRewarded\"")
+        buildConfigField("String", "ADMOB_BANNER_UNIT", "\"$testAdmobBanner\"")
         // 테스트 ID로 빌드됐는지 앱이 알 수 있게 해 둡니다 —
         // 설정 화면에서 "테스트 광고" 라고 밝히는 데 씁니다.
-        buildConfigField(
-            "boolean",
-            "ADMOB_TEST_IDS",
-            (admobAppId.startsWith("ca-app-pub-3940256099942544")).toString(),
-        )
+        buildConfigField("boolean", "ADMOB_TEST_IDS", "true")
     }
 
     signingConfigs {
@@ -110,6 +119,15 @@ android {
             // 서명 정보가 없으면 서명하지 않은 릴리스로 빌드합니다 —
             // R8 규칙이 맞는지 CI에서 확인하는 데는 서명이 필요 없습니다.
             signingConfig = signingConfigs.findByName("release")
+
+            // 실 광고는 여기에만 들어갑니다. ID가 없으면 defaultConfig 의
+            // 테스트 ID가 그대로 남아 릴리스도 안전하게 빌드됩니다.
+            if (hasRealAdmobIds) {
+                manifestPlaceholders["admobAppId"] = realAdmobAppId!!
+                buildConfigField("String", "ADMOB_REWARDED_UNIT", "\"$realAdmobRewarded\"")
+                buildConfigField("String", "ADMOB_BANNER_UNIT", "\"$realAdmobBanner\"")
+                buildConfigField("boolean", "ADMOB_TEST_IDS", "false")
+            }
         }
     }
 

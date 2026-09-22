@@ -21,6 +21,16 @@ jobs:
       STEPLOCK_STORE_PASSWORD: ${{ secrets.STEPLOCK_STORE_PASSWORD }}
       STEPLOCK_KEY_ALIAS: ${{ secrets.STEPLOCK_KEY_ALIAS }}
       STEPLOCK_KEY_PASSWORD: ${{ secrets.STEPLOCK_KEY_PASSWORD }}
+      # AdMob ID. 비밀값이 아니라(APK 안에 그대로 들어갑니다) Secrets 가 아닌
+      # Variables 로 둡니다 — 값을 다시 열어 확인할 수 있어야 오타를 잡습니다.
+      # Settings → Secrets and variables → Actions → Variables 탭에서 넣으세요.
+      #
+      # 비어 있으면 app/build.gradle.kts 가 구글 테스트 ID로 떨어집니다.
+      # 값이 있어도 **릴리스(AAB)에만** 들어가고, 폰에 깔는 디버그 APK 는
+      # 언제나 테스트 광고입니다.
+      STEPLOCK_ADMOB_APP_ID: ${{ vars.STEPLOCK_ADMOB_APP_ID }}
+      STEPLOCK_ADMOB_REWARDED: ${{ vars.STEPLOCK_ADMOB_REWARDED }}
+      STEPLOCK_ADMOB_BANNER: ${{ vars.STEPLOCK_ADMOB_BANNER }}
     steps:
       - uses: actions/checkout@v4
 
@@ -76,6 +86,22 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "STEPLOCK_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      # 실 광고로 빌드됐는지 로그에서 바로 확인할 수 있게 합니다. 오타로 변수가
+      # 안 읽히면 조용히 테스트 광고로 출시되는데, 그게 제일 찾기 어려운 실수입니다.
+      - name: 릴리스가 어느 광고 ID로 빌드되는지
+        run: |
+          if [ -n "$STEPLOCK_ADMOB_APP_ID" ] \
+            && [ -n "$STEPLOCK_ADMOB_REWARDED" ] \
+            && [ -n "$STEPLOCK_ADMOB_BANNER" ]; then
+            echo "릴리스(AAB): 실 AdMob ID — 앱 ID $STEPLOCK_ADMOB_APP_ID"
+          else
+            echo "릴리스(AAB): 구글 테스트 ID — Variables 가 비어 있습니다"
+            echo "  APP_ID  설정됨? $([ -n "$STEPLOCK_ADMOB_APP_ID" ] && echo 예 || echo 아니요)"
+            echo "  REWARDED 설정됨? $([ -n "$STEPLOCK_ADMOB_REWARDED" ] && echo 예 || echo 아니요)"
+            echo "  BANNER  설정됨? $([ -n "$STEPLOCK_ADMOB_BANNER" ] && echo 예 || echo 아니요)"
+          fi
+          echo "디버그 APK 는 설정과 무관하게 언제나 테스트 광고입니다."
 
       - name: bundleRelease (AAB · R8 규칙 검증)
         run: |

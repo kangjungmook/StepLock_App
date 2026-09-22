@@ -347,9 +347,16 @@ main에 푸시될 때마다 새로 빌드해 같은 주소에 올립니다.
 리워드 광고에는 **상한**이 있습니다 — 기본 3회 + 광고 2회 = 하루 최대 5회.
 무한히 늘릴 수 있으면 광고만 보면서 잠금을 무력화할 수 있습니다.
 
-식별자는 `admob.properties`(gitignore)나 환경변수로 받고, 없으면 **구글 공식 테스트
-ID**로 빌드됩니다([`admob.properties.example`](admob.properties.example)).
-실수로 자기 앱의 실 광고를 눌러 계정이 정지되는 사고를 이 기본값이 막아 줍니다.
+식별자는 빌드 타입으로 갈라 둡니다.
+
+| 빌드 | 광고 ID |
+| --- | --- |
+| 디버그 APK | **언제나 구글 공식 테스트 ID** — 설정과 무관합니다 |
+| 릴리스 AAB | `admob.properties`(gitignore)나 환경변수의 실 ID. 하나라도 비면 테스트 ID |
+
+폰에 깔아서 눌러 보는 건 늘 디버그 APK라서, 자기 앱의 실 광고를 눌러 AdMob 계정이
+정지되는 사고가 이 구분 덕에 **구조적으로** 막힙니다. 설정 방법은
+[`admob.properties.example`](admob.properties.example)에 있습니다.
 
 ## 출시 준비
 
