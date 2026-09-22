@@ -4,10 +4,9 @@ layout: default
 
 # 스텝락 계정 및 데이터 삭제 안내
 
-최종 수정일: 2026년 9월 21일
+최종 수정일: 2026년 9월 22일
 
-> **연락처:** `여기에 연락받을 이메일을 적어 주세요`
-> (Play 스토어 등록 전에 반드시 채워야 합니다.)
+> **연락처:** <kangjungmook882@gmail.com>
 
 이 페이지는 Google Play의 [앱 계정 삭제 요건](https://support.google.com/googleplay/android-developer/answer/13327111)에
 따라 제공됩니다. 스텝락 계정과 데이터를 지우는 두 가지 방법을 안내합니다.
