@@ -1,6 +1,5 @@
 package com.steplock.app.navigation
 
-import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -32,8 +31,10 @@ import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.service.PomodoroService
 import com.steplock.app.system.AppPermissions
+import com.steplock.app.system.PermissionGroup
 import com.steplock.app.system.PermissionStep
 import com.steplock.app.system.nextPermissionStep
+import com.steplock.app.system.permissionStates
 import com.steplock.app.ui.StepLockUiState
 import com.steplock.app.ui.StepLockViewModel
 import com.steplock.app.ui.components.NavTab
@@ -131,34 +132,35 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
 
         composable(Route.ONBOARDING) {
             val context = LocalContext.current
-            var step by remember { mutableStateOf(nextPermissionStep(context)) }
+            // 설정 화면에 나갔다 돌아오면 다시 확인해야 체크가 붙습니다.
+            var granted by remember { mutableStateOf(permissionStates(context)) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-                step = nextPermissionStep(context)
+                granted = permissionStates(context)
             }
-            val activityRecognitionRequest = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission(),
-            ) { step = nextPermissionStep(context) }
+            // 걸음 수와 알림은 런타임 권한이라 **대화상자 하나로 함께** 물을 수 있습니다.
+            val runtimeRequest = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions(),
+            ) { granted = permissionStates(context) }
 
             OnboardingScreen(
-                ctaText = stringResource(step.ctaRes),
-                onCtaClick = {
-                    when (step) {
-                        PermissionStep.ActivityRecognition ->
-                            activityRecognitionRequest.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                permissions = PermissionGroup.entries.map { it to (granted[it] == true) },
+                onPermissionClick = { group ->
+                    when (group) {
+                        PermissionGroup.Runtime ->
+                            runtimeRequest.launch(AppPermissions.runtimePermissions())
 
-                        PermissionStep.UsageAccess ->
+                        PermissionGroup.UsageAccess ->
                             context.startActivity(AppPermissions.usageAccessSettings())
 
-                        PermissionStep.Overlay ->
+                        PermissionGroup.Overlay ->
                             context.startActivity(AppPermissions.overlaySettings(context))
-
-                        PermissionStep.Ready -> {
-                            AppWatchService.start(context)
-                            viewModel.completeOnboarding()
-                            navController.navigate(Route.HOME) {
-                                popUpTo(startDestination) { inclusive = true }
-                            }
-                        }
+                    }
+                },
+                onStart = {
+                    AppWatchService.start(context)
+                    viewModel.completeOnboarding()
+                    navController.navigate(Route.HOME) {
+                        popUpTo(startDestination) { inclusive = true }
                     }
                 },
             )
