@@ -12,6 +12,7 @@ import com.steplock.app.data.AuthRepository
 import com.steplock.app.data.AuthState
 import com.steplock.app.data.BlockedAppCatalog
 import com.steplock.app.data.DailyStat
+import com.steplock.app.data.HISTORY_DAYS
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
@@ -35,6 +36,11 @@ data class StepLockUiState(
     val today: DailyStat,
     /** 오늘까지 7일, 기록이 없는 날은 0으로 채웁니다. */
     val weekly: List<DailyStat>,
+    /**
+     * 오늘까지 30일. DataStore가 보관하는 기간과 같습니다 — 통계 화면에서
+     * 기간을 바꿀 때 다시 읽지 않아도 되게 한 번에 올려 보냅니다.
+     */
+    val monthly: List<DailyStat>,
     val onboardingCompleted: Boolean,
     val authState: AuthState,
     /** 연속 달성 일수 — 오늘이 아직 미달이면 어제까지로 셉니다. */
@@ -113,7 +119,8 @@ class StepLockViewModel(
             StepLockUiState(
                 settings = prefs.settings,
                 today = today,
-                weekly = lastSevenDays(prefs.history, today),
+                weekly = lastDays(7, prefs.history, today),
+                monthly = lastDays(HISTORY_DAYS, prefs.history, today),
                 onboardingCompleted = prefs.onboardingCompleted,
                 authState = prefs.authState,
                 streak = StreakCalculator.current(withToday, prefs.settings, today.date),
@@ -383,9 +390,10 @@ class StepLockViewModel(
         viewModelScope.launch { repository.updateSettings(transform) }
     }
 
-    private fun lastSevenDays(history: List<DailyStat>, today: DailyStat): List<DailyStat> {
+    /** 오늘로 끝나는 [days] 일치를 오래된 날부터 돌려줍니다. 빈 날은 0으로 채웁니다. */
+    private fun lastDays(days: Int, history: List<DailyStat>, today: DailyStat): List<DailyStat> {
         val byDate = history.associateBy { it.date } + (today.date to today)
-        return (6L downTo 0L).map { offset ->
+        return ((days - 1).toLong() downTo 0L).map { offset ->
             val date = today.date.minusDays(offset)
             byDate[date] ?: DailyStat(
                 deviceUuid = today.deviceUuid,

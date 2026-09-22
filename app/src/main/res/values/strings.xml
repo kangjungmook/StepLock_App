@@ -111,12 +111,34 @@
 
     <!-- 통계 -->
     <string name="stats_title">통계</string>
-    <string name="stats_section_steps">최근 7일 걸음 수</string>
-    <string name="stats_section_conditions">조건 달성</string>
-    <string name="stats_steps_summary">점선은 목표 %1$s보 · 일 평균 %2$s보</string>
+    <string name="stats_section_steps">걸음 수</string>
+    <string name="stats_section_conditions">조건별 기록</string>
+    <string name="stats_steps_summary">점선은 목표 %1$s보</string>
     <string name="stats_today_steps">오늘 %1$s보</string>
-    <string name="stats_achieved_days">7일 중 %1$d일 달성</string>
     <string name="stats_section_streak">연속 달성</string>
+
+    <!-- 기간 전환. 보는 범위만 바꾸는 것이라 화면 이동이 아닙니다 -->
+    <string name="stats_period_week">7일</string>
+    <string name="stats_period_month">30일</string>
+    <string name="stats_period_label">기간 선택</string>
+
+    <!-- 걸음 수 요약 3칸 -->
+    <string name="stats_figure_average">일평균</string>
+    <string name="stats_figure_best">최고</string>
+    <string name="stats_figure_goal_rate">목표 달성</string>
+    <string name="stats_percent">%1$d%%</string>
+
+    <!--
+      조건별 한 줄. 평균으로 "요즘 어느 정도인지"를, 달성률로 "목표가 맞는지"를
+      보여 줍니다. 달성 일수만 있으면 기간이 바뀔 때 비교가 안 됩니다.
+    -->
+    <string name="stats_record_days">%1$d일 중 %2$d일</string>
+    <string name="stats_avg_steps">일평균 %1$s보</string>
+    <string name="stats_avg_sleep">일평균 %1$s</string>
+    <string name="stats_avg_sessions">일평균 %1$s세션</string>
+    <!-- 꺼 둔 조건도 기록은 보여 줍니다. 다만 잠금에 쓰이지 않는다고 밝혀야
+         100%인데 왜 안 열리냐는 오해가 생기지 않습니다 -->
+    <string name="stats_condition_off">%1$s · 꺼짐</string>
     <!-- 아직 아무 기록도 없는 새 설치 상태 -->
     <string name="stats_empty_title">아직 기록이 없어요</string>
     <string name="stats_empty_desc">하루를 보내면 걸음 수와 달성 현황이 여기에 쌓입니다</string>

@@ -221,6 +221,7 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.recordToday() }
             StatsScreen(
                 weekly = state.weekly,
+                monthly = state.monthly,
                 settings = state.settings,
                 streak = state.streak,
                 longestStreak = state.longestStreak,

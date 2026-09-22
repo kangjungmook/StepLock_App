@@ -23,7 +23,8 @@ private val Context.stepLockStore: DataStore<Preferences> by preferencesDataStor
 /** 걸음 센서는 부팅 이후 누적값을 주므로, 날짜별 기준점을 따로 보관합니다. */
 data class StepBaseline(val date: LocalDate, val counter: Long)
 
-private const val HISTORY_DAYS = 30
+/** 기기에 보관하는 일별 기록의 길이. 통계 화면이 고를 수 있는 최대 기간이기도 합니다. */
+const val HISTORY_DAYS = 30
 
 private fun encodeDay(stat: DailyStat): String =
     "${stat.date}|${stat.steps}|${stat.sleepMinutes}|${stat.pomodoroSessions}"
