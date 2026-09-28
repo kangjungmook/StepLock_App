@@ -227,9 +227,6 @@ private fun StepLockNavGraph(
                 },
                 // 홈의 "잠글 앱" 은 설정을 거치지 않고 바로 고르는 화면으로 갑니다.
                 onManageLocks = { navController.navigate(Route.APP_PICKER) },
-                // 예전에는 잠금 화면 미리보기를 띄웠는데, 거기서 "5분 허용"을 눌러도
-                // 아무것도 허용되지 않아 속이는 화면이 됐습니다. 관리 화면으로 보냅니다.
-                onAppClick = { navController.navigate(Route.APP_PICKER) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
                 streak = state.streak,
                 focusing = state.focusing,

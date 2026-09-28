@@ -40,10 +40,32 @@ fun formatCountdown(remainingMs: Long): String {
     return "%02d:%02d".format(Locale.KOREA, totalSeconds / 60, totalSeconds % 60)
 }
 
-/** 받침 유무에 따라 은/는을 붙입니다. "쇼츠는", "틱톡은". */
+/**
+ * 받침 유무에 따라 은/는을 붙입니다. "유튜브는", "틱톡은".
+ *
+ * 잠글 앱을 사용자가 고르게 되면서 영문 이름("Instagram")도 들어옵니다. 영문은
+ * 받침을 글자로 알 수 없어 **소리로 받침이 되는 끝소리**만 추려 봅니다 —
+ * Instagram·TikTok·Reddit 은 "은", YouTube·Netflix·Discord 는 "는".
+ * "-st"(Pinterest → 핀터레스트)처럼 모음이 붙어 읽히는 끝은 "는"으로 둡니다.
+ * 완벽할 수는 없고, 틀리더라도 "는" 쪽으로 틀리게 해 둡니다.
+ */
 fun withTopicParticle(word: String): String {
-    val last = word.lastOrNull() ?: return word
-    val isHangulSyllable = last.code in 0xAC00..0xD7A3
-    val hasFinalConsonant = isHangulSyllable && (last.code - 0xAC00) % 28 != 0
-    return word + if (hasFinalConsonant) "은" else "는"
+    val trimmed = word.trimEnd()
+    val last = trimmed.lastOrNull() ?: return word
+    val hasFinalConsonant = when {
+        last.code in 0xAC00..0xD7A3 -> (last.code - 0xAC00) % 28 != 0
+        last in 'A'..'Z' || last in 'a'..'z' -> {
+            val lower = trimmed.lowercase()
+            when {
+                lower.endsWith("st") -> false
+                lower.endsWith("ng") -> true
+                else -> lower.last() in LATIN_FINAL_CONSONANTS
+            }
+        }
+        else -> false
+    }
+    return trimmed + if (hasFinalConsonant) "은" else "는"
 }
+
+/** 한국어로 읽을 때 받침이 되는 영문 끝소리. */
+private const val LATIN_FINAL_CONSONANTS = "bklmnpt"

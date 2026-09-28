@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -32,7 +31,7 @@ import com.steplock.app.ads.findActivity
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.SampleData
-import com.steplock.app.ui.components.ConditionSettingCard
+import com.steplock.app.ui.components.ConditionSettingRow
 import com.steplock.app.ui.components.IconTapTarget
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
@@ -129,82 +128,76 @@ fun SettingsScreen(
                 PendingRelaxNotice(applyOn = settingsApplyOn)
             }
 
-            Column {
-                SectionLabel(
-                    text = stringResource(R.string.settings_section_account),
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                AccountRow(
-                    accountEmail = accountEmail,
-                    onSignIn = onSignIn,
-                    onSignOut = onSignOut,
-                )
-                // 되돌릴 수 없는 동작이라 계정 줄과 떼어 놓고 눈에 덜 띄게 둡니다.
-                if (accountEmail != null) {
-                    TextLink(
-                        text = stringResource(R.string.settings_account_delete),
-                        onClick = onDeleteAccount,
-                        style = SlText.LinkSm,
-                        color = SlColor.TextSecondary,
-                        underline = false,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
-            }
-
             val stepsTitle = stringResource(R.string.condition_steps)
+            val enabledCount = listOf(
+                settings.stepsEnabled,
+                settings.sleepEnabled,
+                settings.pomodoroEnabled,
+            ).count { it }
             val sleepTitle = stringResource(R.string.condition_sleep)
             val pomodoroTitle = stringResource(R.string.condition_pomodoro)
             val stepsGoalLabel = stringResource(R.string.settings_steps_goal)
             val sleepGoalName = stringResource(R.string.settings_sleep_goal)
             val pomodoroGoalName = stringResource(R.string.settings_pomodoro_goal)
 
-            ConditionSettingCard(
-                icon = SlIcons.Steps,
-                title = stepsTitle,
-                enabled = settings.stepsEnabled,
-                onEnabledChange = onStepsEnabledChange,
-                toggleLabel = stringResource(R.string.settings_condition_toggle, stepsTitle),
-                goalLabel = stepsGoalLabel,
-                goalValue = stringResource(R.string.unit_steps, settings.stepGoal.formatThousands()),
-                decreaseLabel = stringResource(R.string.settings_goal_decrease, stepsGoalLabel),
-                increaseLabel = stringResource(R.string.settings_goal_increase, stepsGoalLabel),
-                onDecrease = { onStepGoalChange(-500) },
-                onIncrease = { onStepGoalChange(500) },
-            )
-
-            ConditionSettingCard(
-                icon = SlIcons.Moon,
-                title = sleepTitle,
-                enabled = settings.sleepEnabled,
-                onEnabledChange = onSleepEnabledChange,
-                toggleLabel = stringResource(R.string.settings_condition_toggle, sleepTitle),
-                goalLabel = sleepGoalName,
-                goalValue = sleepGoalLabel(settings.sleepGoalHours),
-                decreaseLabel = stringResource(R.string.settings_goal_decrease, sleepGoalName),
-                increaseLabel = stringResource(R.string.settings_goal_increase, sleepGoalName),
-                onDecrease = { onSleepGoalChange(-0.5f) },
-                onIncrease = { onSleepGoalChange(0.5f) },
-            )
-
-            ConditionSettingCard(
-                icon = SlIcons.Timer,
-                title = pomodoroTitle,
-                enabled = settings.pomodoroEnabled,
-                onEnabledChange = onPomodoroEnabledChange,
-                toggleLabel = stringResource(R.string.settings_condition_toggle, pomodoroTitle),
-                goalLabel = pomodoroGoalName,
-                goalValue = stringResource(R.string.unit_sessions, settings.pomodoroGoal),
-                decreaseLabel = stringResource(R.string.settings_goal_decrease, pomodoroGoalName),
-                increaseLabel = stringResource(R.string.settings_goal_increase, pomodoroGoalName),
-                onDecrease = { onPomodoroGoalChange(-1) },
-                onIncrease = { onPomodoroGoalChange(1) },
-            )
-
-            StrictModeRow(
-                enabled = settings.requireAllConditions,
-                onEnabledChange = onRequireAllChange,
-            )
+            Column {
+                SectionLabel(
+                    text = stringResource(R.string.settings_section_conditions),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                // 조건 셋은 같은 종류라 한 패널 안에서 구분선으로만 나눕니다.
+                SlPanel {
+                    ConditionSettingRow(
+                        icon = SlIcons.Steps,
+                        title = stepsTitle,
+                        enabled = settings.stepsEnabled,
+                        onEnabledChange = onStepsEnabledChange,
+                        toggleLabel = stringResource(R.string.settings_condition_toggle, stepsTitle),
+                        goalLabel = stepsGoalLabel,
+                        goalValue = stringResource(R.string.unit_steps, settings.stepGoal.formatThousands()),
+                        decreaseLabel = stringResource(R.string.settings_goal_decrease, stepsGoalLabel),
+                        increaseLabel = stringResource(R.string.settings_goal_increase, stepsGoalLabel),
+                        onDecrease = { onStepGoalChange(-500) },
+                        onIncrease = { onStepGoalChange(500) },
+                    )
+                    SlDivider()
+                    ConditionSettingRow(
+                        icon = SlIcons.Moon,
+                        title = sleepTitle,
+                        enabled = settings.sleepEnabled,
+                        onEnabledChange = onSleepEnabledChange,
+                        toggleLabel = stringResource(R.string.settings_condition_toggle, sleepTitle),
+                        goalLabel = sleepGoalName,
+                        goalValue = sleepGoalLabel(settings.sleepGoalHours),
+                        decreaseLabel = stringResource(R.string.settings_goal_decrease, sleepGoalName),
+                        increaseLabel = stringResource(R.string.settings_goal_increase, sleepGoalName),
+                        onDecrease = { onSleepGoalChange(-0.5f) },
+                        onIncrease = { onSleepGoalChange(0.5f) },
+                    )
+                    SlDivider()
+                    ConditionSettingRow(
+                        icon = SlIcons.Timer,
+                        title = pomodoroTitle,
+                        enabled = settings.pomodoroEnabled,
+                        onEnabledChange = onPomodoroEnabledChange,
+                        toggleLabel = stringResource(R.string.settings_condition_toggle, pomodoroTitle),
+                        goalLabel = pomodoroGoalName,
+                        goalValue = stringResource(R.string.unit_sessions, settings.pomodoroGoal),
+                        decreaseLabel = stringResource(R.string.settings_goal_decrease, pomodoroGoalName),
+                        increaseLabel = stringResource(R.string.settings_goal_increase, pomodoroGoalName),
+                        onDecrease = { onPomodoroGoalChange(-1) },
+                        onIncrease = { onPomodoroGoalChange(1) },
+                    )
+                    // 조건이 둘 이상 켜져 있을 때만 의미가 있는 스위치라 그때만 보입니다.
+                    if (enabledCount >= 2) {
+                        SlDivider()
+                        StrictModeRow(
+                            enabled = settings.requireAllConditions,
+                            onEnabledChange = onRequireAllChange,
+                        )
+                    }
+                }
+            }
 
             Column {
                 SectionLabel(
@@ -233,6 +226,29 @@ fun SettingsScreen(
                 selected = settings.relaxDelay,
                 onSelect = onRelaxDelayChange,
             )
+
+            Column {
+                SectionLabel(
+                    text = stringResource(R.string.settings_section_account),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+                )
+                AccountRow(
+                    accountEmail = accountEmail,
+                    onSignIn = onSignIn,
+                    onSignOut = onSignOut,
+                )
+                // 되돌릴 수 없는 동작이라 계정 줄과 떼어 놓고 눈에 덜 띄게 둡니다.
+                if (accountEmail != null) {
+                    TextLink(
+                        text = stringResource(R.string.settings_account_delete),
+                        onClick = onDeleteAccount,
+                        style = SlText.LinkSm,
+                        color = SlColor.TextSecondary,
+                        underline = false,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
 
             AdsSection()
 
@@ -402,9 +418,9 @@ private fun AdsSection() {
 
 @Composable
 private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+    // 다른 섹션과 같은 표면을 씁니다. 계정 줄만 회색 판이면 눌러야 할 것처럼
+    // 도드라지는데, 이 화면의 주인공은 잠금 조건입니다.
     SlPanel(
-        containerColor = SlColor.SurfaceAlt,
-        borderColor = Color.Transparent,
         contentPadding = PaddingValues(
             start = SlDimen.PanelPadding,
             top = 8.dp,
@@ -437,21 +453,16 @@ private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: (
 
 @Composable
 private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
-    SlPanel(
-        containerColor = SlColor.SurfaceAlt,
-        borderColor = Color.Transparent,
-        contentPadding = PaddingValues(SlDimen.PanelPadding),
+    SlDetailRow(
+        title = stringResource(R.string.settings_strict_title),
+        description = stringResource(R.string.settings_strict_desc),
+        modifier = Modifier.padding(vertical = 16.dp),
     ) {
-        SlDetailRow(
-            title = stringResource(R.string.settings_strict_title),
-            description = stringResource(R.string.settings_strict_desc),
-        ) {
-            SlSwitch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                contentDescription = stringResource(R.string.settings_strict_title),
-            )
-        }
+        SlSwitch(
+            checked = enabled,
+            onCheckedChange = onEnabledChange,
+            contentDescription = stringResource(R.string.settings_strict_title),
+        )
     }
 }
 

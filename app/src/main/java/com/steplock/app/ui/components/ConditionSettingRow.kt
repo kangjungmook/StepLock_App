@@ -26,9 +26,16 @@ import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 
-/** 조건 카드 — 아이콘 + 제목 + 스위치, 구분선 아래 목표값 스테퍼. */
+/**
+ * 조건 한 줄 — 아이콘 + 제목 + 스위치, 켜져 있으면 아래에 목표값 스테퍼.
+ *
+ * 예전에는 조건마다 카드를 따로 두어서 설정 화면에 카드가 일곱 장 쌓였습니다.
+ * 같은 종류의 항목 셋은 **패널 하나 안에서 구분선으로** 나누고, 섹션 사이는
+ * 여백으로 나눕니다. 꺼진 조건의 목표값은 숨깁니다 — 쓰지 않는 조건의 스테퍼가
+ * 보이면 켜 둔 것처럼 읽히고, 화면 길이만 늘어납니다.
+ */
 @Composable
-fun ConditionSettingCard(
+fun ConditionSettingRow(
     icon: ImageVector,
     title: String,
     enabled: Boolean,
@@ -42,23 +49,17 @@ fun ConditionSettingCard(
     onIncrease: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(SlDimen.RadiusCard)
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(SlColor.Surface)
-            .border(1.dp, SlColor.Border, shape)
-            .padding(SlDimen.PanelPadding),
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 16.dp)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconTile(
                 icon = icon,
-                tint = SlColor.BrandDeep,
-                background = SlColor.SurfaceAlt,
+                // 꺼진 조건은 아이콘도 한 단계 가라앉힙니다 — 스위치만 보고
+                // 판단하지 않아도 무엇이 켜져 있는지 훑어 읽힙니다.
+                tint = if (enabled) SlColor.BrandDeep else SlColor.TextTertiary,
+                background = if (enabled) SlColor.BrandTintAlt else SlColor.SurfaceAlt,
                 size = 40.dp,
                 shape = RoundedCornerShape(SlDimen.RadiusBadge),
                 iconSize = 20.dp,
@@ -66,7 +67,7 @@ fun ConditionSettingCard(
             Text(
                 text = title,
                 style = SlText.RowTitle,
-                color = SlColor.TextPrimary,
+                color = if (enabled) SlColor.TextPrimary else SlColor.TextSecondary,
                 modifier = Modifier.weight(1f),
             )
             SlSwitch(
@@ -75,15 +76,18 @@ fun ConditionSettingCard(
                 contentDescription = toggleLabel,
             )
         }
-        SlDivider(modifier = Modifier.padding(vertical = 16.dp))
-        GoalStepper(
-            label = goalLabel,
-            value = goalValue,
-            decreaseLabel = decreaseLabel,
-            increaseLabel = increaseLabel,
-            onDecrease = onDecrease,
-            onIncrease = onIncrease,
-        )
+        if (enabled) {
+            GoalStepper(
+                label = goalLabel,
+                value = goalValue,
+                decreaseLabel = decreaseLabel,
+                increaseLabel = increaseLabel,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                // 아이콘 폭(40) + 간격(14)만큼 들여 제목과 같은 선에서 시작합니다.
+                modifier = Modifier.padding(start = 54.dp, top = 12.dp),
+            )
+        }
     }
 }
 

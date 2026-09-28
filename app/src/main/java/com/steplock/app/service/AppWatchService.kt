@@ -66,6 +66,10 @@ class AppWatchService : Service() {
             .stateIn(scope, SharingStarted.Eagerly, 0)
         var lastSleepRefreshAt = 0L
         var lastRecordAt = 0L
+        // 이 서비스가 **잠긴 상태를 본 적이 있는지**. 서비스가 막 떠서 처음 본 게
+        // 이미 열린 상태면 알리지 않습니다 — 재시작할 때마다 "열렸어요"가 뜨면 안 됩니다.
+        var sawLocked = false
+        var sawLockedOn: LocalDate? = null
 
         while (currentCoroutineContext().isActive) {
             val current = preferences.value
@@ -96,6 +100,21 @@ class AppWatchService : Service() {
             if (now - lastRecordAt > RECORD_INTERVAL_MS) {
                 lastRecordAt = now
                 repository.recordDay(stat)
+            }
+
+            // 잠김 → 열림으로 바뀐 순간 한 번 알립니다. 걸음 목표를 채웠는지 알려고
+            // 앱을 열어 볼 필요가 없게 합니다. 날짜가 바뀌면 다시 셉니다.
+            val unlockedNow = current.settings.blockedAppIds.isNotEmpty() &&
+                UnlockEvaluator.isUnlocked(current.settings, stat)
+            if (sawLockedOn != stat.date) {
+                sawLocked = false
+                sawLockedOn = stat.date
+            }
+            if (!unlockedNow) {
+                sawLocked = true
+            } else if (sawLocked) {
+                sawLocked = false
+                notifyUnlocked()
             }
 
             // 고른 앱의 패키지 이름을 그대로 비교합니다. 예전에는 코드에 박아 둔
@@ -141,6 +160,33 @@ class AppWatchService : Service() {
         return packageName
     }
 
+    private fun notifyUnlocked() {
+        val manager = getSystemService(NotificationManager::class.java) ?: return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                UNLOCK_CHANNEL_ID,
+                getString(R.string.unlock_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+        )
+        val openApp = PendingIntent.getActivity(
+            this,
+            1,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        manager.notify(
+            UNLOCK_NOTIFICATION_ID,
+            Notification.Builder(this, UNLOCK_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_steplock)
+                .setContentTitle(getString(R.string.unlock_notification_title))
+                .setContentText(getString(R.string.unlock_notification_text))
+                .setContentIntent(openApp)
+                .setAutoCancel(true)
+                .build(),
+        )
+    }
+
     private fun startWatchNotification() {
         val manager = getSystemService(NotificationManager::class.java)
         manager?.createNotificationChannel(
@@ -180,6 +226,8 @@ class AppWatchService : Service() {
     companion object {
         private const val CHANNEL_ID = "steplock_watch"
         private const val NOTIFICATION_ID = 21
+        private const val UNLOCK_CHANNEL_ID = "steplock_unlocked"
+        private const val UNLOCK_NOTIFICATION_ID = 22
         private const val POLL_INTERVAL_MS = 1_000L
         private const val EVENT_WINDOW_MS = 10_000L
         private const val SLEEP_REFRESH_MS = 10 * 60_000L

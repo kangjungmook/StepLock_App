@@ -129,25 +129,10 @@ fun StatsScreen(
                 return@Column
             }
 
+            // 연속 달성은 이 화면에서 가장 동기를 주는 숫자라 카드 안의 작은 글씨가
+            // 아니라 제목처럼 크게 둡니다. 카드 하나를 덜어 내 화면도 가벼워집니다.
             Spacer(Modifier.height(28.dp))
-            SectionLabel(stringResource(R.string.stats_section_streak))
-            Spacer(Modifier.height(12.dp))
-            SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    StreakFigure(
-                        label = stringResource(R.string.stats_streak_current),
-                        days = streak,
-                        highlight = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    StreakFigure(
-                        label = stringResource(R.string.stats_streak_longest),
-                        days = longestStreak,
-                        highlight = false,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            StreakHero(streak = streak, longest = longestStreak)
 
             Spacer(Modifier.height(28.dp))
             SectionLabel(stringResource(R.string.stats_section_steps))
@@ -367,23 +352,28 @@ private fun StatFigure(label: String, value: String, modifier: Modifier = Modifi
  * 라벨과 숫자를 한 줄에 둡니다. 두 줄로 쌓으면 아래 차트와 조건 목록이
  * 화면 밖으로 밀려서, 요약인데 자리를 제일 많이 차지하게 됩니다.
  */
+/** 지금 연속 일수를 크게, 최장 기록은 그 아래 한 줄로. */
 @Composable
-private fun StreakFigure(
-    label: String,
-    days: Int,
-    highlight: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
+private fun StreakHero(streak: Int, longest: Int) {
+    Column {
         Text(
-            text = stringResource(R.string.stats_streak_days, days),
-            style = SlText.StatusTitle,
-            color = if (highlight) SlColor.Brand else SlColor.TextPrimary,
+            text = if (streak > 0) {
+                stringResource(R.string.stats_streak_hero, streak)
+            } else {
+                stringResource(R.string.stats_streak_zero)
+            },
+            style = if (streak > 0) SlText.Greeting else SlText.StatusTitle,
+            color = if (streak > 0) SlColor.BrandInk else SlColor.TextPrimary,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = when {
+                // 지금이 곧 최고 기록이면 그 사실이 숫자보다 기쁩니다.
+                streak > 0 && streak >= longest -> stringResource(R.string.stats_streak_is_best)
+                else -> stringResource(R.string.stats_streak_best, longest)
+            },
+            style = SlText.BodySm,
+            color = SlColor.TextSecondary,
         )
     }
 }

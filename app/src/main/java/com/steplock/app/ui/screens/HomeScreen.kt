@@ -50,6 +50,7 @@ import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.StepTrack
+import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -65,6 +66,7 @@ import com.steplock.app.ui.util.remainingText
 import com.steplock.app.ui.util.sleepGoalLabel
 import kotlinx.coroutines.delay
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -84,7 +86,6 @@ fun HomeScreen(
     selectedTab: NavTab,
     onTabSelected: (NavTab) -> Unit,
     onManageLocks: () -> Unit,
-    onAppClick: (InstalledApp) -> Unit,
     onPomodoroClick: () -> Unit,
     streak: Int,
     /** 권한이 꺼져 감시가 멈춘 경우의 제목·설명. 정상이면 둘 다 null입니다. */
@@ -132,9 +133,9 @@ fun HomeScreen(
         ) {
             Text(
                 text = if (userName != null) {
-                    stringResource(R.string.home_greeting, userName)
+                    stringResource(R.string.home_greeting, stringResource(greetingRes()), userName)
                 } else {
-                    stringResource(R.string.home_greeting_anonymous)
+                    stringResource(greetingRes())
                 },
                 style = SlText.Greeting,
                 color = SlColor.TextPrimary,
@@ -284,6 +285,18 @@ fun HomeScreen(
                 )
                 // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
                 if (lockedApps.isNotEmpty() && warningTitle == null) DetectingStatus()
+                // 목록 전체를 한 곳에서 고칩니다. 줄마다 화살표를 달면 앱마다 다른
+                // 화면이 있는 것처럼 읽히는데, 실제로는 모두 같은 관리 화면입니다.
+                if (lockedApps.isNotEmpty()) {
+                    TextLink(
+                        text = stringResource(R.string.home_manage_apps),
+                        onClick = onManageLocks,
+                        style = SlText.LinkSm,
+                        color = SlColor.BrandInk,
+                        underline = false,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
             // 앱 목록은 카드로 감싸지 않습니다. 위의 트랙·카드와 무게를 달리해
             // 같은 크기의 상자가 쌓이지 않게 합니다.
@@ -301,7 +314,6 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(role = Role.Button, onClick = { onAppClick(app) })
                             .padding(vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -315,7 +327,6 @@ fun HomeScreen(
                             color = SlColor.TextPrimary,
                             modifier = Modifier.weight(1f),
                         )
-                        SlChevron()
                     }
                 }
             }
@@ -460,7 +471,6 @@ private fun HomeScreenPreview() {
             selectedTab = NavTab.Home,
             onTabSelected = {},
             onManageLocks = {},
-            onAppClick = {},
             onPomodoroClick = {},
             streak = 3,
             warningTitle = null,
@@ -500,3 +510,14 @@ private fun clockText(epochMs: Long): String =
     Instant.ofEpochMilli(epochMs)
         .atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN))
+
+/**
+ * 시각에 맞는 인사. 예전에는 밤 11시에 열어도 "좋은 아침이에요"였습니다 —
+ * 첫 줄이 틀리면 그 아래 숫자도 덜 믿게 됩니다.
+ */
+private fun greetingRes(hour: Int = LocalTime.now().hour): Int = when (hour) {
+    in 5..10 -> R.string.home_greeting_morning
+    in 11..16 -> R.string.home_greeting_afternoon
+    in 17..21 -> R.string.home_greeting_evening
+    else -> R.string.home_greeting_night
+}

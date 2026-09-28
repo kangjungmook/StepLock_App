@@ -41,7 +41,7 @@
     <string name="login_reset_sent">비밀번호 재설정 메일을 보냈어요. 메일함을 확인해 주세요</string>
 
     <!-- 온보딩 -->
-    <string name="onboarding_tagline">하루의 습관을 채워야\n쇼츠와 릴스의 잠금이 풀립니다.</string>
+    <string name="onboarding_tagline">하루의 습관을 채워야\n내가 고른 앱의 잠금이 풀립니다.</string>
     <string name="onboarding_steps_title">걸음 수를 채우면 해제</string>
     <string name="onboarding_steps_desc">목표 걸음에 도달하면 잠긴 앱이 하루 동안 열립니다.</string>
     <string name="onboarding_sleep_title">충분히 자면 해제</string>
@@ -95,12 +95,18 @@
     <string name="watch_channel_name">잠금 감시</string>
     <string name="watch_notification_title">스텝락이 잠금을 지키고 있어요</string>
     <string name="watch_notification_text">차단한 앱을 열면 조건 화면을 보여줍니다</string>
+    <string name="unlock_channel_name">잠금 해제 알림</string>
+    <string name="unlock_notification_title">오늘 잠금이 풀렸어요</string>
+    <string name="unlock_notification_text">조건을 채웠어요. 잠근 앱을 이제 열 수 있어요</string>
     <string name="onboarding_skip_permissions">권한 없이 먼저 둘러보기</string>
     <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
 
     <!-- 홈 -->
-    <string name="home_greeting">좋은 아침이에요, %1$s님</string>
-    <string name="home_greeting_anonymous">좋은 아침이에요</string>
+    <string name="home_greeting">%1$s, %2$s님</string>
+    <string name="home_greeting_morning">좋은 아침이에요</string>
+    <string name="home_greeting_afternoon">좋은 오후예요</string>
+    <string name="home_greeting_evening">편안한 저녁이에요</string>
+    <string name="home_greeting_night">늦은 밤이에요</string>
     <string name="home_date_pattern">M월 d일 EEEE</string>
     <!-- 홈 맨 위 상태 카드 — 오늘 잠금이 풀렸는지 -->
     <string name="home_status_unlocked_title">오늘은 열려 있어요</string>
@@ -121,6 +127,7 @@
     <string name="home_no_apps_title">잠글 앱을 고르지 않았어요</string>
     <string name="home_no_apps_desc">설정에서 잠글 앱을 골라 주세요</string>
     <string name="home_section_blocked_apps">차단 중인 앱</string>
+    <string name="home_manage_apps">관리</string>
     <string name="home_steps_value">%1$s / %2$s보</string>
     <string name="home_sleep_value">%1$s / %2$s</string>
     <string name="home_pomodoro_value">%1$d / %2$d 세션</string>
@@ -143,7 +150,6 @@
     <string name="stats_section_conditions">조건별 기록</string>
     <string name="stats_steps_summary">점선은 목표 %1$s보</string>
     <string name="stats_today_steps">오늘 %1$s보</string>
-    <string name="stats_section_streak">연속 달성</string>
 
     <!-- 기간 전환. 보는 범위만 바꾸는 것이라 화면 이동이 아닙니다 -->
     <string name="stats_period_week">7일</string>
@@ -170,9 +176,10 @@
     <!-- 아직 아무 기록도 없는 새 설치 상태 -->
     <string name="stats_empty_title">아직 기록이 없어요</string>
     <string name="stats_empty_desc">하루를 보내면 걸음 수와 달성 현황이 여기에 쌓입니다</string>
-    <string name="stats_streak_current">현재</string>
-    <string name="stats_streak_longest">최장 기록</string>
-    <string name="stats_streak_days">%1$d일</string>
+    <string name="stats_streak_hero">%1$d일 연속 달성 중</string>
+    <string name="stats_streak_zero">오늘 채우면 연속 기록이 시작돼요</string>
+    <string name="stats_streak_best">최장 기록 %1$d일</string>
+    <string name="stats_streak_is_best">지금이 최장 기록이에요</string>
     <string name="stats_weekday_pattern">E</string>
 
     <!-- 조건 이름 -->
@@ -190,6 +197,7 @@
     <string name="settings_goal_increase">%1$s 늘리기</string>
     <string name="settings_strict_title">조건을 모두 만족해야 해제</string>
     <string name="settings_strict_desc">끄면 켜둔 조건 중 하나만 채워도 해제됩니다.</string>
+    <string name="settings_section_conditions">해제 조건</string>
     <string name="settings_section_apps">차단할 앱</string>
     <string name="settings_apps_pick">잠글 앱 고르기</string>
     <string name="settings_apps_count">%1$d개 골랐어요</string>
@@ -210,7 +218,7 @@
     <string name="app_picker_none_title">목록을 읽지 못했어요</string>
     <string name="app_picker_none_desc">실행 아이콘이 있는 앱만 보입니다. 앱을 다시 시작해 보세요</string>
     <string name="app_picker_still_blocked">해제를 기다리는 중 · 아직 막혀 있어요</string>
-    <string name="app_picker_pending_title">%1$d개는 %2$s에 풀려요</string>
+    <string name="app_picker_pending_title">%1$d개는 %2$s 풀려요</string>
     <string name="app_picker_pending_desc">체크를 풀어도 완화 대기 기간이 지나야 실제로 열립니다</string>
 
     <!--
@@ -227,9 +235,9 @@
     <string name="settings_relax_self_note">이 대기 기간을 줄이는 것도 기다려야 합니다 — 그러지 않으면 기간을 없앤 뒤 무엇이든 풀 수 있어요.</string>
 
     <!-- 예약된 완화가 있을 때 설정 화면 맨 위에 붙는 안내 -->
-    <string name="settings_pending_title">바꾼 조건은 %1$s에 적용돼요</string>
+    <string name="settings_pending_title">바꾼 조건은 %1$s 적용돼요</string>
     <string name="settings_pending_desc">그때까지는 지금 조건이 그대로 유지됩니다</string>
-    <string name="settings_pending_date">%1$d월 %2$d일</string>
+    <string name="settings_pending_date">%1$d월 %2$d일에</string>
     <string name="settings_pending_tomorrow">내일</string>
     <string name="settings_autosave_note">바꾼 내용은 바로 저장돼요. 느슨해지는 변경만 대기 기간 뒤에 적용됩니다.</string>
     <string name="settings_section_account">계정</string>
@@ -250,7 +258,7 @@
     <string name="sleep_permission_denied">수면 데이터 읽기를 허용하면 조건을 켤 수 있어요</string>
 
     <!-- 잠금 오버레이 -->
-    <string name="lock_title">%1$s 잠겨있어요</string>
+    <string name="lock_title">%1$s 잠겨 있어요</string>
     <!-- 링 가운데 캡션 — 지금 보여 주는 조건이 무엇인지 알려 줍니다 -->
     <string name="lock_ring_caption">걸음 목표</string>
     <string name="lock_ring_caption_sleep">수면 목표</string>
