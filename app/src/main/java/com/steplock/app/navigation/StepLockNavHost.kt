@@ -363,6 +363,7 @@ private fun StepLockNavGraph(
                     ThemeModeApplier.apply(context, mode)
                 },
                 accountEmail = state.settings.accountEmail,
+                accountName = state.settings.displayName,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,
                 onBack = { navController.popBackStack() },

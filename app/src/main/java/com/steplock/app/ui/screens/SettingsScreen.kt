@@ -71,6 +71,8 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     accountEmail: String?,
+    /** 계정 표시 이름(카카오 닉네임 등). 있으면 계정 줄 제목으로, 이메일은 그 아래에. */
+    accountName: String? = null,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onBack: () -> Unit,
@@ -238,6 +240,7 @@ fun SettingsScreen(
                 )
                 AccountRow(
                     accountEmail = accountEmail,
+                    accountName = accountName,
                     onSignIn = onSignIn,
                     onSignOut = onSignOut,
                 )
@@ -481,7 +484,12 @@ private fun AdsSection() {
 }
 
 @Composable
-private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+private fun AccountRow(
+    accountEmail: String?,
+    accountName: String?,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
+) {
     // 다른 섹션과 같은 표면을 씁니다. 계정 줄만 회색 판이면 눌러야 할 것처럼
     // 도드라지는데, 이 화면의 주인공은 잠금 조건입니다.
     SlPanel(
@@ -493,11 +501,17 @@ private fun AccountRow(accountEmail: String?, onSignIn: () -> Unit, onSignOut: (
         ),
     ) {
         SlDetailRow(
-            title = accountEmail ?: stringResource(R.string.settings_account_guest),
-            description = if (accountEmail != null) {
-                stringResource(R.string.settings_account_synced)
-            } else {
-                stringResource(R.string.settings_account_guest_desc)
+            // 로그인했으면 이름을 제목으로, 이메일을 그 아래에 — 누구 계정인지와 어느
+            // 계정인지를 함께 보여 줍니다. 이름이 이메일 앞부분과 같으면 이메일만.
+            title = when {
+                accountEmail == null -> stringResource(R.string.settings_account_guest)
+                accountName != null && accountName != accountEmail.substringBefore('@') -> accountName
+                else -> accountEmail
+            },
+            description = when {
+                accountEmail == null -> stringResource(R.string.settings_account_guest_desc)
+                accountName != null && accountName != accountEmail.substringBefore('@') -> accountEmail
+                else -> stringResource(R.string.settings_account_synced)
             },
         ) {
             TextLink(

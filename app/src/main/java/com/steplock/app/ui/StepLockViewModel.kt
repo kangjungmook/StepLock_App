@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.time.LocalDate
 
 data class StepLockUiState(
@@ -206,7 +209,11 @@ class StepLockViewModel(
                         val user = status.session.user
                         val accountId = user?.id
                         if (accountId != null) {
-                            repository.setAccount(accountId = accountId, email = user.email)
+                            repository.setAccount(
+                                accountId = accountId,
+                                email = user.email,
+                                name = user.userMetadata?.providerName(),
+                            )
                             loginState = LoginUiState()
                             syncRepository.sync(accountId)
                         }
@@ -475,3 +482,14 @@ class StepLockViewModel(
         }
     }
 }
+
+/**
+ * 로그인 사업자가 준 이름. Supabase 는 사업자마다 다른 이름 필드를 계정 메타데이터로
+ * 옮겨 두는데(카카오는 닉네임을 name · full_name · preferred_username 에), 어느 키에
+ * 들어올지 사업자마다 달라서 흔한 순서대로 봅니다. 없으면 null.
+ */
+private fun JsonObject.providerName(): String? =
+    listOf("name", "full_name", "nickname", "preferred_username", "user_name")
+        .firstNotNullOfOrNull { key ->
+            (this[key] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+        }

@@ -177,7 +177,9 @@ class SettingsRepository(context: Context) {
             prefs.writeConditions(effective, settings)
             prefs.writeConditions(desired, settings)
             prefs.remove(Keys.settingsApplyOn)
-            prefs.writeAccountFields(settings)
+            // 표시 이름은 서버에서 되살리지 않습니다. 방금 로그인하며 사업자에게서 받은
+            // 이름(카카오 닉네임)이 더 정확한데, 서버에는 예전 이름이 남아 있을 수 있습니다.
+            settings.accountId?.let { prefs[Keys.accountId] = it }
             prefs[Keys.settingsUpdatedAt] = updatedAt
         }
     }
@@ -253,14 +255,20 @@ class SettingsRepository(context: Context) {
         store.edit { it[Keys.guest] = true }
     }
 
-    /** 로그인 성공 — 이 기기의 로컬 레코드를 계정에 귀속시킵니다. */
-    suspend fun setAccount(accountId: String, email: String?) {
+    /**
+     * 로그인 성공 — 이 기기의 로컬 레코드를 계정에 귀속시킵니다.
+     *
+     * 표시 이름은 로그인 사업자가 준 이름(카카오 닉네임, 구글 이름)을 먼저 쓰고,
+     * 없으면(이메일 가입, 닉네임 동의 거절) 이메일 앞부분을 씁니다. 전에는 늘 이메일
+     * 앞부분이라 카카오로 로그인해도 "kangjungmook882님"처럼 나왔습니다.
+     */
+    suspend fun setAccount(accountId: String, email: String?, name: String?) {
         store.edit { prefs ->
             prefs[Keys.accountId] = accountId
-            if (email != null) {
-                prefs[Keys.accountEmail] = email
-                prefs[Keys.displayName] = email.substringBefore('@')
-            }
+            if (email != null) prefs[Keys.accountEmail] = email
+            val displayName = name?.trim()?.takeIf { it.isNotEmpty() }
+                ?: email?.substringBefore('@')
+            if (displayName != null) prefs[Keys.displayName] = displayName
             prefs.remove(Keys.guest)
         }
     }
