@@ -146,6 +146,19 @@ jobs:
           set -o pipefail
           ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee build.log
 
+      # 테스트 파일이 컴파일만 되고 실제로는 안 돌았는데 "성공"으로 끝나는 일을 막습니다.
+      # 실행 개수를 결과 XML 에서 세어 주석(notice)으로 남기고, 기대보다 적으면 실패시킵니다.
+      - name: 테스트가 실제로 돌았는지
+        run: |
+          total=0; failed=0
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            t=$(grep -o 'tests="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*')
+            x=$(grep -o 'failures="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*')
+            total=$((total + t)); failed=$((failed + x))
+          done
+          echo "::notice title=단위 테스트::${total}개 실행, ${failed}개 실패"
+          [ "$total" -ge 10 ] && [ "$failed" -eq 0 ]
+
       - name: 테스트 실패를 이슈로
         if: failure()
         env:
