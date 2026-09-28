@@ -1,10 +1,12 @@
 package com.steplock.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.steplock.app.ads.Ads
 import com.steplock.app.data.SupabaseProvider
@@ -16,6 +18,13 @@ import com.steplock.app.ui.theme.StepLockTheme
 import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * 잠금 화면에서 "집중 타이머" 로 들어온 요청. 내비게이션이 한 번 처리하면
+     * 비웁니다 — 남겨 두면 화면을 돌릴 때마다 타이머로 다시 끌려갑니다.
+     */
+    private val openFocus = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // super.onCreate 보다 먼저 불러야 스플래시가 화면을 이어받습니다.
         // 뒤로 밀면 흰 화면이 한 번 스쳤다가 스플래시가 뜹니다.
@@ -23,12 +32,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         SupabaseProvider.client.handleDeeplinks(intent)
+        if (savedInstanceState == null) openFocus.value = intent.wantsFocus()
         // 동의 확인 → SDK 초기화. 잠금 화면에서 리워드 광고를 쓸 수 있으려면
         // 그보다 먼저 여기서 끝나 있어야 합니다.
         Ads.prepare(this)
         setContent {
             StepLockTheme {
-                StepLockNavHost()
+                StepLockNavHost(
+                    openFocus = openFocus.value,
+                    onFocusOpened = { openFocus.value = false },
+                )
             }
         }
     }
@@ -37,6 +50,18 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SupabaseProvider.client.handleDeeplinks(intent)
+        if (intent.wantsFocus()) openFocus.value = true
+    }
+
+    private fun Intent.wantsFocus(): Boolean = getBooleanExtra(EXTRA_OPEN_FOCUS, false)
+
+    companion object {
+        private const val EXTRA_OPEN_FOCUS = "open_focus"
+
+        fun openFocusIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_OPEN_FOCUS, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
 
     /** 권한이 갖춰져 있으면 앱을 열 때마다 감시 서비스를 다시 살려 둡니다. */

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.steplock.app.MainActivity
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.rememberRewardedAd
 import com.steplock.app.data.InstalledAppsRepository
@@ -85,9 +86,25 @@ class LockActivity : ComponentActivity() {
                     } else {
                         null
                     },
+                    focusing = loaded.focusing,
+                    // 집중 조건을 켜 뒀고 아직 못 채웠을 때만 타이머로 가는 길을 줍니다.
+                    onStartFocus = if (
+                        loaded.settings.pomodoroEnabled &&
+                        loaded.today.pomodoroSessions < loaded.settings.pomodoroGoal
+                    ) {
+                        { openFocusTimer() }
+                    } else {
+                        null
+                    },
                 )
             }
         }
+    }
+
+    /** 스텝락을 집중 타이머 화면으로 엽니다. 차단된 앱으로는 돌아가지 않습니다. */
+    private fun openFocusTimer() {
+        startActivity(MainActivity.openFocusIntent(this))
+        finish()
     }
 
     private fun goHome() {

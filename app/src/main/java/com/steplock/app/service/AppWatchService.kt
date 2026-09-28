@@ -114,7 +114,11 @@ class AppWatchService : Service() {
                 // 앱을 떠나지 않는 한 무제한으로 쓸 수 있었습니다.
                 shownForAppId = null
             } else if (shownForAppId != blockedPackage) {
-                if (!UnlockEvaluator.isUnlocked(current.settings, stat)) {
+                // 집중 세션이 도는 동안에는 조건을 이미 채웠어도 잠급니다.
+                // 그러지 않으면 타이머를 켜 둔 채 쇼츠를 봐도 "집중 1회"가 쌓여서,
+                // 집중 조건이 아무것도 증명하지 못합니다.
+                val focusing = current.pomodoro.isRunning
+                if (focusing || !UnlockEvaluator.isUnlocked(current.settings, stat)) {
                     shownForAppId = blockedPackage
                     startActivity(LockActivity.intent(this, blockedPackage))
                 }

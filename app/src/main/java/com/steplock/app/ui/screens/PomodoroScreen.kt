@@ -158,7 +158,10 @@ fun PomodoroScreen(
                     else -> onStart
                 },
             )
-            if (state.running || state.paused) {
+            // 처음부터 다시는 **멈춘 뒤에만** 보입니다. 돌고 있을 때 "멈추기" 바로
+            // 밑에 두면 잘못 눌러 20분을 한 번에 날릴 수 있는데, 확인 대화상자를
+            // 하나 더 두는 것보다 한 단계(멈추기)를 거치게 하는 편이 가볍습니다.
+            if (state.paused) {
                 TextLink(
                     text = stringResource(R.string.pomodoro_reset),
                     onClick = onReset,
@@ -167,7 +170,12 @@ fun PomodoroScreen(
             } else {
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = stringResource(R.string.pomodoro_hint, Pomodoro.SESSION_MINUTES),
+                    // 도는 동안에는 잠금이 걸려 있다는 사실을 알려 줍니다.
+                    text = if (state.running) {
+                        stringResource(R.string.pomodoro_running_hint)
+                    } else {
+                        stringResource(R.string.pomodoro_hint, Pomodoro.SESSION_MINUTES)
+                    },
                     style = SlText.Caption,
                     color = SlColor.TextSecondary,
                     textAlign = TextAlign.Center,

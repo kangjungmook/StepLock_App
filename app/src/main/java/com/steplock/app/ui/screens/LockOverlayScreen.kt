@@ -69,6 +69,14 @@ fun LockOverlayScreen(
      * 그럴 때 이 줄은 나타나지 않습니다 — 눌러도 안 되는 줄을 남기지 않습니다.
      */
     onWatchAdForBonus: (() -> Unit)? = null,
+    /** 집중 세션 중이라 잠긴 경우. 조건 대신 "집중 중"을 말합니다. */
+    focusing: Boolean = false,
+    /**
+     * 집중 타이머로 바로 가는 길. 집중 조건을 켜 뒀고 아직 못 채웠을 때만 줍니다.
+     * 잠금 화면이 할 일을 알려 주기만 하고 거기로 가는 길이 없으면, 사용자는
+     * 닫고 앱을 찾아 들어가 탭을 찾아야 합니다.
+     */
+    onStartFocus: (() -> Unit)? = null,
 ) {
     val sleepAchieved = UnlockCondition.Sleep.isAchieved(stat, settings)
     val pomodoroAchieved = UnlockCondition.Pomodoro.isAchieved(stat, settings)
@@ -114,7 +122,12 @@ fun LockOverlayScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 // 채운 조건이 히어로일 수 있어서(전부 만족 모드) 공용 확장이 분기합니다.
-                text = hero.remainingText(stat, settings),
+                // 집중 중이면 조건과 무관하게 잠긴 것이라 그 이유를 말합니다.
+                text = if (focusing) {
+                    stringResource(R.string.lock_focusing)
+                } else {
+                    hero.remainingText(stat, settings)
+                },
                 style = SlText.Remaining,
                 color = SlColor.Dark.AmberText,
                 textAlign = TextAlign.Center,
@@ -197,6 +210,16 @@ fun LockOverlayScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+        // 풀 수 있는 길이 있으면 그게 주 행동입니다. 닫기는 한 단계 낮춥니다.
+        if (onStartFocus != null && !focusing) {
+            PrimaryButton(
+                text = stringResource(R.string.lock_start_focus),
+                onClick = onStartFocus,
+                containerColor = SlColor.Dark.AmberRing,
+                contentColor = SlColor.Dark.Background,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
         PrimaryButton(
             text = stringResource(R.string.lock_dismiss),
             onClick = onDismiss,

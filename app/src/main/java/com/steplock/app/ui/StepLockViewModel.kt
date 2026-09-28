@@ -59,6 +59,13 @@ data class StepLockUiState(
     val temporaryAllowBonusRemaining: Int,
     /** 지금 잠그고 있는 앱. 이름은 기기에서 읽어 채웁니다. */
     val blockedApps: List<InstalledApp>,
+    /** 집중 세션이 도는 중. 이 동안에는 조건을 채웠어도 잠급니다. */
+    val focusing: Boolean = false,
+    /**
+     * 임시 허용이 끝나는 시각(epoch ms). 지났을 수도 있어서 화면이 지금 시각과
+     * 비교해야 합니다 — 이 값만으로 "허용 중"이라고 판단하면 안 됩니다.
+     */
+    val temporaryAllowUntil: Long? = null,
 )
 
 enum class LoginError {
@@ -146,6 +153,8 @@ class StepLockViewModel(
                 temporaryAllowRemaining = prefs.temporaryAllow.remainingToday,
                 temporaryAllowBonusRemaining = prefs.temporaryAllow.bonusRemaining,
                 blockedApps = installedApps.resolve(prefs.settings.blockedAppIds),
+                focusing = prefs.pomodoro.isRunning,
+                temporaryAllowUntil = prefs.temporaryAllow.allowedUntil,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

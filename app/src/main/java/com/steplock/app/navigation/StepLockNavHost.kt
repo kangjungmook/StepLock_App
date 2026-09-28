@@ -39,7 +39,6 @@ import com.steplock.app.ui.StepLockViewModel
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.screens.AppPickerScreen
 import com.steplock.app.ui.screens.HomeScreen
-import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.screens.LoginScreen
 import com.steplock.app.ui.screens.LoginTrigger
 import com.steplock.app.ui.screens.OnboardingScreen
@@ -58,16 +57,15 @@ object Route {
     const val POMODORO = "pomodoro"
     const val APP_PICKER = "app-picker"
 
-    // 패키지 이름에 점이 들어가서 경로 조각(lock/{x})으로는 못 씁니다 — 쿼리로 받습니다.
-    const val LOCK = "lock?package={package}"
-
     fun login(trigger: LoginTrigger = LoginTrigger.AppStart) = "login?trigger=${trigger.name}"
-
-    fun lock(packageName: String) = "lock?package=$packageName"
 }
 
+/**
+ * @param openFocus 잠금 화면의 "집중 타이머" 로 들어왔을 때 true. 한 번 이동한 뒤
+ *   [onFocusOpened] 로 비웁니다.
+ */
 @Composable
-fun StepLockNavHost() {
+fun StepLockNavHost(openFocus: Boolean = false, onFocusOpened: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: StepLockViewModel = viewModel(factory = StepLockViewModel.factory(context))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,14 +75,33 @@ fun StepLockNavHost() {
         Box(Modifier.fillMaxSize().background(SlColor.Background))
         return
     }
-    StepLockNavGraph(viewModel = viewModel, state = loaded)
+    StepLockNavGraph(
+        viewModel = viewModel,
+        state = loaded,
+        openFocus = openFocus,
+        onFocusOpened = onFocusOpened,
+    )
 }
 
 @Composable
-private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiState) {
+private fun StepLockNavGraph(
+    viewModel: StepLockViewModel,
+    state: StepLockUiState,
+    openFocus: Boolean,
+    onFocusOpened: () -> Unit,
+) {
     val navController = rememberNavController()
     val startDestination = remember {
         if (state.onboardingCompleted) Route.HOME else Route.login()
+    }
+
+    // 잠금 화면에서 "집중 타이머로 풀기" 를 누르고 들어온 경우. 홈 위에 타이머를
+    // 올려서, 뒤로 가면 홈이 나오게 합니다.
+    LaunchedEffect(openFocus) {
+        if (openFocus && state.onboardingCompleted) {
+            navController.navigate(Route.POMODORO) { launchSingleTop = true }
+            onFocusOpened()
+        }
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -210,9 +227,13 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 },
                 // 홈의 "잠글 앱" 은 설정을 거치지 않고 바로 고르는 화면으로 갑니다.
                 onManageLocks = { navController.navigate(Route.APP_PICKER) },
-                onAppClick = { app -> navController.navigate(Route.lock(app.packageName)) },
+                // 예전에는 잠금 화면 미리보기를 띄웠는데, 거기서 "5분 허용"을 눌러도
+                // 아무것도 허용되지 않아 속이는 화면이 됐습니다. 관리 화면으로 보냅니다.
+                onAppClick = { navController.navigate(Route.APP_PICKER) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
                 streak = state.streak,
+                focusing = state.focusing,
+                temporaryAllowUntil = state.temporaryAllowUntil,
                 // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
                 warningTitle = when (permissionStep) {
                     PermissionStep.Ready -> null
@@ -338,7 +359,6 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 onStepGoalChange = viewModel::changeStepGoal,
                 onSleepGoalChange = viewModel::changeSleepGoal,
                 onPomodoroGoalChange = viewModel::changePomodoroGoal,
-                onSave = { navController.popBackStack() },
             )
         }
 
@@ -354,31 +374,6 @@ private fun StepLockNavGraph(viewModel: StepLockViewModel, state: StepLockUiStat
                 applyOn = state.settingsApplyOn,
                 onToggle = viewModel::toggleBlockedApp,
                 onBack = { navController.popBackStack() },
-            )
-        }
-
-        composable(
-            route = Route.LOCK,
-            arguments = listOf(
-                navArgument("package") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                },
-            ),
-        ) { entry ->
-            // 앱 안에서 미리보기로 열 때의 경로입니다. 실제 잠금은 LockActivity 가 띄웁니다.
-            val blockedPackage = entry.arguments?.getString("package").orEmpty()
-            val appName = state.blockedApps
-                .firstOrNull { it.packageName == blockedPackage }
-                ?.label
-                ?: blockedPackage
-            LockOverlayScreen(
-                appName = appName,
-                stat = state.today,
-                settings = state.settings,
-                temporaryAllowRemaining = state.temporaryAllowRemaining,
-                onDismiss = { navController.popBackStack() },
-                onTemporaryAllow = { navController.popBackStack() },
             )
         }
     }

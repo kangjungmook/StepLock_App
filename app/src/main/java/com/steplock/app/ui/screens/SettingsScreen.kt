@@ -3,7 +3,6 @@ package com.steplock.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -35,7 +34,6 @@ import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.SampleData
 import com.steplock.app.ui.components.ConditionSettingCard
 import com.steplock.app.ui.components.IconTapTarget
-import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
 import com.steplock.app.ui.components.SlConfirmDialog
@@ -86,7 +84,6 @@ fun SettingsScreen(
     onStepGoalChange: (Int) -> Unit,
     onSleepGoalChange: (Float) -> Unit,
     onPomodoroGoalChange: (Int) -> Unit,
-    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -238,20 +235,16 @@ fun SettingsScreen(
             )
 
             AdsSection()
-        }
 
-        Column(modifier = Modifier.background(SlColor.Surface)) {
-            SlDivider()
-            Box(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(start = SlDimen.ScreenPadding, end = SlDimen.ScreenPadding, top = 12.dp, bottom = 16.dp),
-            ) {
-                PrimaryButton(
-                    text = stringResource(R.string.settings_save),
-                    onClick = onSave,
-                )
-            }
+            // "저장" 버튼을 두지 않습니다. 바꾸는 순간 저장되는데 버튼이 있으면,
+            // 누르지 않고 나가면 취소된다고 읽혀서 괜히 한 번 더 누르게 되고,
+            // 반대로 "저장했으니 바로 적용"이라고 오해하게 만듭니다(완화는 대기).
+            Text(
+                text = stringResource(R.string.settings_autosave_note),
+                style = SlText.Caption,
+                color = SlColor.TextTertiary,
+                modifier = Modifier.navigationBarsPadding(),
+            )
         }
     }
 
@@ -489,7 +482,6 @@ private fun SettingsScreenPreview() {
             onStepGoalChange = {},
             onSleepGoalChange = {},
             onPomodoroGoalChange = {},
-            onSave = {},
         )
     }
 }
@@ -525,7 +517,6 @@ private fun SettingsScreenPendingPreview() {
             onStepGoalChange = {},
             onSleepGoalChange = {},
             onPomodoroGoalChange = {},
-            onSave = {},
         )
     }
 }

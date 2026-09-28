@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +40,7 @@ import com.steplock.app.ui.components.BottomNavBar
 import com.steplock.app.ui.components.ConditionRow
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
+import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
@@ -60,6 +63,9 @@ import com.steplock.app.ui.util.primaryCondition
 import com.steplock.app.ui.util.progress
 import com.steplock.app.ui.util.remainingText
 import com.steplock.app.ui.util.sleepGoalLabel
+import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -86,11 +92,26 @@ fun HomeScreen(
     warningDescription: String?,
     onWarningClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 집중 세션이 도는 중. 감시 서비스는 이 동안 조건과 무관하게 잠급니다. */
+    focusing: Boolean = false,
+    /** 임시 허용이 끝나는 시각(epoch ms). 이미 지났을 수 있습니다. */
+    temporaryAllowUntil: Long? = null,
 ) {
     // 걸러는 뷰모델이 합니다 — 화면은 이름과 아이콘만 그립니다.
     val lockedApps = apps
     val conditions = enabledConditions(settings)
-    val unlocked = UnlockEvaluator.isUnlocked(settings, stat)
+    val allowActive = rememberAllowActive(temporaryAllowUntil)
+
+    // 홈의 결론은 **감시 서비스와 같은 규칙**이어야 합니다. 예전에는 조건만 봐서,
+    // 5분 허용 중에도 "잠겨 있어요", 집중 중에 앱이 막혀도 "열려 있어요"라고
+    // 말했습니다 — 화면과 실제가 어긋나면 사용자는 둘 다 믿지 않습니다.
+    val status = when {
+        allowActive -> HomeStatus.Allowed
+        focusing -> HomeStatus.Focusing
+        UnlockEvaluator.isUnlocked(settings, stat) -> HomeStatus.Unlocked
+        else -> HomeStatus.Locked
+    }
+    val unlocked = status == HomeStatus.Unlocked || status == HomeStatus.Allowed
 
     Column(
         modifier = modifier
@@ -159,10 +180,11 @@ fun HomeScreen(
                 ) {
                     Text(
                         text = stringResource(
-                            if (unlocked) {
-                                R.string.home_status_unlocked_title
-                            } else {
-                                R.string.home_status_locked_title
+                            when (status) {
+                                HomeStatus.Unlocked -> R.string.home_status_unlocked_title
+                                HomeStatus.Allowed -> R.string.home_status_allowed_title
+                                HomeStatus.Focusing -> R.string.home_status_focusing_title
+                                HomeStatus.Locked -> R.string.home_status_locked_title
                             },
                         ),
                         style = SlText.StatusTitle,
@@ -174,10 +196,14 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = if (unlocked) {
-                        stringResource(R.string.home_status_unlocked_desc)
-                    } else {
-                        hero.remainingText(stat, settings)
+                    text = when (status) {
+                        HomeStatus.Unlocked -> stringResource(R.string.home_status_unlocked_desc)
+                        HomeStatus.Allowed -> stringResource(
+                            R.string.home_status_allowed_desc,
+                            clockText(temporaryAllowUntil ?: 0L),
+                        )
+                        HomeStatus.Focusing -> stringResource(R.string.home_status_focusing_desc)
+                        HomeStatus.Locked -> hero.remainingText(stat, settings)
                     },
                     style = SlText.BodySm,
                     color = SlColor.TextSecondary,
@@ -191,8 +217,24 @@ fun HomeScreen(
                         R.string.home_track_goal,
                         hero.goalText(settings),
                     ),
-                    mood = if (unlocked) MascotMood.Resting else MascotMood.Walking,
+                    mood = when (status) {
+                        HomeStatus.Focusing -> MascotMood.Focusing
+                        HomeStatus.Locked -> MascotMood.Walking
+                        else -> MascotMood.Resting
+                    },
                 )
+
+                // 집중 타이머가 맨 앞 조건이면 아래 목록에 나오지 않아서, 예전에는
+                // 홈에서 타이머로 갈 길이 **아예 없었습니다.** 트랙 아래에 둡니다.
+                if (hero == UnlockCondition.Pomodoro) {
+                    Spacer(Modifier.height(16.dp))
+                    PrimaryButton(
+                        text = stringResource(
+                            if (focusing) R.string.home_focus_resume else R.string.home_focus_open,
+                        ),
+                        onClick = onPomodoroClick,
+                    )
+                }
 
                 // 트랙이 첫 조건을 보여 주므로 카드에는 나머지만 넣습니다.
                 val rest = conditions.filter { it != hero }
@@ -427,3 +469,34 @@ private fun HomeScreenPreview() {
         )
     }
 }
+
+/** 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다. */
+private enum class HomeStatus { Allowed, Focusing, Unlocked, Locked }
+
+/**
+ * 임시 허용이 **지금** 유효한지. 끝나는 순간 스스로 false 로 바뀝니다 —
+ * 화면 상태는 설정이나 걸음이 바뀔 때만 새로 오므로, 가만히 앉아 있으면
+ * 허용이 끝나도 "열려 있어요"가 남습니다.
+ */
+@Composable
+private fun rememberAllowActive(until: Long?): Boolean {
+    val active by produceState(
+        initialValue = until != null && System.currentTimeMillis() < until,
+        until,
+    ) {
+        if (until == null) return@produceState
+        val left = until - System.currentTimeMillis()
+        if (left > 0) {
+            value = true
+            delay(left)
+        }
+        value = false
+    }
+    return active
+}
+
+/** 오후 3:05 같은 시각. 남은 분을 세는 대신 끝나는 시각을 적어 매초 다시 그리지 않습니다. */
+private fun clockText(epochMs: Long): String =
+    Instant.ofEpochMilli(epochMs)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN))
