@@ -103,7 +103,7 @@
     <string name="tutorial_unlock_title">하루 습관을 채우면 열어 드려요</string>
     <string name="tutorial_unlock_body">걸음 수, 수면 시간, 집중 타이머 중에서 조건을 골라 두세요. 채우는 순간 알림으로 알려 드릴게요.</string>
     <string name="tutorial_allow_title">급할 땐 잠깐 열 수 있어요</string>
-    <string name="tutorial_allow_body">잠금 화면에서 %1$d분씩, 하루 %2$d번까지 열 수 있어요. 다 쓰면 내일 다시 생겨요.</string>
+    <string name="tutorial_allow_body">잠금 화면에서 %1$d분씩, 하루 %2$d번까지 열 수 있어요. 집중 타이머가 도는 동안만은 안 돼요.</string>
     <string name="tutorial_ready_title">이제 몇 가지만 허용해 주세요</string>
     <string name="tutorial_ready_body">어떤 앱이 열렸는지 알아보고 그 위에 잠금 화면을 띄우려면 권한이 필요해요.</string>
     <string name="tutorial_skip">건너뛰기</string>

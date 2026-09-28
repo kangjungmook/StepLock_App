@@ -42,7 +42,7 @@
 | --- | --- |
 | 첫 실행 튜토리얼 | "안녕하세요, 저는 스텝이예요" — 네 장에 나눠 앱 쓰는 법을 알려 줍니다 |
 | 잠금 화면 | 옆에서 말풍선으로 "2,760보만 더 걸으면 열려요" |
-| 집중 타이머 | "집중하는 동안 잠근 앱은 제가 지킬게요" (시작 전·도는 중·멈춤마다 다름) |
+| 집중 타이머 | "집중하는 동안 잠근 앱은 제가 지킬게요. 끝날 때까지 멈추지 않아요" (도는 중·쉬는 중·목표 달성·잠근 앱 없음마다 다름) |
 | 알림 | 머리글에 "스텝이"가 붙고, "해냈어요! 오늘은 열어 둘게요", 저녁 7~10시 "저녁 산책 같이 가요?" |
 | 빈 화면 | "지킬 앱을 골라 주세요 — 고른 앱이 열리면 제가 막아 둘게요" |
 
@@ -85,19 +85,25 @@
 
 | 화면 | 역할 | 파일 |
 | --- | --- | --- |
-| **Login** | 앱 첫 화면. 밑줄형 입력 · 로그인 유지 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
+| **Login** | 앱 첫 화면. 밑줄형 입력 · 비밀번호 재설정 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
+| **Sign Up** | 이메일 가입. 비밀번호 확인 · 개인정보 처리방침 동의 · 인증 메일을 보냈으면 "메일함을 확인해 주세요" | [`SignUpScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SignUpScreen.kt) |
 | **Tutorial** | 첫 실행 안내 네 장. 스텝이가 말풍선으로 한 장에 한 가지씩 — 인사 · 해제 조건 · 5분 허용 · 권한 | [`TutorialScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/TutorialScreen.kt) |
 | **Onboarding** | 필요한 권한 세 줄을 한 화면에(남은 개수 표시), 권한 없이 먼저 둘러보기 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
 | **Home** | 지금 상태를 한 문장으로, 그 아래 오늘의 숫자 · 최근 7일 링 · 앱별 오늘 막은 횟수 (아래 "홈" 절) | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
 | **Settings** | 해제 조건(한 패널), 잠글 앱 고르기, 완화 대기 기간, 계정, 화면 모드(기기 설정 · 라이트 · 다크), 사용 방법 다시 보기 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
 | **App Picker** | 기기에 깔린 앱에서 잠글 앱 고르기. 검색, 고른 앱 먼저, 해제 대기 중인 앱 표시 | [`AppPickerScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/AppPickerScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
-| **Pomodoro** | 25분 집중 세션 타이머. 세션이 도는 동안 캐릭터가 앉습니다 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
+| **Pomodoro** | 25분 집중 세션. 앱을 잠그는 순간 저절로 시작되고 **끝날 때까지 멈출 수 없습니다** | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 | **Stats** | 7일 / 30일 전환, 걸음 차트와 요약 3칸, 조건별 일평균과 달성률 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
-화면 이동: `Login → Tutorial → Onboarding → Home`, 홈에서 설정 · 집중 타이머 · 잠글 앱 고르기로 들어갑니다.
-잠금 화면은 감시 서비스가 차단 앱 위에 띄우며, 거기서 집중 타이머로 바로 넘어갈 수 있습니다.
-하단 탭은 홈 · 통계 · 설정이고, 온보딩을 마친 기기는 다음 실행부터 로그인을 건너뛰고 홈에서 시작합니다.
+화면 이동: `Login(→ Sign Up) → Tutorial → Onboarding → Home`, 홈에서 집중 타이머 · 잠글 앱 고르기로 들어갑니다.
+잠금 화면은 감시 서비스가 차단 앱 위에 띄우며, 집중 중이면 거기서 타이머로 바로 넘어갈 수 있습니다.
+하단 탭은 홈 · 통계 · 설정이고 세 화면 모두에 보입니다. 탭은 홈 위에 하나만 쌓여서 어느 탭에서든
+뒤로 가기 한 번이면 홈입니다. 온보딩을 마친 기기는 다음 실행부터 로그인을 건너뛰고 홈에서 시작합니다.
+
+**잠근 앱이 없으면 아무것도 진행하지 않습니다.** 홈은 "아직 막고 있는 앱이 없어요"와 잠글 앱 고르기
+버튼, 앱을 잠그면 채울 조건의 목표만 보여 줍니다 — 진행 링·트랙은 앱을 잠근 뒤에 나타납니다.
+걸음은 만보기처럼 하루 동안 계속 세므로, 오후에 앱을 잠가도 그날 아침부터 걸은 걸음이 들어갑니다.
 
 각 화면 파일 하단에 `@Preview`가 있어 Android Studio에서 412×892 프레임으로 바로 확인할 수 있습니다.
 위 이미지는 [`docs/screens/`](docs/screens)에 있습니다.
@@ -163,9 +169,31 @@
 거절하면 조건이 켜지지 않고 이유를 알려 줍니다.
 
 집중 세션은 남은 시간이 아니라 **종료 시각**을 저장합니다. 그래서 앱이나 서비스가 죽어도
-남은 시간을 다시 계산할 수 있고, 시간이 지난 세션은 앱을 여는 순간 집계됩니다.
-멈춘 세션만 남은 시간으로 보관합니다. 완료 세션은 날짜와 함께 쌓여 자정에 0으로 돌아가고,
-`UnlockEvaluator`의 집중 타이머 조건에 그대로 쓰입니다.
+남은 시간을 다시 계산할 수 있고, 끝난 세션은 감시 서비스(1초 간격)나 앱이 집계합니다.
+완료 세션은 **끝난 날**의 몫으로 쌓여 자정에 0으로 돌아가고, `UnlockEvaluator`의 집중 타이머
+조건에 그대로 쓰입니다.
+
+**집중 세션은 저절로 시작되고, 시작하면 멈출 수 없습니다.** 집중 조건을 켜 두고 오늘 목표가
+남았을 때 다음 순간에 25분 세션이 시작됩니다.
+
+| 시작되는 순간 | 어디서 |
+| --- | --- |
+| 잠글 앱을 고를 때 | 앱 고르기 화면 — 누르기 전에 "앱을 잠그면 25분 집중이 바로 시작돼요"를 먼저 보여 줍니다 |
+| 잠근 앱이 있는 채로 집중 조건을 켤 때 | 설정 — 조건 패널 아래에 같은 규칙을 적어 둡니다 |
+| 잠금 화면이 뜰 때 | 감시 서비스 — 다음 날이나 세션 사이에 잠근 앱을 열면 다음 세션이 시작됩니다 |
+
+세션은 한 번에 하나만 돌고, 끝나면 다음 세션은 잠근 앱을 다시 열 때 시작됩니다(세션 사이 쉬는 시간).
+바로 이어 가고 싶으면 타이머 화면의 "다음 25분 바로 시작하기"를 누릅니다.
+
+도는 동안에는 앱 안에서 끝낼 길을 모두 닫았습니다 — 멈춤·처음부터 버튼이 없고, 5분 임시 허용이
+듣지 않고, 잠근 앱을 목록에서 뺄 수 없고, 계정 삭제도 숨깁니다(지우면 잠근 앱 목록까지 사라져
+뒷문이 됩니다). 새 앱을 더 잠그는 것은 됩니다.
+
+남겨 둔 출구는 둘입니다. **앱 삭제**는 저장소가 통째로 사라집니다. **시스템 설정의 강제 종료**는
+저장소를 남기므로, 다음에 앱이 뜰 때 안드로이드의 프로세스 종료 기록(`ApplicationExitInfo`,
+Android 11+)을 보고 "세션 도중 사용자가 끝냈다"면 세션을 집계하지 않고 지웁니다(`ForceStopCheck`).
+Android 10 이하에는 이 기록이 없어 세션이 원래 끝나는 시각까지 이어집니다. 일부 제조사 기기는
+최근 앱 목록에서 밀어 닫는 것도 같은 사유로 기록할 수 있습니다.
 
 **감지 방식 선택** — 접근성 서비스가 더 빠르고 정확하지만 Play 스토어에서 민감 권한으로 분류돼
 심사 설명을 요구합니다. 그래서 심사 부담이 작은 사용 정보 접근(`PACKAGE_USAGE_STATS`) +
