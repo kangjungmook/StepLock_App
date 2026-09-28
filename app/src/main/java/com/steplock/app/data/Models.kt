@@ -37,6 +37,23 @@ enum class RelaxDelay(val days: Int) {
 }
 
 /**
+ * 화면 색 모드. 잠금 조건이 아니라 **이 기기의 취향**이라 서버로 보내지 않고,
+ * 완화 대기도 걸지 않습니다.
+ */
+enum class ThemeMode {
+    /** 기기의 다크 모드 설정을 따릅니다. 처음 설치했을 때의 값입니다. */
+    System,
+    Light,
+    Dark,
+    ;
+
+    companion object {
+        /** 저장은 이름으로 합니다. 모르는 값이면 기기 설정을 따릅니다. */
+        fun fromName(name: String?): ThemeMode = entries.firstOrNull { it.name == name } ?: System
+    }
+}
+
+/**
  * 로컬 레코드는 기기별 UUID로 저장하고, 로그인 후 서버 계정에 귀속(claim)시킬 수 있도록
  * accountId를 nullable로 함께 들고 갑니다.
  */

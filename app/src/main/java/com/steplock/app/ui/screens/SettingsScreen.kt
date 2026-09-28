@@ -30,6 +30,7 @@ import com.steplock.app.ads.Ads
 import com.steplock.app.ads.findActivity
 import com.steplock.app.data.LockSettings
 import com.steplock.app.data.RelaxDelay
+import com.steplock.app.data.ThemeMode
 import com.steplock.app.data.SampleData
 import com.steplock.app.ui.components.ConditionSettingRow
 import com.steplock.app.ui.components.IconTapTarget
@@ -67,6 +68,8 @@ fun SettingsScreen(
     blockedCount: Int,
     onPickApps: () -> Unit,
     onReplayTutorial: () -> Unit,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
     accountEmail: String?,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
@@ -251,6 +254,8 @@ fun SettingsScreen(
                 }
             }
 
+            ThemeModeSection(selected = themeMode, onSelect = onThemeModeChange)
+
             Column {
                 SectionLabel(
                     text = stringResource(R.string.settings_section_help),
@@ -389,6 +394,47 @@ private fun RelaxDelaySection(selected: RelaxDelay, onSelect: (RelaxDelay) -> Un
 }
 
 /**
+ * 화면 모드 고르기. 잠금 조건이 아니라 취향이라 바로 적용되고, 대기도 없습니다.
+ *
+ * "기기 설정 따르기"를 맨 앞(기본값)에 둡니다 — 대부분은 기기에서 이미 정해 두었고,
+ * 앱만 따로 다르게 쓰고 싶은 사람이 나머지 둘을 고릅니다.
+ */
+@Composable
+private fun ThemeModeSection(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val options = listOf(
+        ThemeMode.System to stringResource(R.string.settings_theme_system),
+        ThemeMode.Light to stringResource(R.string.settings_theme_light),
+        ThemeMode.Dark to stringResource(R.string.settings_theme_dark),
+    )
+    Column {
+        SectionLabel(
+            text = stringResource(R.string.settings_section_display),
+            modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+        )
+        SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
+            Text(
+                text = stringResource(R.string.settings_theme_title),
+                style = SlText.RowTitle,
+                color = SlColor.TextPrimary,
+            )
+            Text(
+                text = stringResource(R.string.settings_theme_desc),
+                style = SlText.RowValue,
+                color = SlColor.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Spacer(Modifier.height(16.dp))
+            SlSegmented(
+                options = options.map { it.second },
+                selectedIndex = options.indexOfFirst { it.first == selected }.coerceAtLeast(0),
+                onSelect = { onSelect(options[it].first) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
  * 광고에 관해 사용자가 할 수 있는 일과 알아야 할 사실만 둡니다.
  *
  * 보여 줄 게 없으면 섹션 자체가 나타나지 않습니다. 동의 재설정은 그게 필요한
@@ -495,6 +541,8 @@ private fun SettingsScreenPreview() {
             blockedCount = SampleData.settings.blockedAppIds.size,
             onPickApps = {},
             onReplayTutorial = {},
+            themeMode = ThemeMode.System,
+            onThemeModeChange = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
@@ -528,6 +576,8 @@ private fun SettingsScreenPreviewDark() {
             blockedCount = SampleData.settings.blockedAppIds.size,
             onPickApps = {},
             onReplayTutorial = {},
+            themeMode = ThemeMode.System,
+            onThemeModeChange = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
@@ -564,6 +614,8 @@ private fun SettingsScreenPendingPreview() {
             blockedCount = SampleData.settings.blockedAppIds.size,
             onPickApps = {},
             onReplayTutorial = {},
+            themeMode = ThemeMode.System,
+            onThemeModeChange = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},

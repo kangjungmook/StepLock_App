@@ -22,6 +22,7 @@ import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StreakCalculator
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.SyncRepository
+import com.steplock.app.data.ThemeMode
 import com.steplock.app.ui.components.SocialProvider
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
@@ -117,6 +118,14 @@ class StepLockViewModel(
      * 설치했으면 스텝락을 다시 켜야 목록에 나타납니다.
      */
     val availableApps: List<InstalledApp> by lazy { installedApps.launchableApps() }
+
+    /** 화면 색 모드. 설정 화면이 지금 고른 칸을 표시하는 데 씁니다. */
+    val themeMode: StateFlow<ThemeMode> = repository.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.System)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { repository.setThemeMode(mode) }
+    }
 
     var loginState by mutableStateOf(LoginUiState())
         private set

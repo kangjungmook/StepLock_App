@@ -118,6 +118,12 @@
     <string name="tutorial_start">권한 켜러 가기</string>
     <string name="tutorial_done">다 봤어요, 닫기</string>
     <string name="tutorial_position">%2$d장 중 %1$d번째</string>
+    <string name="settings_section_display">화면</string>
+    <string name="settings_theme_title">화면 모드</string>
+    <string name="settings_theme_desc">기기 설정과 다르게 쓰고 싶을 때 앱만 따로 정할 수 있어요</string>
+    <string name="settings_theme_system">기기 설정</string>
+    <string name="settings_theme_light">라이트</string>
+    <string name="settings_theme_dark">다크</string>
     <string name="settings_section_help">도움말</string>
     <string name="settings_tutorial_replay">사용 방법 다시 보기</string>
     <string name="settings_tutorial_replay_desc">처음 설치했을 때 본 안내를 다시 봅니다</string>

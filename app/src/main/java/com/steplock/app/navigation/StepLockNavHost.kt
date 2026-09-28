@@ -48,6 +48,7 @@ import com.steplock.app.ui.screens.StatsScreen
 import com.steplock.app.ui.screens.TutorialScreen
 import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.theme.SlColor
+import com.steplock.app.ui.theme.ThemeModeApplier
 
 object Route {
     const val LOGIN = "login?trigger={trigger}"
@@ -342,6 +343,7 @@ private fun StepLockNavGraph(
                 }
             }
 
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             SettingsScreen(
                 // 설정 화면은 **정해 둔 값**을 보여 줍니다 — 방금 누른 게 반영돼
                 // 보이지 않으면 눌리지 않은 것처럼 느껴집니다. 실제 적용 시점은
@@ -352,6 +354,11 @@ private fun StepLockNavGraph(
                 blockedCount = state.desiredSettings.blockedAppIds.size,
                 onPickApps = { navController.navigate(Route.APP_PICKER) },
                 onReplayTutorial = { navController.navigate(Route.tutorial(replay = true)) },
+                themeMode = themeMode,
+                onThemeModeChange = { mode ->
+                    viewModel.setThemeMode(mode)
+                    ThemeModeApplier.apply(context, mode)
+                },
                 accountEmail = state.settings.accountEmail,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,

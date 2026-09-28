@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -80,6 +81,7 @@ class SettingsRepository(context: Context) {
         val accountEmail = stringPreferencesKey("account_email")
         val guest = booleanPreferencesKey("guest")
         val onboardingCompleted = booleanPreferencesKey("onboarding_completed")
+        val themeMode = stringPreferencesKey("theme_mode")
         /** 예약된 완화가 적용되는 날(ISO). 없으면 예약이 없습니다. */
         val settingsApplyOn = stringPreferencesKey("settings_apply_on")
         val stepBaselineDate = stringPreferencesKey("step_baseline_date")
@@ -222,6 +224,15 @@ class SettingsRepository(context: Context) {
         next.displayName?.let { this[Keys.displayName] = it }
     }
 
+    /** 화면 색 모드. 앱을 켤 때 가장 먼저 필요해서 나머지 설정과 따로 읽습니다. */
+    val themeMode: Flow<ThemeMode> = store.data
+        .map { ThemeMode.fromName(it[Keys.themeMode]) }
+        .distinctUntilChanged()
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        store.edit { it[Keys.themeMode] = mode.name }
+    }
+
     suspend fun setOnboardingCompleted(completed: Boolean) {
         store.edit { it[Keys.onboardingCompleted] = completed }
     }
@@ -258,8 +269,12 @@ class SettingsRepository(context: Context) {
     suspend fun clearAllLocalData() {
         store.edit { prefs ->
             val onboarded = prefs[Keys.onboardingCompleted] ?: false
+            // 화면 모드는 계정 기록이 아니라 기기 취향이라 남깁니다. 안드로이드 12+ 에서는
+            // 시스템에도 같은 값이 저장돼 있어서, 여기만 지우면 둘이 어긋납니다.
+            val theme = prefs[Keys.themeMode]
             prefs.clear()
             prefs[Keys.onboardingCompleted] = onboarded
+            theme?.let { prefs[Keys.themeMode] = it }
             prefs[Keys.deviceUuid] = UUID.randomUUID().toString()
             prefs[Keys.guest] = true
         }
