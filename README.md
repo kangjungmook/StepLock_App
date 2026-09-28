@@ -18,10 +18,13 @@
   <img src="docs/screens/01-login.png" width="22%" alt="로그인" />
   <img src="docs/screens/02-onboarding.png" width="22%" alt="온보딩" />
   <img src="docs/screens/04-settings.png" width="22%" alt="잠금 조건 설정" />
+  <img src="docs/screens/09-app-picker.png" width="22%" alt="잠글 앱 고르기" />
+</p>
+<p align="center">
   <img src="docs/screens/06-pomodoro.png" width="22%" alt="집중 타이머" />
 </p>
 
-<p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다 (실기기 캡처가 아닙니다)</sub></p>
+<p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다 (실기기 캡처가 아닙니다).<br>앱 아이콘 자리는 첫 글자 자리표시자이며, 실제 앱은 기기에 깔린 각 앱의 아이콘을 보여 줍니다</sub></p>
 
 ## 캐릭터
 
@@ -76,7 +79,8 @@
 | **Pomodoro** | 25분 집중 세션 타이머. 세션이 도는 동안 캐릭터가 앉습니다 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 | **Stats** | 7일 / 30일 전환, 걸음 차트와 요약 3칸, 조건별 일평균과 달성률 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
-화면 이동: `Login → Onboarding → Home`, 홈에서 설정 · 집중 타이머 · 잠금 오버레이로 들어갑니다.
+화면 이동: `Login → Onboarding → Home`, 홈에서 설정 · 집중 타이머 · 잠글 앱 고르기로 들어갑니다.
+잠금 화면은 감시 서비스가 차단 앱 위에 띄우며, 거기서 집중 타이머로 바로 넘어갈 수 있습니다.
 하단 탭은 홈 · 통계 · 설정이고, 온보딩을 마친 기기는 다음 실행부터 로그인을 건너뛰고 홈에서 시작합니다.
 
 각 화면 파일 하단에 `@Preview`가 있어 Android Studio에서 412×892 프레임으로 바로 확인할 수 있습니다.
