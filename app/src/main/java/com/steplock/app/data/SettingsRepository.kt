@@ -27,6 +27,13 @@ data class StepBaseline(val date: LocalDate, val counter: Long)
 /** 기기에 보관하는 일별 기록의 길이. 통계 화면이 고를 수 있는 최대 기간이기도 합니다. */
 const val HISTORY_DAYS = 30
 
+private fun decodeHits(raw: Set<String>): Map<String, Int> =
+    raw.mapNotNull { line ->
+        val pkg = line.substringBeforeLast('=', "")
+        val count = line.substringAfterLast('=').toIntOrNull()
+        if (pkg.isEmpty() || count == null) null else pkg to count
+    }.toMap()
+
 private fun encodeDay(stat: DailyStat): String =
     "${stat.date}|${stat.steps}|${stat.sleepMinutes}|${stat.pomodoroSessions}"
 
@@ -97,6 +104,10 @@ class SettingsRepository(context: Context) {
         val tempAllowDate = stringPreferencesKey("temp_allow_date")
         val tempAllowCount = intPreferencesKey("temp_allow_count")
         val tempAllowBonus = intPreferencesKey("temp_allow_bonus")
+        /** 막은 횟수가 어느 날의 것인지(ISO). 날짜가 다르면 새로 셉니다. */
+        val blockedHitsDate = stringPreferencesKey("blocked_hits_date")
+        /** `패키지=횟수` 한 줄씩. 패키지 이름에는 `=` 가 들어갈 수 없습니다. */
+        val blockedHits = stringSetPreferencesKey("blocked_hits")
         val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
     }
 
@@ -359,6 +370,26 @@ class SettingsRepository(context: Context) {
         return granted
     }
 
+    /**
+     * 잠금 화면을 한 번 띄울 때마다 그 앱의 오늘 횟수를 하나 늘립니다.
+     *
+     * 감시 서비스는 같은 앱에 머무는 동안 잠금을 다시 띄우지 않으므로, 이 숫자는
+     * "그 앱을 열려고 한 횟수"에 가깝습니다. 기기에만 두고 서버로 보내지 않습니다.
+     */
+    suspend fun recordBlockedOpen(packageName: String) {
+        store.edit { prefs ->
+            val today = LocalDate.now().toString()
+            val current = if (prefs[Keys.blockedHitsDate] == today) {
+                decodeHits(prefs[Keys.blockedHits].orEmpty())
+            } else {
+                emptyMap()
+            }
+            val next = current + (packageName to (current[packageName] ?: 0) + 1)
+            prefs[Keys.blockedHitsDate] = today
+            prefs[Keys.blockedHits] = next.map { (pkg, count) -> "$pkg=$count" }.toSet()
+        }
+    }
+
     suspend fun completePomodoroSession() {
         store.edit { prefs ->
             if (prefs[Keys.pomodoroEndsAt] == null) return@edit
@@ -479,6 +510,11 @@ class SettingsRepository(context: Context) {
                 0
             },
             settingsUpdatedAt = this[Keys.settingsUpdatedAt] ?: 0L,
+            blockedToday = if (this[Keys.blockedHitsDate] == LocalDate.now().toString()) {
+                decodeHits(this[Keys.blockedHits].orEmpty())
+            } else {
+                emptyMap()
+            },
             history = this[Keys.dailyHistory].orEmpty()
                 .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }
                 .sortedBy { it.date },

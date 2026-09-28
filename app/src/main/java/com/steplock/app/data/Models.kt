@@ -153,6 +153,11 @@ data class AppPreferences(
     val history: List<DailyStat>,
     /** 설정을 마지막으로 바꾼 시각. 서버와 비교해 최신 쪽을 택합니다. */
     val settingsUpdatedAt: Long,
+    /**
+     * 오늘 잠금 화면으로 막은 횟수 — 패키지 이름별. 홈이 "오늘 3번 막았어요"를
+     * 보여 주는 데 씁니다. 날짜가 바뀌면 비어 있습니다.
+     */
+    val blockedToday: Map<String, Int> = emptyMap(),
 )
 
 /**

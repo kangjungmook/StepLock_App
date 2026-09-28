@@ -160,6 +160,7 @@ class AppWatchService : Service() {
                 if (focusing || !UnlockEvaluator.isUnlocked(current.settings, stat)) {
                     shownForAppId = blockedPackage
                     startActivity(LockActivity.intent(this, blockedPackage))
+                    repository.recordBlockedOpen(blockedPackage)
                 }
             }
             delay(POLL_INTERVAL_MS)

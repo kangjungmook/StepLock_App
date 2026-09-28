@@ -67,6 +67,8 @@ data class StepLockUiState(
      * 비교해야 합니다 — 이 값만으로 "허용 중"이라고 판단하면 안 됩니다.
      */
     val temporaryAllowUntil: Long? = null,
+    /** 오늘 잠금 화면으로 막은 횟수 — 패키지 이름별. */
+    val blockedToday: Map<String, Int> = emptyMap(),
 )
 
 enum class LoginError {
@@ -164,6 +166,7 @@ class StepLockViewModel(
                 blockedApps = installedApps.resolve(prefs.settings.blockedAppIds),
                 focusing = prefs.pomodoro.isRunning,
                 temporaryAllowUntil = prefs.temporaryAllow.allowedUntil,
+                blockedToday = prefs.blockedToday,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

@@ -52,6 +52,15 @@ object SlText {
     val Wordmark = slStyle(FontWeight.Black, 32f, 36f, -1f)
     val AppTitle = slStyle(FontWeight.Black, 34f, 39f, -0.6f)
     val Greeting = slStyle(FontWeight.Black, 24f, 31f, -0.4f)
+
+    /**
+     * 홈 맨 위 한 문장("2,760보만 더 걸으면 잠금이 풀려요"). 화면에서 가장 큰 글자라
+     * 인사(24)보다 한 단계 위에 둡니다 — 누구인지보다 지금 무엇을 하면 되는지가 먼저입니다.
+     */
+    val HeroHeadline = slStyle(FontWeight.Black, 26f, 34f, -0.5f)
+
+    /** 홈 "오늘" 줄의 숫자(거리·막은 횟수·남은 허용). 라벨보다 먼저 읽히도록 굵게. */
+    val FigureValue = slStyle(FontWeight.Black, 20f, 26f, -0.3f)
     val LockTitle = slStyle(FontWeight.Black, 25f, 32f, -0.4f)
     val RingValue = slStyle(FontWeight.Black, 42f, 42f, -1f)
     val LoginHeading = slStyle(FontWeight.Black, 20f, 26f)

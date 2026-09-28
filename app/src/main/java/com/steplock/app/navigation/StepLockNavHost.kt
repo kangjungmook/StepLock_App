@@ -259,6 +259,9 @@ private fun StepLockNavGraph(
                 streak = state.streak,
                 focusing = state.focusing,
                 temporaryAllowUntil = state.temporaryAllowUntil,
+                weekly = state.weekly,
+                blockedToday = state.blockedToday,
+                temporaryAllowRemaining = state.temporaryAllowRemaining,
                 // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
                 warningTitle = when (permissionStep) {
                     PermissionStep.Ready -> null

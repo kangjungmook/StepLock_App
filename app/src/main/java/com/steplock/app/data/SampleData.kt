@@ -13,6 +13,12 @@ object SampleData {
         InstalledApp("com.ss.android.ugc.tiktok.lite", "TikTok Lite"),
     )
 
+    /** 오늘 막은 횟수. 가장 많이 막은 앱이 홈 목록 맨 위로 올라가는지 봅니다. */
+    val blockedToday = mapOf(
+        "com.ss.android.ugc.tiktok.lite" to 3,
+        "com.google.android.youtube" to 1,
+    )
+
     val settings = LockSettings(
         deviceUuid = PREVIEW_UUID,
         displayName = "지우",
