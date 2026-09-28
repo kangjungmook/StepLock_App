@@ -66,6 +66,7 @@ fun SettingsScreen(
     /** 지금 고른 앱 개수. 목록은 별도 화면에서 고릅니다. */
     blockedCount: Int,
     onPickApps: () -> Unit,
+    onReplayTutorial: () -> Unit,
     accountEmail: String?,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
@@ -246,6 +247,23 @@ fun SettingsScreen(
                         color = SlColor.TextSecondary,
                         underline = false,
                         modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+
+            Column {
+                SectionLabel(
+                    text = stringResource(R.string.settings_section_help),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+                )
+                SlPanel {
+                    SlDetailRow(
+                        title = stringResource(R.string.settings_tutorial_replay),
+                        description = stringResource(R.string.settings_tutorial_replay_desc),
+                        modifier = Modifier
+                            .clickable(role = Role.Button, onClick = onReplayTutorial)
+                            .padding(vertical = 16.dp),
+                        trailing = { SlChevron() },
                     )
                 }
             }
@@ -476,6 +494,7 @@ private fun SettingsScreenPreview() {
             onRelaxDelayChange = {},
             blockedCount = SampleData.settings.blockedAppIds.size,
             onPickApps = {},
+            onReplayTutorial = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
@@ -511,6 +530,7 @@ private fun SettingsScreenPendingPreview() {
             onRelaxDelayChange = {},
             blockedCount = SampleData.settings.blockedAppIds.size,
             onPickApps = {},
+            onReplayTutorial = {},
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},

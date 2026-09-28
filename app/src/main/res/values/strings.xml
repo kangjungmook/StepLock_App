@@ -98,6 +98,22 @@
     <string name="unlock_channel_name">잠금 해제 알림</string>
     <string name="unlock_notification_title">오늘 잠금이 풀렸어요</string>
     <string name="unlock_notification_text">조건을 채웠어요. 잠근 앱을 이제 열 수 있어요</string>
+    <string name="tutorial_hello_title">안녕하세요, 걸어 다니는 자물쇠예요</string>
+    <string name="tutorial_hello_body">시간을 자꾸 뺏어 가는 앱을 제가 잠가 둘게요. 잠글 앱은 직접 고를 수 있어요.</string>
+    <string name="tutorial_unlock_title">하루 습관을 채우면 열어 드려요</string>
+    <string name="tutorial_unlock_body">걸음 수, 수면 시간, 집중 타이머 중에서 조건을 골라 두세요. 채우는 순간 알림으로 알려 드릴게요.</string>
+    <string name="tutorial_allow_title">급할 땐 잠깐 열 수 있어요</string>
+    <string name="tutorial_allow_body">잠금 화면에서 %1$d분씩, 하루 %2$d번까지 열 수 있어요. 다 쓰면 내일 다시 생겨요.</string>
+    <string name="tutorial_ready_title">이제 몇 가지만 허용해 주세요</string>
+    <string name="tutorial_ready_body">어떤 앱이 열렸는지 알아보고 그 위에 잠금 화면을 띄우려면 권한이 필요해요.</string>
+    <string name="tutorial_skip">건너뛰기</string>
+    <string name="tutorial_next">다음</string>
+    <string name="tutorial_start">권한 켜러 가기</string>
+    <string name="tutorial_done">다 봤어요, 닫기</string>
+    <string name="tutorial_position">%2$d장 중 %1$d번째</string>
+    <string name="settings_section_help">도움말</string>
+    <string name="settings_tutorial_replay">사용 방법 다시 보기</string>
+    <string name="settings_tutorial_replay_desc">처음 설치했을 때 본 안내를 다시 봅니다</string>
     <string name="onboarding_skip_permissions">권한 없이 먼저 둘러보기</string>
     <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
 

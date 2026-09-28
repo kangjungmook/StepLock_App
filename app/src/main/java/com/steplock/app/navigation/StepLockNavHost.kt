@@ -45,6 +45,7 @@ import com.steplock.app.ui.screens.OnboardingScreen
 import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
 import com.steplock.app.ui.screens.StatsScreen
+import com.steplock.app.ui.screens.TutorialScreen
 import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.theme.SlColor
 
@@ -56,8 +57,11 @@ object Route {
     const val STATS = "stats"
     const val POMODORO = "pomodoro"
     const val APP_PICKER = "app-picker"
+    const val TUTORIAL = "tutorial?replay={replay}"
 
     fun login(trigger: LoginTrigger = LoginTrigger.AppStart) = "login?trigger=${trigger.name}"
+
+    fun tutorial(replay: Boolean = false) = "tutorial?replay=$replay"
 }
 
 /**
@@ -124,7 +128,7 @@ private fun StepLockNavGraph(
                 if (state.authState is AuthState.SignedIn) {
                     if (trigger == LoginTrigger.AppStart) {
                         navController.navigate(
-                            if (state.onboardingCompleted) Route.HOME else Route.ONBOARDING,
+                            if (state.onboardingCompleted) Route.HOME else Route.tutorial(),
                         ) {
                             popUpTo(startDestination) { inclusive = true }
                         }
@@ -140,13 +144,36 @@ private fun StepLockNavGraph(
                 onSocialLogin = viewModel::signInWithSocial,
                 onGuestContinue = {
                     viewModel.continueAsGuest()
-                    navController.navigate(Route.ONBOARDING)
+                    navController.navigate(Route.tutorial())
                 },
                 onForgotPassword = viewModel::requestPasswordReset,
                 trigger = trigger,
                 submitting = loginState.submitting,
                 errorText = loginState.error?.let { stringResource(it.messageRes()) },
                 noticeText = loginState.notice?.let { stringResource(it.messageRes()) },
+            )
+        }
+
+        // 권한을 묻기 전에 무엇을 하는 앱인지 캐릭터가 먼저 알려 줍니다.
+        composable(
+            route = Route.TUTORIAL,
+            arguments = listOf(
+                navArgument("replay") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
+        ) { entry ->
+            val replay = entry.arguments?.getBoolean("replay") ?: false
+            TutorialScreen(
+                replay = replay,
+                onFinish = {
+                    if (replay) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(Route.ONBOARDING)
+                    }
+                },
             )
         }
 
@@ -324,6 +351,7 @@ private fun StepLockNavGraph(
                 onRelaxDelayChange = viewModel::setRelaxDelay,
                 blockedCount = state.desiredSettings.blockedAppIds.size,
                 onPickApps = { navController.navigate(Route.APP_PICKER) },
+                onReplayTutorial = { navController.navigate(Route.tutorial(replay = true)) },
                 accountEmail = state.settings.accountEmail,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,
