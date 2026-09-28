@@ -27,15 +27,16 @@
 
 <p align="center"><sub>412×892 프레임 · 구현과 같은 OKLCH 토큰·간격·아이콘으로 렌더한 이미지입니다 (실기기 캡처가 아닙니다).<br>앱 아이콘 자리는 첫 글자 자리표시자이며, 실제 앱은 기기에 깔린 각 앱의 아이콘을 보여 줍니다</sub></p>
 
-## 캐릭터
+## 캐릭터 — 스텝이
 
 <p align="center">
-  <img src="docs/screens/mascot-walk.gif" width="120" alt="걷는 자물쇠 캐릭터 애니메이션" />
+  <img src="docs/screens/mascot-walk.gif" width="120" alt="걷는 자물쇠 캐릭터 스텝이 애니메이션" />
 </p>
 
-<p align="center"><img src="docs/screens/mascot-walk.png" width="70%" alt="걷는 자물쇠 캐릭터의 네 프레임" /></p>
+<p align="center"><img src="docs/screens/mascot-walk.png" width="70%" alt="스텝이의 걷는 네 프레임" /></p>
 
-이름 그대로 걸어서 잠금을 푸는 앱이라, 다리가 달린 자물쇠를 마스코트로 씁니다.
+이름 그대로 걸어서 잠금을 푸는 앱이라, 다리가 달린 자물쇠 **스텝이**를 마스코트로 씁니다.
+첫 실행 튜토리얼에서는 스텝이가 말풍선으로 앱 쓰는 법을 알려 줍니다.
 런처 아이콘은 이 캐릭터를 적응형 아이콘(전경 PNG + 크림 배경 + 모노크롬 벡터)으로 넣었습니다.
 
 앱 안에서는 비트맵을 쓰지 않고 100×124 좌표계로 **다시 그려**

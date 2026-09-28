@@ -98,8 +98,8 @@
     <string name="unlock_channel_name">잠금 해제 알림</string>
     <string name="unlock_notification_title">오늘 잠금이 풀렸어요</string>
     <string name="unlock_notification_text">조건을 채웠어요. 잠근 앱을 이제 열 수 있어요</string>
-    <string name="tutorial_hello_title">안녕하세요, 걸어 다니는 자물쇠예요</string>
-    <string name="tutorial_hello_body">시간을 자꾸 뺏어 가는 앱을 제가 잠가 둘게요. 잠글 앱은 직접 고를 수 있어요.</string>
+    <string name="tutorial_hello_title">안녕하세요, 저는 스텝이예요</string>
+    <string name="tutorial_hello_body">걸어 다니는 자물쇠예요. 시간을 자꾸 뺏어 가는 앱을 제가 잠가 둘게요. 잠글 앱은 직접 고를 수 있어요.</string>
     <string name="tutorial_unlock_title">하루 습관을 채우면 열어 드려요</string>
     <string name="tutorial_unlock_body">걸음 수, 수면 시간, 집중 타이머 중에서 조건을 골라 두세요. 채우는 순간 알림으로 알려 드릴게요.</string>
     <string name="tutorial_allow_title">급할 땐 잠깐 열 수 있어요</string>
