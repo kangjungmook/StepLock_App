@@ -48,9 +48,11 @@ enum class MascotMood { Walking, Resting, Focusing }
 fun StepLockMascot(
     modifier: Modifier = Modifier,
     mood: MascotMood = MascotMood.Walking,
-    bodyColor: Color = SlColor.Brand,
-    shadeColor: Color = SlColor.BrandInk,
-    eyeColor: Color = SlColor.BrandDeep,
+    // 다크 모드에서는 강조 글자용 밝은 초록(BrandDeep)을 눈에 쓰면 눈이 하얗게
+    // 뜹니다. 캐릭터 색은 팔레트에 따로 둡니다.
+    bodyColor: Color = SlColor.MascotBody,
+    shadeColor: Color = SlColor.MascotShade,
+    eyeColor: Color = SlColor.MascotEye,
     footprintColor: Color = SlColor.Border,
 ) {
     val walking = mood == MascotMood.Walking

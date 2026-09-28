@@ -516,6 +516,39 @@ private fun SettingsScreenPreview() {
     }
 }
 
+/** 다크 모드 — 같은 데이터로 색만 바뀌는지 봅니다. */
+@Preview(widthDp = 412, heightDp = 892, name = "Dark")
+@Composable
+private fun SettingsScreenPreviewDark() {
+    StepLockTheme(darkTheme = true) {
+        SettingsScreen(
+            settings = SampleData.settings,
+            settingsApplyOn = null,
+            onRelaxDelayChange = {},
+            blockedCount = SampleData.settings.blockedAppIds.size,
+            onPickApps = {},
+            onReplayTutorial = {},
+            accountEmail = "jiwoo@example.com",
+            onSignIn = {},
+            onSignOut = {},
+            onBack = {},
+            onDeleteAccount = {},
+            onDeleteAccountConfirm = {},
+            onDeleteAccountDismiss = {},
+            deleteAccountConfirming = false,
+            deleteAccountDeleting = false,
+            deleteAccountErrorText = null,
+            onStepsEnabledChange = {},
+            onSleepEnabledChange = {},
+            onPomodoroEnabledChange = {},
+            onRequireAllChange = {},
+            onStepGoalChange = {},
+            onSleepGoalChange = {},
+            onPomodoroGoalChange = {},
+        )
+    }
+}
+
 /** 목표를 낮춰서 완화가 예약된 상태. 맨 위 안내와 대기 기간 칸을 같이 확인합니다. */
 @Preview(widthDp = 412, heightDp = 892)
 @Composable

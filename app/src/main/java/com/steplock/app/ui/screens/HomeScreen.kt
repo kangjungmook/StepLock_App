@@ -480,6 +480,28 @@ private fun HomeScreenPreview() {
     }
 }
 
+/** 다크 모드 — 같은 데이터로 색만 바뀌는지 봅니다. */
+@Preview(widthDp = 412, heightDp = 892, name = "Dark")
+@Composable
+private fun HomeScreenPreviewDark() {
+    StepLockTheme(darkTheme = true) {
+        HomeScreen(
+            userName = SampleData.settings.displayName,
+            stat = SampleData.today,
+            settings = SampleData.settings,
+            apps = SampleData.apps,
+            selectedTab = NavTab.Home,
+            onTabSelected = {},
+            onManageLocks = {},
+            onPomodoroClick = {},
+            streak = 3,
+            warningTitle = null,
+            warningDescription = null,
+            onWarningClick = {},
+        )
+    }
+}
+
 /** 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다. */
 private enum class HomeStatus { Allowed, Focusing, Unlocked, Locked }
 

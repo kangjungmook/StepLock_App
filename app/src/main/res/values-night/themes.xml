@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 다크 모드: 상태 표시줄 아이콘을 밝게. 배경색은 values-night/colors.xml 에서. -->
+    <style name="Theme.StepLock" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/steplock_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

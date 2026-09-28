@@ -247,3 +247,12 @@ private fun TutorialScreenPreview() {
         TutorialScreen(onFinish = {})
     }
 }
+
+/** 다크 모드 — 같은 데이터로 색만 바뀌는지 봅니다. */
+@Preview(widthDp = 412, heightDp = 892, name = "Dark")
+@Composable
+private fun TutorialScreenPreviewDark() {
+    StepLockTheme(darkTheme = true) {
+        TutorialScreen(onFinish = {})
+    }
+}

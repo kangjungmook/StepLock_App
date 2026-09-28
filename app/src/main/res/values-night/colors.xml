@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      다크 모드의 창·스플래시 배경. Compose 가 첫 화면을 그리기 전 잠깐 보이는
+      색이라 DarkPalette.background 와 같아야 합니다 — 다르면 켤 때마다 한 번
+      번쩍입니다.
+    -->
+    <color name="steplock_background">#FF0E1411</color>
+</resources>

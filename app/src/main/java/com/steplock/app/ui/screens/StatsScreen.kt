@@ -406,3 +406,20 @@ private fun StatsScreenPreview() {
         )
     }
 }
+
+/** 다크 모드 — 같은 데이터로 색만 바뀌는지 봅니다. */
+@Preview(widthDp = 412, heightDp = 892, name = "Dark")
+@Composable
+private fun StatsScreenPreviewDark() {
+    StepLockTheme(darkTheme = true) {
+        StatsScreen(
+            weekly = SampleData.weekly,
+            monthly = SampleData.monthly,
+            settings = SampleData.settings,
+            streak = 5,
+            longestStreak = 7,
+            selectedTab = NavTab.Stats,
+            onTabSelected = {},
+        )
+    }
+}

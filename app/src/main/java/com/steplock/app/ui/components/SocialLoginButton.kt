@@ -71,7 +71,8 @@ fun SocialLoginButton(
             SocialProvider.Apple -> Icon(
                 imageVector = SlIcons.Apple,
                 contentDescription = label,
-                tint = SlColor.Social.AppleInk,
+                // 배경(TextPrimary)의 반대색 — 라이트는 검은 버튼에 밝은 로고, 다크는 그 반대.
+                tint = SlColor.Background,
                 modifier = Modifier.size(19.dp),
             )
         }

@@ -71,6 +71,9 @@ fun StepTrack(
                 )
             }
 
+            // 그리기 블록은 컴포저블이 아니라 테마 색을 그 안에서 읽을 수 없습니다.
+            val trackColor = SlColor.BorderStrong
+            val walkedColor = SlColor.Brand
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -84,7 +87,7 @@ fun StepTrack(
 
                 if (animated < 1f) {
                     drawLine(
-                        color = SlColor.BorderStrong,
+                        color = trackColor,
                         start = Offset(walked + stroke, centerY),
                         end = Offset(finishX, centerY),
                         strokeWidth = 2.dp.toPx(),
@@ -97,7 +100,7 @@ fun StepTrack(
                 }
                 if (animated > 0f) {
                     drawLine(
-                        color = SlColor.Brand,
+                        color = walkedColor,
                         start = Offset(0f, centerY),
                         end = Offset(walked, centerY),
                         strokeWidth = stroke,
@@ -106,7 +109,7 @@ fun StepTrack(
                 }
                 // 결승선 — 목표에 닿으면 브랜드 색으로 바뀝니다.
                 drawLine(
-                    color = if (animated >= 1f) SlColor.Brand else SlColor.BorderStrong,
+                    color = if (animated >= 1f) walkedColor else trackColor,
                     start = Offset(finishX, 0f),
                     end = Offset(finishX, size.height),
                     strokeWidth = 3.dp.toPx(),

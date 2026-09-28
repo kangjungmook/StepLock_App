@@ -1,37 +1,57 @@
 package com.steplock.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-
-private val StepLockColorScheme = lightColorScheme(
-    primary = SlColor.Brand,
-    onPrimary = SlColor.OnBrand,
-    primaryContainer = SlColor.BrandTint,
-    onPrimaryContainer = SlColor.BrandDeep,
-    secondary = SlColor.Amber,
-    onSecondary = SlColor.OnAmber,
-    secondaryContainer = SlColor.AmberSurface,
-    onSecondaryContainer = SlColor.AmberText,
-    background = SlColor.Background,
-    onBackground = SlColor.TextPrimary,
-    surface = SlColor.Surface,
-    onSurface = SlColor.TextPrimary,
-    surfaceVariant = SlColor.SurfaceAlt,
-    onSurfaceVariant = SlColor.TextSecondary,
-    outline = SlColor.Border,
-    outlineVariant = SlColor.BorderStrong,
-)
+import androidx.compose.runtime.CompositionLocalProvider
 
 /**
- * 시안의 다크 팔레트는 잠금 오버레이 전용이라 시스템 다크모드를 따르지 않습니다.
- * 오버레이는 SlColor.Dark 토큰을 직접 사용합니다.
+ * 시스템 다크 모드를 따릅니다. 화면 코드는 [SlColor] 토큰만 쓰고, 여기서 내려 준
+ * 팔레트에 따라 값이 바뀝니다.
+ *
+ * 잠금 화면은 이 설정과 상관없이 [SlColor.Dark] 를 씁니다.
  */
 @Composable
-fun StepLockTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = StepLockColorScheme,
-        typography = SlTypography,
-        content = content,
+fun StepLockTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    val palette = if (darkTheme) DarkPalette else LightPalette
+    CompositionLocalProvider(LocalSlPalette provides palette) {
+        MaterialTheme(
+            colorScheme = palette.toColorScheme(darkTheme),
+            typography = SlTypography,
+            content = content,
+        )
+    }
+}
+
+/** Material 컴포넌트(대화상자·텍스트 선택 등)도 같은 색을 쓰게 맞춥니다. */
+private fun SlPalette.toColorScheme(dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = brand,
+        onPrimary = onBrand,
+        primaryContainer = brandTint,
+        onPrimaryContainer = brandDeep,
+        secondary = amber,
+        onSecondary = onAmber,
+        secondaryContainer = amberSurface,
+        onSecondaryContainer = amberText,
+        background = background,
+        onBackground = textPrimary,
+        surface = surface,
+        onSurface = textPrimary,
+        surfaceVariant = surfaceAlt,
+        onSurfaceVariant = textSecondary,
+        surfaceContainerHigh = surface,
+        surfaceContainerHighest = surfaceAlt,
+        outline = border,
+        outlineVariant = borderStrong,
+        error = error,
+        onError = onError,
     )
 }
