@@ -14,15 +14,12 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.util.UUID
 
 private val Context.stepLockStore: DataStore<Preferences> by preferencesDataStore(name = "steplock")
 
-/** 걸음 센서는 부팅 이후 누적값을 주므로, 날짜별 기준점을 따로 보관합니다. */
-data class StepBaseline(val date: LocalDate, val counter: Long)
 
 /** 기기에 보관하는 일별 기록의 길이. 통계 화면이 고를 수 있는 최대 기간이기도 합니다. */
 const val HISTORY_DAYS = 30
@@ -93,6 +90,10 @@ class SettingsRepository(context: Context) {
         val settingsApplyOn = stringPreferencesKey("settings_apply_on")
         val stepBaselineDate = stringPreferencesKey("step_baseline_date")
         val stepBaselineCounter = longPreferencesKey("step_baseline_counter")
+        /** 재부팅 전에 센 오늘 걸음. 없으면 0. */
+        val stepBaselineOffset = intPreferencesKey("step_baseline_offset")
+        /** 기준을 잡을 때의 부팅 횟수. 없으면 재부팅을 누적값으로만 판단합니다. */
+        val stepBaselineBoot = intPreferencesKey("step_baseline_boot")
         val pomodoroEndsAt = longPreferencesKey("pomodoro_ends_at")
         val pomodoroPausedRemaining = longPreferencesKey("pomodoro_paused_remaining")
         val pomodoroSessionsDate = stringPreferencesKey("pomodoro_sessions_date")
@@ -412,9 +413,13 @@ class SettingsRepository(context: Context) {
      */
     suspend fun recordDay(stat: DailyStat) {
         store.edit { prefs ->
-            val encoded = encodeDay(stat)
             val existing = prefs[Keys.dailyHistory].orEmpty()
             val sameDay = existing.firstOrNull { it.startsWith("${stat.date}|") }
+            // 같은 날 걸음은 줄어들지 않으므로 더 큰 쪽을 남깁니다. 감시 서비스가 막
+            // 켜져 센서 값이 오기 전(0)에 기록하더라도, 재부팅 직후에 이어 붙일
+            // 오늘 걸음을 덮어쓰지 않게 하려는 것입니다.
+            val recordedSteps = sameDay?.split('|')?.getOrNull(1)?.toIntOrNull() ?: 0
+            val encoded = encodeDay(stat.copy(steps = maxOf(stat.steps, recordedSteps)))
             if (sameDay == encoded) return@edit
             prefs[Keys.dailyHistory] = (existing - setOfNotNull(sameDay) + encoded)
                 .sortedByDescending { it.substringBefore('|') }
@@ -430,19 +435,62 @@ class SettingsRepository(context: Context) {
         }
     }
 
-    suspend fun readStepBaseline(): StepBaseline? {
-        val prefs = store.data.first()
-        val date = prefs[Keys.stepBaselineDate] ?: return null
-        val counter = prefs[Keys.stepBaselineCounter] ?: return null
-        return StepBaseline(LocalDate.parse(date), counter)
+    /**
+     * 센서 누적값을 오늘 걸음으로 바꿉니다. 규칙은 [resolveTodaySteps] 에 있습니다.
+     *
+     * 기준점 읽기 → 판단 → 쓰기를 **한 번의 edit 안에서** 합니다. 화면과 감시 서비스가
+     * 각자 센서를 읽으므로, 따로 읽고 쓰면 재부팅 직후 둘이 동시에 기준점을 새로 잡아
+     * 그사이 걸음이 빠질 수 있습니다. edit 은 차례로 실행되어 뒤에 온 쪽이 앞의
+     * 결과를 봅니다. 기준점이 그대로면 저장소에 쓰지 않습니다.
+     */
+    suspend fun countTodaySteps(
+        total: Long,
+        today: LocalDate,
+        bootCount: Int?,
+        bootedToday: Boolean,
+    ): Int {
+        var steps = 0
+        store.edit { prefs ->
+            val reading = resolveTodaySteps(
+                total = total,
+                today = today,
+                bootCount = bootCount,
+                bootedToday = bootedToday,
+                baseline = prefs.stepBaseline(),
+                recordedToday = prefs.recordedSteps(today),
+            )
+            reading.newBaseline?.let { baseline ->
+                prefs[Keys.stepBaselineDate] = baseline.date.toString()
+                prefs[Keys.stepBaselineCounter] = baseline.counter
+                prefs[Keys.stepBaselineOffset] = baseline.offset
+                val boot = baseline.bootCount
+                if (boot != null) prefs[Keys.stepBaselineBoot] = boot else prefs.remove(Keys.stepBaselineBoot)
+            }
+            steps = reading.steps
+        }
+        return steps
     }
 
-    suspend fun writeStepBaseline(baseline: StepBaseline) {
-        store.edit { prefs ->
-            prefs[Keys.stepBaselineDate] = baseline.date.toString()
-            prefs[Keys.stepBaselineCounter] = baseline.counter
-        }
+    private fun Preferences.stepBaseline(): StepBaseline? {
+        val date = this[Keys.stepBaselineDate]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?: return null
+        val counter = this[Keys.stepBaselineCounter] ?: return null
+        return StepBaseline(
+            date = date,
+            counter = counter,
+            offset = this[Keys.stepBaselineOffset] ?: 0,
+            bootCount = this[Keys.stepBaselineBoot],
+        )
     }
+
+    /** 그날 기록해 둔 걸음. 없으면 0. */
+    private fun Preferences.recordedSteps(date: LocalDate): Int =
+        this[Keys.dailyHistory].orEmpty()
+            .firstOrNull { it.startsWith("$date|") }
+            ?.split('|')
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+            ?: 0
 
     /**
      * 한 벌의 조건을 읽습니다.

@@ -15,8 +15,11 @@ ktor = "3.0.1"
 playServicesAds = "23.6.0"
 # 동의 관리(UMP). 광고 SDK와 버전이 독립적입니다.
 userMessagingPlatform = "3.1.0"
+# 단위 테스트(JVM). 걸음 계산처럼 기기에서 재현하기 어려운 규칙을 확인합니다.
+junit = "4.13.2"
 
 [libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
