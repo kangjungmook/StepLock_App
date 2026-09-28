@@ -1,9 +1,7 @@
 package com.steplock.app.ui.screens
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -21,7 +18,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,8 +25,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -44,6 +38,7 @@ import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.StepLockMascot
+import com.steplock.app.ui.components.StepiBubble
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -168,7 +163,9 @@ private fun TutorialPageContent(page: TutorialPage) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        SpeechBubble {
+        StepiBubble(
+            modifier = Modifier.widthIn(max = 340.dp).fillMaxWidth(),
+        ) {
             Text(
                 text = stringResource(page.titleRes),
                 style = SlText.StatusTitle,
@@ -201,45 +198,6 @@ private fun TutorialPageContent(page: TutorialPage) {
             modifier = Modifier.size(width = 120.dp, height = 149.dp),
             mood = page.mood,
         )
-    }
-}
-
-/**
- * 캐릭터 위에 뜨는 말풍선. 꼬리가 아래로 캐릭터를 가리켜서, 이 글이 누구의 말인지
- * 설명 없이 읽힙니다.
- */
-@Composable
-private fun SpeechBubble(content: @Composable () -> Unit) {
-    val shape = RoundedCornerShape(SlDimen.RadiusCard)
-    Box(contentAlignment = Alignment.BottomCenter) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 340.dp)
-                .fillMaxWidth()
-                .clip(shape)
-                .background(SlColor.Surface)
-                .border(1.dp, SlColor.Border, shape)
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-        ) {
-            content()
-        }
-        // 꼬리: 말풍선 테두리를 1dp 덮어서 한 덩어리로 보이게 합니다.
-        Canvas(
-            modifier = Modifier
-                .size(width = 20.dp, height = 11.dp)
-                .offset(y = 10.dp),
-        ) {
-            val path = Path().apply {
-                moveTo(0f, 0f)
-                lineTo(size.width / 2f, size.height)
-                lineTo(size.width, 0f)
-                close()
-            }
-            drawPath(path, SlColor.Surface)
-            val stroke = 1.dp.toPx()
-            drawLine(SlColor.Border, Offset(0f, 0f), Offset(size.width / 2f, size.height), stroke)
-            drawLine(SlColor.Border, Offset(size.width, 0f), Offset(size.width / 2f, size.height), stroke)
-        }
     }
 }
 

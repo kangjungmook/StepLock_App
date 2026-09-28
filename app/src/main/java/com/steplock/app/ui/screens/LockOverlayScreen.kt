@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +34,8 @@ import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.StatusChip
 import com.steplock.app.ui.components.StepLockMascot
+import com.steplock.app.ui.components.StepiSays
+import com.steplock.app.ui.components.BubbleTail
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -102,36 +105,48 @@ fun LockOverlayScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // 목표를 채우면 캐릭터도 걸음을 멈춥니다. 모든 조건을 요구할 때만 볼 수 있는 상태입니다.
-            StepLockMascot(
-                modifier = Modifier.size(width = 80.dp, height = 99.dp),
-                mood = if (heroProgress >= 1f) MascotMood.Resting else MascotMood.Walking,
-                bodyColor = SlColor.Dark.GreenIcon,
-                shadeColor = SlColor.Dark.GreenDeep,
-                eyeColor = SlColor.Dark.GreenTint,
-                footprintColor = SlColor.Dark.Border,
-            )
-
-            Spacer(Modifier.height(24.dp))
             Text(
                 text = stringResource(R.string.lock_title, withTopicParticle(appName)),
                 style = SlText.LockTitle,
                 color = SlColor.Dark.TextPrimary,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                // 채운 조건이 히어로일 수 있어서(전부 만족 모드) 공용 확장이 분기합니다.
-                // 집중 중이면 조건과 무관하게 잠긴 것이라 그 이유를 말합니다.
-                text = if (focusing) {
-                    stringResource(R.string.lock_focusing)
-                } else {
-                    hero.remainingText(stat, settings)
-                },
-                style = SlText.Remaining,
-                color = SlColor.Dark.AmberText,
-                textAlign = TextAlign.Center,
-            )
+
+            // 무엇을 하면 열리는지는 스텝이가 직접 말합니다. 같은 문장도 캐릭터의
+            // 말이면 "막혔다"가 아니라 "같이 채우자"로 읽힙니다.
+            Spacer(Modifier.height(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 목표를 채우면 걸음을 멈춥니다. 모든 조건을 요구할 때만 볼 수 있는 상태입니다.
+                StepLockMascot(
+                    modifier = Modifier.size(width = 64.dp, height = 79.dp),
+                    mood = when {
+                        focusing -> MascotMood.Focusing
+                        heroProgress >= 1f -> MascotMood.Resting
+                        else -> MascotMood.Walking
+                    },
+                    bodyColor = SlColor.Dark.GreenIcon,
+                    shadeColor = SlColor.Dark.GreenDeep,
+                    eyeColor = SlColor.Dark.GreenTint,
+                    footprintColor = SlColor.Dark.Border,
+                )
+                Spacer(Modifier.width(8.dp))
+                StepiSays(
+                    // 채운 조건이 히어로일 수 있어서(전부 만족 모드) 공용 확장이 분기합니다.
+                    // 집중 중이면 조건과 무관하게 잠긴 것이라 그 이유를 말합니다.
+                    text = if (focusing) {
+                        stringResource(R.string.lock_focusing)
+                    } else {
+                        hero.remainingText(stat, settings)
+                    },
+                    tail = BubbleTail.Start,
+                    style = SlText.Remaining,
+                    textColor = SlColor.Dark.AmberText,
+                    containerColor = SlColor.Dark.Surface,
+                    borderColor = SlColor.Dark.Border,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
 
             Spacer(Modifier.height(32.dp))
             ProgressRing(

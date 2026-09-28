@@ -42,6 +42,7 @@ class PomodoroService : Service() {
         repository = SettingsRepository(this)
         createChannel()
         startForegroundWith(
+            getString(R.string.pomodoro_notification_running_title),
             getString(R.string.pomodoro_notification_running, formatCountdown(Pomodoro.SESSION_MS)),
         )
         scope.launch { trackSession() }
@@ -70,11 +71,13 @@ class PomodoroService : Service() {
                         return
                     }
                     updateNotification(
+                        getString(R.string.pomodoro_notification_running_title),
                         getString(R.string.pomodoro_notification_running, formatCountdown(remaining)),
                     )
                 }
 
                 state.pausedRemainingMs != null -> updateNotification(
+                    getString(R.string.pomodoro_notification_paused_title),
                     getString(
                         R.string.pomodoro_notification_paused,
                         formatCountdown(state.pausedRemainingMs),
@@ -101,8 +104,8 @@ class PomodoroService : Service() {
         )
     }
 
-    private fun startForegroundWith(text: String) {
-        val notification = buildNotification(text, ongoing = true)
+    private fun startForegroundWith(title: String, text: String) {
+        val notification = buildNotification(title, text, ongoing = true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
@@ -114,8 +117,8 @@ class PomodoroService : Service() {
         }
     }
 
-    private fun updateNotification(text: String) {
-        notificationManager()?.notify(NOTIFICATION_ID, buildNotification(text, ongoing = true))
+    private fun updateNotification(title: String, text: String) {
+        notificationManager()?.notify(NOTIFICATION_ID, buildNotification(title, text, ongoing = true))
     }
 
     private fun notifySessionDone() {
@@ -123,6 +126,7 @@ class PomodoroService : Service() {
             DONE_NOTIFICATION_ID,
             Notification.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_steplock)
+                .setSubText(getString(R.string.mascot_name))
                 .setContentTitle(getString(R.string.pomodoro_notification_done_title))
                 .setContentText(getString(R.string.pomodoro_notification_done_text))
                 .setContentIntent(openAppIntent())
@@ -131,11 +135,17 @@ class PomodoroService : Service() {
         )
     }
 
-    private fun buildNotification(text: String, ongoing: Boolean): Notification =
+    /**
+     * 알림 문구는 스텝이가 말하는 투로 씁니다. 머리글에 이름(subText)을 붙여서,
+     * 앱 이름 옆에 "스텝이"가 보이고 누구의 말인지 따로 설명하지 않아도 됩니다.
+     */
+    private fun buildNotification(title: String, text: String, ongoing: Boolean): Notification =
         Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_steplock)
-            .setContentTitle(getString(R.string.condition_pomodoro))
+            .setSubText(getString(R.string.mascot_name))
+            .setContentTitle(title)
             .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
             .setContentIntent(openAppIntent())
             .setOngoing(ongoing)
             .setOnlyAlertOnce(true)

@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
@@ -31,6 +30,7 @@ import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.StepLockMascot
+import com.steplock.app.ui.components.StepiSays
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -83,6 +83,16 @@ fun PomodoroScreen(
         ) {
             // 세션이 도는 동안 앉아서 함께 기다립니다. 멈추거나 끝나면 일어섭니다 —
             // 자세 하나로 "지금 돌고 있는지"가 숫자를 읽지 않아도 보입니다.
+            // 지금 상태에 맞는 한마디. 버튼 아래 안내 문구를 여기로 옮겨 와서,
+            // 화면 아래쪽은 버튼만 남깁니다.
+            StepiSays(
+                text = when {
+                    state.running -> stringResource(R.string.pomodoro_stepi_running)
+                    state.paused -> stringResource(R.string.pomodoro_stepi_paused)
+                    else -> stringResource(R.string.pomodoro_stepi_idle, Pomodoro.SESSION_MINUTES)
+                },
+            )
+            Spacer(Modifier.height(16.dp))
             StepLockMascot(
                 modifier = Modifier.size(width = 56.dp, height = 69.dp),
                 mood = if (state.running) MascotMood.Focusing else MascotMood.Resting,
@@ -161,6 +171,7 @@ fun PomodoroScreen(
             // 처음부터 다시는 **멈춘 뒤에만** 보입니다. 돌고 있을 때 "멈추기" 바로
             // 밑에 두면 잘못 눌러 20분을 한 번에 날릴 수 있는데, 확인 대화상자를
             // 하나 더 두는 것보다 한 단계(멈추기)를 거치게 하는 편이 가볍습니다.
+            // 다른 때도 같은 높이를 비워 두어 상태가 바뀔 때 버튼이 튀지 않게 합니다.
             if (state.paused) {
                 TextLink(
                     text = stringResource(R.string.pomodoro_reset),
@@ -168,19 +179,7 @@ fun PomodoroScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             } else {
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    // 도는 동안에는 잠금이 걸려 있다는 사실을 알려 줍니다.
-                    text = if (state.running) {
-                        stringResource(R.string.pomodoro_running_hint)
-                    } else {
-                        stringResource(R.string.pomodoro_hint, Pomodoro.SESSION_MINUTES)
-                    },
-                    style = SlText.Caption,
-                    color = SlColor.TextSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Spacer(Modifier.height(SlDimen.TouchTarget))
             }
         }
     }

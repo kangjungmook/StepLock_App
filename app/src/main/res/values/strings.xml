@@ -83,21 +83,28 @@
     <string name="pomodoro_reset">처음부터 다시</string>
     <string name="pomodoro_ring_caption">남은 시간</string>
     <string name="pomodoro_sessions">완료 %1$d / 목표 %2$d 세션</string>
-    <string name="pomodoro_hint">%1$d분을 채우면 세션 하나가 쌓여요</string>
-    <string name="pomodoro_running_hint">집중하는 동안에는 잠근 앱이 열리지 않아요</string>
+    <string name="pomodoro_stepi_idle">%1$d분만 같이 집중해요. 끝나면 세션 하나가 쌓여요</string>
+    <string name="pomodoro_stepi_running">집중하는 동안 잠근 앱은 제가 지킬게요</string>
+    <string name="pomodoro_stepi_paused">잠깐 쉬어도 괜찮아요. 준비되면 이어서 해요</string>
     <string name="pomodoro_channel_name">집중 타이머</string>
-    <string name="pomodoro_notification_running">집중 중 · %1$s 남음</string>
-    <string name="pomodoro_notification_paused">잠시 멈춤 · %1$s 남음</string>
-    <string name="pomodoro_notification_done_title">집중 세션을 마쳤어요</string>
-    <string name="pomodoro_notification_done_text">오늘 완료한 세션이 홈에 반영됐어요</string>
+    <string name="pomodoro_notification_running_title">같이 집중하는 중이에요</string>
+    <string name="pomodoro_notification_running">%1$s 남았어요. 그동안 잠근 앱은 제가 지킬게요</string>
+    <string name="pomodoro_notification_paused_title">잠깐 쉬는 중이에요</string>
+    <string name="pomodoro_notification_paused">%1$s 남았어요. 준비되면 이어서 해요</string>
+    <string name="pomodoro_notification_done_title">집중 한 번 끝! 수고했어요</string>
+    <string name="pomodoro_notification_done_text">완료한 세션을 홈에 쌓아 뒀어요</string>
 
     <!-- 잠금 감시 알림 -->
     <string name="watch_channel_name">잠금 감시</string>
-    <string name="watch_notification_title">스텝락이 잠금을 지키고 있어요</string>
-    <string name="watch_notification_text">차단한 앱을 열면 조건 화면을 보여줍니다</string>
+    <string name="mascot_name">스텝이</string>
+    <string name="watch_notification_title">잠근 앱은 제가 지키고 있어요</string>
+    <string name="watch_notification_text">잠근 앱을 열면 무엇을 채우면 되는지 알려 드릴게요</string>
     <string name="unlock_channel_name">잠금 해제 알림</string>
-    <string name="unlock_notification_title">오늘 잠금이 풀렸어요</string>
-    <string name="unlock_notification_text">조건을 채웠어요. 잠근 앱을 이제 열 수 있어요</string>
+    <string name="unlock_notification_title">해냈어요! 오늘은 열어 둘게요</string>
+    <string name="unlock_notification_text">조건을 채웠어요. 잠근 앱을 이제 쓸 수 있어요</string>
+    <string name="nudge_channel_name">스텝이 저녁 응원</string>
+    <string name="nudge_notification_title">오늘 %1$s보 남았어요</string>
+    <string name="nudge_notification_text">저녁 산책 같이 가요? 채우면 잠근 앱을 열어 둘게요</string>
     <string name="tutorial_hello_title">안녕하세요, 저는 스텝이예요</string>
     <string name="tutorial_hello_body">걸어 다니는 자물쇠예요. 시간을 자꾸 뺏어 가는 앱을 제가 잠가 둘게요. 잠글 앱은 직접 고를 수 있어요.</string>
     <string name="tutorial_unlock_title">하루 습관을 채우면 열어 드려요</string>
@@ -138,10 +145,10 @@
     <string name="home_section_conditions_rest">나머지 조건</string>
     <string name="home_track_goal">목표 %1$s</string>
     <!-- 조건이나 앱을 하나도 고르지 않은 경우 -->
-    <string name="home_no_conditions_title">켜 둔 조건이 없어요</string>
-    <string name="home_no_conditions_desc">설정에서 조건을 켜면 잠금이 시작돼요</string>
-    <string name="home_no_apps_title">잠글 앱을 고르지 않았어요</string>
-    <string name="home_no_apps_desc">설정에서 잠글 앱을 골라 주세요</string>
+    <string name="home_no_conditions_title">지킬 조건이 없어서 쉬고 있어요</string>
+    <string name="home_no_conditions_desc">설정에서 조건을 하나 켜 주면 바로 일할게요</string>
+    <string name="home_no_apps_title">지킬 앱을 골라 주세요</string>
+    <string name="home_no_apps_desc">고른 앱이 열리면 제가 막아 둘게요</string>
     <string name="home_section_blocked_apps">차단 중인 앱</string>
     <string name="home_manage_apps">관리</string>
     <string name="home_steps_value">%1$s / %2$s보</string>
@@ -190,8 +197,8 @@
          100%인데 왜 안 열리냐는 오해가 생기지 않습니다 -->
     <string name="stats_condition_off">%1$s · 꺼짐</string>
     <!-- 아직 아무 기록도 없는 새 설치 상태 -->
-    <string name="stats_empty_title">아직 기록이 없어요</string>
-    <string name="stats_empty_desc">하루를 보내면 걸음 수와 달성 현황이 여기에 쌓입니다</string>
+    <string name="stats_empty_title">아직 같이 걸은 날이 없어요</string>
+    <string name="stats_empty_desc">하루를 보내고 오면 걸음과 달성 기록을 여기 모아 둘게요</string>
     <string name="stats_streak_hero">%1$d일 연속 달성 중</string>
     <string name="stats_streak_zero">오늘 채우면 연속 기록이 시작돼요</string>
     <string name="stats_streak_best">최장 기록 %1$d일</string>
@@ -229,10 +236,10 @@
     <string name="app_picker_search_label">앱 찾기</string>
     <string name="app_picker_search_hint">앱 이름 또는 패키지 이름</string>
     <string name="app_picker_hint">고른 앱이 열리면 잠금 화면이 뜹니다</string>
-    <string name="app_picker_no_match_title">찾는 앱이 없어요</string>
-    <string name="app_picker_no_match_desc">이름의 일부만 넣어 보거나, 패키지 이름으로 찾아 보세요</string>
-    <string name="app_picker_none_title">목록을 읽지 못했어요</string>
-    <string name="app_picker_none_desc">실행 아이콘이 있는 앱만 보입니다. 앱을 다시 시작해 보세요</string>
+    <string name="app_picker_no_match_title">그런 앱은 못 찾았어요</string>
+    <string name="app_picker_no_match_desc">이름 일부나 패키지 이름으로 다시 찾아볼까요?</string>
+    <string name="app_picker_none_title">앱 목록을 못 읽었어요</string>
+    <string name="app_picker_none_desc">스텝락을 다시 열어 주면 다시 찾아볼게요. 실행 아이콘이 있는 앱만 보여요</string>
     <string name="app_picker_still_blocked">해제를 기다리는 중 · 아직 막혀 있어요</string>
     <string name="app_picker_pending_title">%1$d개는 %2$s 풀려요</string>
     <string name="app_picker_pending_desc">체크를 풀어도 완화 대기 기간이 지나야 실제로 열립니다</string>
@@ -294,7 +301,7 @@
     <string name="lock_rule_all">조건을 모두 채워야 열려요</string>
     <string name="lock_dismiss">알겠어요, 닫기</string>
     <string name="lock_start_focus">집중 타이머로 잠금 풀러 가기</string>
-    <string name="lock_focusing">집중하는 중이에요 · 세션이 끝나면 다시 열려요</string>
+    <string name="lock_focusing">지금은 집중할 시간이에요. 세션이 끝나면 열어 드릴게요</string>
     <!-- 임시 허용은 하루 한도가 있어서 남은 횟수를 함께 보여 줍니다 -->
     <string name="lock_temporary_allow">%1$d분만 임시로 허용하기 (오늘 %2$d번 남음)</string>
     <string name="lock_temporary_allow_exhausted">오늘 쓸 수 있는 임시 허용을 다 썼어요</string>

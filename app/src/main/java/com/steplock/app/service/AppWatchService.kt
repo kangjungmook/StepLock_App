@@ -20,6 +20,7 @@ import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.UnlockEvaluator
+import com.steplock.app.data.hasActivityRecognitionPermission
 import com.steplock.app.ui.LockActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * 전경 앱을 1초 간격으로 확인해 차단 대상이 열리면 잠금 화면을 띄웁니다.
@@ -70,6 +72,7 @@ class AppWatchService : Service() {
         // 이미 열린 상태면 알리지 않습니다 — 재시작할 때마다 "열렸어요"가 뜨면 안 됩니다.
         var sawLocked = false
         var sawLockedOn: LocalDate? = null
+        var nudgedOn: LocalDate? = null
 
         while (currentCoroutineContext().isActive) {
             val current = preferences.value
@@ -115,6 +118,23 @@ class AppWatchService : Service() {
             } else if (sawLocked) {
                 sawLocked = false
                 notifyUnlocked()
+            }
+
+            // 저녁 산책 응원 — 하루 한 번, 저녁에 걸음만 모자라 잠겨 있을 때.
+            // 잠긴 걸 알게 되는 건 보통 앱을 열었을 때라 이미 늦습니다. 아직 걸을
+            // 시간이 남았을 때 한 번 알려 줍니다. 걸음 권한이 없으면 0보가 진짜인지
+            // 알 수 없어 보내지 않습니다.
+            val hour = LocalTime.now().hour
+            if (nudgedOn != stat.date &&
+                hour in NUDGE_HOURS &&
+                !unlockedNow &&
+                current.settings.blockedAppIds.isNotEmpty() &&
+                current.settings.stepsEnabled &&
+                stat.steps < current.settings.stepGoal &&
+                hasActivityRecognitionPermission(this)
+            ) {
+                nudgedOn = stat.date
+                notifyEveningWalk(current.settings.stepGoal - stat.steps)
             }
 
             // 고른 앱의 패키지 이름을 그대로 비교합니다. 예전에는 코드에 박아 둔
@@ -179,9 +199,43 @@ class AppWatchService : Service() {
             UNLOCK_NOTIFICATION_ID,
             Notification.Builder(this, UNLOCK_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_steplock)
+                .setSubText(getString(R.string.mascot_name))
                 .setContentTitle(getString(R.string.unlock_notification_title))
                 .setContentText(getString(R.string.unlock_notification_text))
                 .setContentIntent(openApp)
+                .setAutoCancel(true)
+                .build(),
+        )
+    }
+
+    private fun notifyEveningWalk(remainingSteps: Int) {
+        val manager = getSystemService(NotificationManager::class.java) ?: return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                NUDGE_CHANNEL_ID,
+                getString(R.string.nudge_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+        )
+        val text = getString(R.string.nudge_notification_text)
+        manager.notify(
+            NUDGE_NOTIFICATION_ID,
+            Notification.Builder(this, NUDGE_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_steplock)
+                .setSubText(getString(R.string.mascot_name))
+                .setContentTitle(
+                    getString(R.string.nudge_notification_title, "%,d".format(remainingSteps)),
+                )
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(text))
+                .setContentIntent(
+                    PendingIntent.getActivity(
+                        this,
+                        2,
+                        Intent(this, MainActivity::class.java),
+                        PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                )
                 .setAutoCancel(true)
                 .build(),
         )
@@ -206,6 +260,7 @@ class AppWatchService : Service() {
 
         val notification = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_steplock)
+            .setSubText(getString(R.string.mascot_name))
             .setContentTitle(getString(R.string.watch_notification_title))
             .setContentText(getString(R.string.watch_notification_text))
             .setContentIntent(openApp)
@@ -228,6 +283,11 @@ class AppWatchService : Service() {
         private const val NOTIFICATION_ID = 21
         private const val UNLOCK_CHANNEL_ID = "steplock_unlocked"
         private const val UNLOCK_NOTIFICATION_ID = 22
+        private const val NUDGE_CHANNEL_ID = "steplock_nudge"
+        private const val NUDGE_NOTIFICATION_ID = 23
+
+        /** 저녁 산책을 권하는 시간대. 너무 이르면 잔소리, 너무 늦으면 걸을 수 없습니다. */
+        private val NUDGE_HOURS = 19..21
         private const val POLL_INTERVAL_MS = 1_000L
         private const val EVENT_WINDOW_MS = 10_000L
         private const val SLEEP_REFRESH_MS = 10 * 60_000L
