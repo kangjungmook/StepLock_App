@@ -51,12 +51,19 @@ class AuthRepository {
         }
     }
 
-    suspend fun signUpWithEmail(email: String, password: String): Result<Unit> = runCatching {
+    /**
+     * 이메일로 가입합니다. 성공하면 **인증 메일을 보냈는지**를 돌려줍니다.
+     *
+     * Supabase 에서 이메일 인증을 켜 두면 가입만으로는 세션이 생기지 않고 메일이
+     * 나갑니다(true). 메일의 링크는 딥링크(steplock://login-callback)로 앱에 돌아와
+     * 로그인을 마칩니다. 인증을 꺼 두었으면 바로 로그인됩니다(false).
+     */
+    suspend fun signUpWithEmail(email: String, password: String): Result<Boolean> = runCatching {
         auth.signUpWith(Email) {
             this.email = email
             this.password = password
         }
-        Unit
+        auth.currentSessionOrNull() == null
     }
 
     suspend fun signInWithGoogle(): Result<Unit> = runCatching { auth.signInWith(Google) }

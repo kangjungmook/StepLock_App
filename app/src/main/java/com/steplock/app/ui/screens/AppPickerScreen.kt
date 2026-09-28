@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.data.InstalledApp
+import com.steplock.app.data.Pomodoro
 import com.steplock.app.ui.components.AppIcon
 import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.IconTapTarget
@@ -67,6 +68,16 @@ fun AppPickerScreen(
     onToggle: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * 집중 세션이 도는 중. 이 동안에는 잠근 앱을 **뺄 수 없고** 더 잠그는 것만 됩니다 —
+     * 빼면 세션은 돌아도 막는 게 없어서, 멈출 수 없게 한 의미가 사라집니다.
+     */
+    focusing: Boolean = false,
+    /**
+     * 앱을 잠그면 집중 세션이 곧바로 시작되는 상태(집중 조건을 켰고 오늘 목표가 남음).
+     * 멈출 수 없는 25분이 시작되니 누르기 전에 미리 알려 줍니다.
+     */
+    focusStartsOnLock: Boolean = false,
 ) {
     var query by remember { mutableStateOf("") }
 
@@ -166,6 +177,26 @@ fun AppPickerScreen(
                 bottom = 24.dp,
             ),
         ) {
+            if (focusing) {
+                item {
+                    FocusNotice(
+                        title = stringResource(R.string.app_picker_focus_title),
+                        description = stringResource(R.string.app_picker_focus_desc),
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                }
+            } else if (focusStartsOnLock) {
+                item {
+                    FocusNotice(
+                        title = stringResource(
+                            R.string.app_picker_focus_start_title,
+                            Pomodoro.SESSION_MINUTES,
+                        ),
+                        description = stringResource(R.string.app_picker_focus_start_desc),
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                }
+            }
             // 체크를 풀었는데도 아직 막히는 앱이 있으면 목록보다 먼저 알립니다.
             if (pending.isNotEmpty() && applyOn != null) {
                 item {
@@ -183,10 +214,13 @@ fun AppPickerScreen(
                 )
             }
             items(visible, key = { it.packageName }) { app ->
+                val checked = app.packageName in selected
                 AppPickerRow(
                     app = app,
-                    checked = app.packageName in selected,
+                    checked = checked,
                     stillBlocked = app.packageName in pending,
+                    // 집중 중에는 체크를 풀 수 없습니다. 더 잠그는 건 됩니다.
+                    locked = focusing && checked,
                     onToggle = { onToggle(app.packageName) },
                 )
                 SlDivider()
@@ -202,12 +236,19 @@ private fun AppPickerRow(
     checked: Boolean,
     /** 체크는 풀렸지만 완화 대기 때문에 아직 막고 있는 앱. */
     stillBlocked: Boolean,
+    /** 집중 중이라 체크를 풀 수 없는 앱. */
+    locked: Boolean,
     onToggle: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
+            .toggleable(
+                value = checked,
+                enabled = !locked,
+                role = Role.Checkbox,
+                onValueChange = { onToggle() },
+            )
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -217,17 +258,43 @@ private fun AppPickerRow(
             Text(text = app.label, style = SlText.ListItem, color = SlColor.TextPrimary)
             Text(
                 // 아직 막고 있다는 사실이 패키지 이름보다 중요합니다.
-                text = if (stillBlocked) {
-                    stringResource(R.string.app_picker_still_blocked)
-                } else {
-                    app.packageName
+                text = when {
+                    locked -> stringResource(R.string.app_picker_focus_locked)
+                    stillBlocked -> stringResource(R.string.app_picker_still_blocked)
+                    else -> app.packageName
                 },
                 style = SlText.LabelSm,
-                color = if (stillBlocked) SlColor.AmberText else SlColor.TextTertiary,
+                color = when {
+                    locked -> SlColor.BrandDeep
+                    stillBlocked -> SlColor.AmberText
+                    else -> SlColor.TextTertiary
+                },
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
         CheckboxMark(checked = checked)
+    }
+}
+
+/**
+ * 집중 세션에 관한 안내. 경고가 아니라 규칙 설명이라 브랜드 틴트를 씁니다 —
+ * 해제 대기(앰버)와 색이 달라야 둘이 함께 떠도 구분됩니다.
+ */
+@Composable
+private fun FocusNotice(title: String, description: String, modifier: Modifier = Modifier) {
+    SlPanel(
+        modifier = modifier,
+        containerColor = SlColor.BrandTintAlt,
+        borderColor = SlColor.BrandTintAlt,
+        contentPadding = PaddingValues(SlDimen.PanelPadding),
+    ) {
+        Text(text = title, style = SlText.RowTitle, color = SlColor.BrandDeep)
+        Text(
+            text = description,
+            style = SlText.RowValue,
+            color = SlColor.TextSecondary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 

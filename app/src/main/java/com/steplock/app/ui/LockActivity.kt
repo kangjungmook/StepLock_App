@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import com.steplock.app.MainActivity
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.rememberRewardedAd
 import com.steplock.app.data.InstalledAppsRepository
+import com.steplock.app.service.PomodoroService
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.theme.SlColor
 import kotlinx.coroutines.launch
@@ -57,6 +59,14 @@ class LockActivity : ComponentActivity() {
 
             val scope = rememberCoroutineScope()
             val loaded = state
+
+            // 타이머 알림을 여기서도 띄웁니다. 감시 서비스는 백그라운드라 안드로이드 12+
+            // 에서 막힐 수 있는데, 이 화면이 보이는 동안에는 띄울 수 있습니다.
+            val focusing = loaded?.focusing == true
+            LaunchedEffect(focusing) {
+                if (focusing) runCatching { PomodoroService.start(context) }
+            }
+
             if (loaded == null) {
                 Box(Modifier.fillMaxSize().background(SlColor.Dark.Background))
             } else {
@@ -86,16 +96,9 @@ class LockActivity : ComponentActivity() {
                     } else {
                         null
                     },
-                    focusing = loaded.focusing,
-                    // 집중 조건을 켜 뒀고 아직 못 채웠을 때만 타이머로 가는 길을 줍니다.
-                    onStartFocus = if (
-                        loaded.settings.pomodoroEnabled &&
-                        loaded.today.pomodoroSessions < loaded.settings.pomodoroGoal
-                    ) {
-                        { openFocusTimer() }
-                    } else {
-                        null
-                    },
+                    // 세션은 감시 서비스가 잠금을 띄우며 이미 시작해 두었습니다.
+                    focusEndsAt = loaded.focusEndsAt,
+                    onOpenFocus = { openFocusTimer() },
                 )
             }
         }

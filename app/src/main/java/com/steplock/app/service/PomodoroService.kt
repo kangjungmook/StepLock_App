@@ -15,6 +15,7 @@ import com.steplock.app.MainActivity
 import com.steplock.app.R
 import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SettingsRepository
+import com.steplock.app.system.ForceStopCheck
 import com.steplock.app.ui.util.formatCountdown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,8 @@ import kotlinx.coroutines.launch
 /**
  * 집중 세션이 화면을 벗어나도 이어지게 하고, 남은 시간을 알림에 보여줍니다.
  * 세션 상태는 DataStore가 들고 있어서 서비스가 죽어도 종료 시각으로 복구됩니다.
+ *
+ * 알림에 멈춤 버튼이 없습니다 — 세션은 시작하면 끝날 때까지 멈출 수 없습니다.
  */
 class PomodoroService : Service() {
 
@@ -56,6 +59,7 @@ class PomodoroService : Service() {
     }
 
     private suspend fun trackSession() {
+        ForceStopCheck.discardFocusIfForceStopped(this)
         val preferences = repository.preferences.stateIn(scope)
         val serviceStartedAt = System.currentTimeMillis()
 
@@ -76,15 +80,7 @@ class PomodoroService : Service() {
                     )
                 }
 
-                state.pausedRemainingMs != null -> updateNotification(
-                    getString(R.string.pomodoro_notification_paused_title),
-                    getString(
-                        R.string.pomodoro_notification_paused,
-                        formatCountdown(state.pausedRemainingMs),
-                    ),
-                )
-
-                // 화면에서 시작을 누른 직후에는 저장이 아직 안 끝났을 수 있습니다.
+                // 시작 직후에는 저장이 아직 안 끝났을 수 있습니다.
                 System.currentTimeMillis() - serviceStartedAt > IDLE_GRACE_MS -> {
                     stopSelf()
                     return

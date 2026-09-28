@@ -15,9 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,9 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.ui.LoginError
 import com.steplock.app.ui.LoginNotice
-import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SocialLoginButton
@@ -77,8 +72,9 @@ internal fun LoginNotice.messageRes(): Int = when (this) {
 
 @Composable
 fun LoginScreen(
-    onLogin: (email: String, password: String, rememberMe: Boolean) -> Unit,
-    onSignUp: (email: String, password: String) -> Unit,
+    onLogin: (email: String, password: String) -> Unit,
+    /** 회원가입 화면으로 갑니다. 여기서 바로 가입 요청을 보내지 않습니다. */
+    onSignUp: () -> Unit,
     onSocialLogin: (SocialProvider) -> Unit,
     onGuestContinue: () -> Unit,
     onForgotPassword: (email: String) -> Unit,
@@ -90,7 +86,6 @@ fun LoginScreen(
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    var rememberMe by rememberSaveable { mutableStateOf(true) }
 
     Box(
         modifier = modifier
@@ -142,39 +137,15 @@ fun LoginScreen(
                 imeAction = ImeAction.Done,
             )
 
+            // "로그인 유지" 체크박스를 두지 않습니다. 세션은 언제나 기기에 남아서
+            // 체크를 풀어도 달라지는 게 없었습니다 — 동작하지 않는 선택지였습니다.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = SlDimen.TouchTarget),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(SlDimen.RadiusSmall))
-                        .toggleable(
-                            value = rememberMe,
-                            role = Role.Checkbox,
-                            onValueChange = { rememberMe = it },
-                        )
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CheckboxMark(
-                        checked = rememberMe,
-                        size = 18.dp,
-                        cornerRadius = 5.dp,
-                        borderWidth = 1.5.dp,
-                        checkIcon = SlIcons.CheckExtraBold,
-                        checkSize = 11.dp,
-                    )
-                    Text(
-                        text = stringResource(R.string.login_remember),
-                        style = SlText.Label,
-                        color = SlColor.TextSecondary,
-                    )
-                }
                 TextLink(
                     text = stringResource(R.string.login_forgot),
                     onClick = { onForgotPassword(email) },
@@ -207,7 +178,7 @@ fun LoginScreen(
                 } else {
                     stringResource(R.string.login_submit)
                 },
-                onClick = { onLogin(email, password, rememberMe) },
+                onClick = { onLogin(email, password) },
                 shape = CircleShape,
                 enabled = !submitting,
             )
@@ -244,7 +215,7 @@ fun LoginScreen(
                 )
                 TextLink(
                     text = stringResource(R.string.login_signup_action),
-                    onClick = { onSignUp(email, password) },
+                    onClick = onSignUp,
                     style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
                     color = SlColor.BrandInk,
                     underline = true,
@@ -266,8 +237,8 @@ fun LoginScreen(
 private fun LoginScreenPreview() {
     StepLockTheme {
         LoginScreen(
-            onLogin = { _, _, _ -> },
-            onSignUp = { _, _ -> },
+            onLogin = { _, _ -> },
+            onSignUp = {},
             onSocialLogin = {},
             onGuestContinue = {},
             onForgotPassword = {},
@@ -280,8 +251,8 @@ private fun LoginScreenPreview() {
 private fun LoginScreenSyncPreview() {
     StepLockTheme {
         LoginScreen(
-            onLogin = { _, _, _ -> },
-            onSignUp = { _, _ -> },
+            onLogin = { _, _ -> },
+            onSignUp = {},
             onSocialLogin = {},
             onGuestContinue = {},
             onForgotPassword = {},

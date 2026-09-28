@@ -14,8 +14,11 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 
 private val Context.stepLockStore: DataStore<Preferences> by preferencesDataStore(name = "steplock")
@@ -300,38 +303,45 @@ class SettingsRepository(context: Context) {
         }
     }
 
-    suspend fun startPomodoro(durationMs: Long = Pomodoro.SESSION_MS) {
+    /**
+     * 집중 세션을 시작합니다. 이미 돌고 있으면 아무것도 하지 않고 false —
+     * 잠금 화면과 앱 고르기 화면이 거의 동시에 불러도 세션이 새로 덮이지 않습니다.
+     *
+     * 멈춤·처음부터 다시는 없습니다([PomodoroState]).
+     */
+    suspend fun startPomodoro(durationMs: Long = Pomodoro.SESSION_MS): Boolean {
+        var started = false
         store.edit { prefs ->
+            if (prefs[Keys.pomodoroEndsAt] != null) return@edit
             prefs[Keys.pomodoroEndsAt] = System.currentTimeMillis() + durationMs
+            // 예전 버전에서 멈춰 둔 세션이 남아 있을 수 있습니다.
             prefs.remove(Keys.pomodoroPausedRemaining)
+            started = true
         }
+        return started
     }
 
-    suspend fun pausePomodoro() {
+    /**
+     * 잠금이 걸리는 순간 불러, 조건이 맞으면 집중 세션을 시작합니다([shouldAutoStartFocus]).
+     * 시작했으면 true — 부르는 쪽이 타이머 알림 서비스를 띄웁니다.
+     */
+    suspend fun autoStartFocusIfNeeded(): Boolean {
+        val current = preferences.first()
+        if (!shouldAutoStartFocus(current.settings, current.pomodoro)) return false
+        return startPomodoro()
+    }
+
+    /**
+     * 강제 종료 뒤에만 부릅니다([com.steplock.app.system.ForceStopCheck]). 세션을
+     * 집계하지 않고 지웁니다 — 사용자가 시스템 설정에서 직접 끝낸 세션입니다.
+     */
+    suspend fun discardPomodoroSession() {
         store.edit { prefs ->
-            val endsAt = prefs[Keys.pomodoroEndsAt] ?: return@edit
-            val remaining = (endsAt - System.currentTimeMillis()).coerceAtLeast(0L)
-            prefs[Keys.pomodoroPausedRemaining] = remaining
             prefs.remove(Keys.pomodoroEndsAt)
-        }
-    }
-
-    suspend fun resumePomodoro() {
-        store.edit { prefs ->
-            val remaining = prefs[Keys.pomodoroPausedRemaining] ?: return@edit
-            prefs[Keys.pomodoroEndsAt] = System.currentTimeMillis() + remaining
             prefs.remove(Keys.pomodoroPausedRemaining)
         }
     }
 
-    suspend fun resetPomodoro() {
-        store.edit { prefs ->
-            prefs.remove(Keys.pomodoroEndsAt)
-            prefs.remove(Keys.pomodoroPausedRemaining)
-        }
-    }
-
-    /** 진행 중이던 세션만 한 번 집계합니다 — 화면과 서비스가 동시에 불러도 중복되지 않게. */
     /**
      * 임시 허용을 한 번 씁니다. 하루 한도를 넘으면 아무것도 바꾸지 않고 false 를 돌려줍니다.
      * 호출자가 화면을 닫기 전에 결과를 확인해야, 한도를 넘긴 상태로 잠금이 풀리지 않습니다.
@@ -399,19 +409,28 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    /**
+     * 끝난 세션을 한 번 집계합니다 — 화면과 서비스가 동시에 불러도 중복되지 않게.
+     *
+     * **끝난 날**의 몫으로 셉니다. 어제 밤에 끝난 세션을 오늘 아침에 집계하면
+     * (폰이 꺼져 있었거나, 백업에서 복원한 경우) 오늘 목표를 하나 거저 채우게 됩니다.
+     */
     suspend fun completePomodoroSession() {
         store.edit { prefs ->
-            if (prefs[Keys.pomodoroEndsAt] == null) return@edit
-            val today = LocalDate.now().toString()
-            val sameDay = prefs[Keys.pomodoroSessionsDate] == today
-            prefs[Keys.pomodoroSessionsDate] = today
+            val endsAt = prefs[Keys.pomodoroEndsAt] ?: return@edit
+            if (endsAt > System.currentTimeMillis()) return@edit
+            prefs.remove(Keys.pomodoroEndsAt)
+            prefs.remove(Keys.pomodoroPausedRemaining)
+            val endedOn = Instant.ofEpochMilli(endsAt).atZone(ZoneId.systemDefault()).toLocalDate()
+            val today = LocalDate.now()
+            if (endedOn != today) return@edit
+            val sameDay = prefs[Keys.pomodoroSessionsDate] == today.toString()
+            prefs[Keys.pomodoroSessionsDate] = today.toString()
             prefs[Keys.pomodoroSessionsCount] = if (sameDay) {
                 (prefs[Keys.pomodoroSessionsCount] ?: 0) + 1
             } else {
                 1
             }
-            prefs.remove(Keys.pomodoroEndsAt)
-            prefs.remove(Keys.pomodoroPausedRemaining)
         }
     }
 
@@ -584,7 +603,6 @@ class SettingsRepository(context: Context) {
             },
             pomodoro = PomodoroState(
                 endsAt = this[Keys.pomodoroEndsAt],
-                pausedRemainingMs = this[Keys.pomodoroPausedRemaining],
                 sessionsToday = if (this[Keys.pomodoroSessionsDate] == LocalDate.now().toString()) {
                     this[Keys.pomodoroSessionsCount] ?: 0
                 } else {

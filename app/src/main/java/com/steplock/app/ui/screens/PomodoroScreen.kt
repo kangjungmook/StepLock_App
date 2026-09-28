@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -19,10 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.data.Pomodoro
+import com.steplock.app.ui.FocusPhase
 import com.steplock.app.ui.PomodoroUiState
 import com.steplock.app.ui.components.IconTapTarget
 import com.steplock.app.ui.components.MascotMood
@@ -31,7 +34,6 @@ import com.steplock.app.ui.components.ProgressRing
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.StepiSays
-import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -42,10 +44,10 @@ import com.steplock.app.ui.util.formatCountdown
 fun PomodoroScreen(
     state: PomodoroUiState,
     onBack: () -> Unit,
+    /** 다음 세션을 바로 시작. [FocusPhase.Ready] 에서만 보입니다. */
     onStart: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onReset: () -> Unit,
+    /** 잠근 앱이 없을 때 고르러 가는 길. */
+    onPickApps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -86,10 +88,15 @@ fun PomodoroScreen(
             // 지금 상태에 맞는 한마디. 버튼 아래 안내 문구를 여기로 옮겨 와서,
             // 화면 아래쪽은 버튼만 남깁니다.
             StepiSays(
-                text = when {
-                    state.running -> stringResource(R.string.pomodoro_stepi_running)
-                    state.paused -> stringResource(R.string.pomodoro_stepi_paused)
-                    else -> stringResource(R.string.pomodoro_stepi_idle, Pomodoro.SESSION_MINUTES)
+                text = when (state.phase) {
+                    FocusPhase.Running -> stringResource(R.string.pomodoro_stepi_running)
+                    FocusPhase.Ready -> stringResource(R.string.pomodoro_stepi_ready)
+                    FocusPhase.GoalMet -> stringResource(R.string.pomodoro_stepi_goal_met)
+                    FocusPhase.NoApps -> stringResource(
+                        R.string.pomodoro_stepi_no_apps,
+                        Pomodoro.SESSION_MINUTES,
+                    )
+                    FocusPhase.ConditionOff -> stringResource(R.string.pomodoro_stepi_off)
                 },
             )
             Spacer(Modifier.height(16.dp))
@@ -156,32 +163,54 @@ fun PomodoroScreen(
                 bottom = 24.dp,
             ),
         ) {
-            PrimaryButton(
-                text = when {
-                    state.running -> stringResource(R.string.pomodoro_pause)
-                    state.paused -> stringResource(R.string.pomodoro_resume)
-                    else -> stringResource(R.string.pomodoro_start, Pomodoro.SESSION_MINUTES)
-                },
-                onClick = when {
-                    state.running -> onPause
-                    state.paused -> onResume
-                    else -> onStart
-                },
-            )
-            // 처음부터 다시는 **멈춘 뒤에만** 보입니다. 돌고 있을 때 "멈추기" 바로
-            // 밑에 두면 잘못 눌러 20분을 한 번에 날릴 수 있는데, 확인 대화상자를
-            // 하나 더 두는 것보다 한 단계(멈추기)를 거치게 하는 편이 가볍습니다.
-            // 다른 때도 같은 높이를 비워 두어 상태가 바뀔 때 버튼이 튀지 않게 합니다.
-            if (state.paused) {
-                TextLink(
-                    text = stringResource(R.string.pomodoro_reset),
-                    onClick = onReset,
-                    modifier = Modifier.fillMaxWidth(),
+            // 세션이 도는 동안에는 버튼이 없습니다 — 멈춤도 처음부터도 없습니다.
+            // 대신 왜 없는지를 버튼 자리에 적어 둡니다. 모든 상태에서 같은 높이를
+            // 차지하게 해서 상태가 바뀔 때 위의 링이 튀지 않습니다.
+            when (state.phase) {
+                FocusPhase.Ready -> {
+                    PrimaryButton(
+                        text = stringResource(R.string.pomodoro_start_next, Pomodoro.SESSION_MINUTES),
+                        onClick = onStart,
+                    )
+                    FocusNote(stringResource(R.string.pomodoro_start_note))
+                }
+
+                FocusPhase.NoApps -> {
+                    PrimaryButton(
+                        text = stringResource(R.string.home_pick_apps),
+                        onClick = onPickApps,
+                    )
+                    FocusNote(stringResource(R.string.pomodoro_no_apps_note))
+                }
+
+                FocusPhase.Running -> FocusNote(
+                    stringResource(R.string.pomodoro_running_note),
+                    modifier = Modifier.height(SlDimen.CtaHeight + SlDimen.TouchTarget),
                 )
-            } else {
-                Spacer(Modifier.height(SlDimen.TouchTarget))
+
+                FocusPhase.GoalMet, FocusPhase.ConditionOff -> Spacer(
+                    Modifier.height(SlDimen.CtaHeight + SlDimen.TouchTarget),
+                )
             }
         }
+    }
+}
+
+/** 버튼 아래(또는 버튼 자리)의 한 줄 안내. */
+@Composable
+private fun FocusNote(text: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = SlDimen.TouchTarget),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = SlText.Caption,
+            color = SlColor.TextSecondary,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -194,15 +223,13 @@ private fun PomodoroScreenPreview() {
                 remainingMs = 14 * 60_000L + 13_000L,
                 progress = 0.43f,
                 running = true,
-                paused = false,
                 sessionsToday = 2,
                 goal = 3,
+                phase = FocusPhase.Running,
             ),
             onBack = {},
             onStart = {},
-            onPause = {},
-            onResume = {},
-            onReset = {},
+            onPickApps = {},
         )
     }
 }
@@ -216,15 +243,13 @@ private fun PomodoroScreenIdlePreview() {
                 remainingMs = Pomodoro.SESSION_MS,
                 progress = 0f,
                 running = false,
-                paused = false,
-                sessionsToday = 0,
+                sessionsToday = 1,
                 goal = 3,
+                phase = FocusPhase.Ready,
             ),
             onBack = {},
             onStart = {},
-            onPause = {},
-            onResume = {},
-            onReset = {},
+            onPickApps = {},
         )
     }
 }

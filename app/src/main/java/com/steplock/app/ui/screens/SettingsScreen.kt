@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -29,11 +28,13 @@ import com.steplock.app.R
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.findActivity
 import com.steplock.app.data.LockSettings
+import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.ThemeMode
 import com.steplock.app.data.SampleData
+import com.steplock.app.ui.components.BottomNavBar
 import com.steplock.app.ui.components.ConditionSettingRow
-import com.steplock.app.ui.components.IconTapTarget
+import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
 import com.steplock.app.ui.components.SlConfirmDialog
@@ -75,7 +76,8 @@ fun SettingsScreen(
     accountName: String? = null,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
-    onBack: () -> Unit,
+    /** 홈·통계와 같은 하단 탭. 설정도 탭 중 하나라 뒤로 가기 대신 탭으로 오갑니다. */
+    onTabSelected: (NavTab) -> Unit,
     onDeleteAccount: () -> Unit,
     onDeleteAccountConfirm: () -> Unit,
     onDeleteAccountDismiss: () -> Unit,
@@ -90,31 +92,31 @@ fun SettingsScreen(
     onSleepGoalChange: (Float) -> Unit,
     onPomodoroGoalChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** 집중 세션이 도는 중. 계정 삭제를 잠시 막습니다. */
+    focusing: Boolean = false,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(SlColor.Background),
     ) {
-        Row(
+        // 탭 화면이라 뒤로 가기 화살표를 두지 않습니다 — 홈·통계와 같은 자리에
+        // 제목만 둡니다. 화살표가 있으면 "하위 화면"으로 읽혀 탭이 사라진 것처럼 보입니다.
+        Text(
+            text = stringResource(R.string.settings_title),
+            // 통계 탭 제목과 같은 크기·위치 — 탭을 바꿔도 제목이 튀지 않습니다.
+            style = SlText.Greeting,
+            color = SlColor.TextPrimary,
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconTapTarget(
-                icon = SlIcons.ArrowLeft,
-                contentDescription = stringResource(R.string.action_back),
-                onClick = onBack,
-            )
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = SlText.ScreenTitle,
-                color = SlColor.TextPrimary,
-            )
-        }
+                .padding(
+                    start = SlDimen.ScreenPadding,
+                    end = SlDimen.ScreenPadding,
+                    top = 12.dp,
+                    bottom = 12.dp,
+                ),
+        )
 
         Column(
             modifier = Modifier
@@ -203,6 +205,14 @@ fun SettingsScreen(
                         )
                     }
                 }
+                // 잠근 앱이 있는 채로 집중 조건을 켜면 멈출 수 없는 세션이 곧바로
+                // 시작됩니다. 스위치를 누르기 전에 알아야 하는 일이라 바로 아래에 둡니다.
+                Text(
+                    text = stringResource(R.string.settings_pomodoro_rule, Pomodoro.SESSION_MINUTES),
+                    style = SlText.Caption,
+                    color = SlColor.TextTertiary,
+                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                )
             }
 
             Column {
@@ -245,7 +255,16 @@ fun SettingsScreen(
                     onSignOut = onSignOut,
                 )
                 // 되돌릴 수 없는 동작이라 계정 줄과 떼어 놓고 눈에 덜 띄게 둡니다.
-                if (accountEmail != null) {
+                // 집중 중에는 숨깁니다 — 계정을 지우면 잠근 앱 목록까지 지워져서,
+                // 멈출 수 없는 세션을 앱 안에서 끝내는 뒷문이 됩니다.
+                if (accountEmail != null && focusing) {
+                    Text(
+                        text = stringResource(R.string.settings_account_delete_focusing),
+                        style = SlText.Caption,
+                        color = SlColor.TextTertiary,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+                    )
+                } else if (accountEmail != null) {
                     TextLink(
                         text = stringResource(R.string.settings_account_delete),
                         onClick = onDeleteAccount,
@@ -285,9 +304,10 @@ fun SettingsScreen(
                 text = stringResource(R.string.settings_autosave_note),
                 style = SlText.Caption,
                 color = SlColor.TextTertiary,
-                modifier = Modifier.navigationBarsPadding(),
             )
         }
+
+        BottomNavBar(selected = NavTab.Settings, onSelect = onTabSelected)
     }
 
     if (deleteAccountConfirming) {
@@ -560,7 +580,7 @@ private fun SettingsScreenPreview() {
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
-            onBack = {},
+            onTabSelected = {},
             onDeleteAccount = {},
             onDeleteAccountConfirm = {},
             onDeleteAccountDismiss = {},
@@ -595,7 +615,7 @@ private fun SettingsScreenPreviewDark() {
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
-            onBack = {},
+            onTabSelected = {},
             onDeleteAccount = {},
             onDeleteAccountConfirm = {},
             onDeleteAccountDismiss = {},
@@ -633,7 +653,7 @@ private fun SettingsScreenPendingPreview() {
             accountEmail = "jiwoo@example.com",
             onSignIn = {},
             onSignOut = {},
-            onBack = {},
+            onTabSelected = {},
             onDeleteAccount = {},
             onDeleteAccountConfirm = {},
             onDeleteAccountDismiss = {},

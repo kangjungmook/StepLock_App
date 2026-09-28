@@ -16,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.LockSettings
+import com.steplock.app.data.Pomodoro
 import com.steplock.app.data.SampleData
 import com.steplock.app.data.TemporaryAllow
 import com.steplock.app.ui.components.ChipState
@@ -42,12 +45,14 @@ import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.util.UnlockCondition
 import com.steplock.app.ui.util.enabledConditions
+import com.steplock.app.ui.util.formatCountdown
 import com.steplock.app.ui.util.isAchieved
 import com.steplock.app.ui.util.primaryCondition
 import com.steplock.app.ui.util.progress
 import com.steplock.app.ui.util.remainingText
 import com.steplock.app.ui.util.sleepGoalLabel
 import com.steplock.app.ui.util.withTopicParticle
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 /**
@@ -72,15 +77,16 @@ fun LockOverlayScreen(
      * 그럴 때 이 줄은 나타나지 않습니다 — 눌러도 안 되는 줄을 남기지 않습니다.
      */
     onWatchAdForBonus: (() -> Unit)? = null,
-    /** 집중 세션 중이라 잠긴 경우. 조건 대신 "집중 중"을 말합니다. */
-    focusing: Boolean = false,
     /**
-     * 집중 타이머로 바로 가는 길. 집중 조건을 켜 뒀고 아직 못 채웠을 때만 줍니다.
-     * 잠금 화면이 할 일을 알려 주기만 하고 거기로 가는 길이 없으면, 사용자는
-     * 닫고 앱을 찾아 들어가 탭을 찾아야 합니다.
+     * 집중 세션이 끝나는 시각. null 이 아니면 집중 중이라 잠긴 것이고, 링은 조건 대신
+     * 세션의 남은 시간을 그립니다. 세션은 잠금이 걸리는 순간 저절로 시작됩니다.
      */
-    onStartFocus: (() -> Unit)? = null,
+    focusEndsAt: Long? = null,
+    /** 집중 타이머 화면으로 가는 길. 집중 중일 때만 보입니다. */
+    onOpenFocus: (() -> Unit)? = null,
 ) {
+    val focusing = focusEndsAt != null
+    val focusRemaining = rememberRemaining(focusEndsAt)
     val sleepAchieved = UnlockCondition.Sleep.isAchieved(stat, settings)
     val pomodoroAchieved = UnlockCondition.Pomodoro.isAchieved(stat, settings)
 
@@ -149,8 +155,13 @@ fun LockOverlayScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+            // 집중 중이면 조건 대신 세션의 남은 시간 — 지금 기다리는 게 그것입니다.
             ProgressRing(
-                progress = heroProgress,
+                progress = if (focusing) {
+                    1f - (focusRemaining.toFloat() / Pomodoro.SESSION_MS).coerceIn(0f, 1f)
+                } else {
+                    heroProgress
+                },
                 size = 176.dp,
                 radius = 76.dp,
                 strokeWidth = 12.dp,
@@ -162,12 +173,20 @@ fun LockOverlayScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
-                        text = "${(heroProgress * 100).roundToInt()}%",
+                        text = if (focusing) {
+                            formatCountdown(focusRemaining)
+                        } else {
+                            "${(heroProgress * 100).roundToInt()}%"
+                        },
                         style = SlText.RingValue,
                         color = SlColor.Dark.TextPrimary,
                     )
                     Text(
-                        text = stringResource(hero.goalCaptionRes),
+                        text = if (focusing) {
+                            stringResource(R.string.pomodoro_ring_caption)
+                        } else {
+                            stringResource(hero.goalCaptionRes)
+                        },
                         style = SlText.LabelSm,
                         color = SlColor.Dark.TextMuted,
                     )
@@ -225,11 +244,11 @@ fun LockOverlayScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-        // 풀 수 있는 길이 있으면 그게 주 행동입니다. 닫기는 한 단계 낮춥니다.
-        if (onStartFocus != null && !focusing) {
+        // 집중 중이면 타이머로 가는 길이 주 행동입니다. 닫기는 한 단계 낮춥니다.
+        if (onOpenFocus != null && focusing) {
             PrimaryButton(
-                text = stringResource(R.string.lock_start_focus),
-                onClick = onStartFocus,
+                text = stringResource(R.string.lock_open_focus),
+                onClick = onOpenFocus,
                 containerColor = SlColor.Dark.AmberRing,
                 contentColor = SlColor.Dark.Background,
             )
@@ -246,7 +265,20 @@ fun LockOverlayScreen(
         //
         // 광고 줄은 기본 한도를 **다 쓴 뒤에만** 나타납니다. 아직 쓸 수 있는데
         // 광고를 먼저 권하면, 그냥 쓰면 되는 걸 광고로 팔는 화면이 됩니다.
+        //
+        // 집중 중에는 임시 허용이 없습니다. 세션은 멈출 수 없고, 5분씩 열어 주면
+        // 그 사이에도 "집중 1회"가 쌓여서 집중 조건이 아무것도 증명하지 못합니다.
         when {
+            focusing -> Text(
+                text = stringResource(R.string.lock_focus_no_allow),
+                style = SlText.LinkSm,
+                color = SlColor.Dark.TextMuted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
+            )
+
             temporaryAllowRemaining > 0 -> TextLink(
                 text = stringResource(
                     R.string.lock_temporary_allow,
@@ -282,6 +314,42 @@ fun LockOverlayScreen(
             )
         }
     }
+}
+
+/** [endsAt] 까지 남은 시간(ms). 1초마다 다시 셉니다. 없으면 0. */
+@Composable
+private fun rememberRemaining(endsAt: Long?): Long {
+    val remaining by produceState(
+        initialValue = endsAt?.let { (it - System.currentTimeMillis()).coerceAtLeast(0L) } ?: 0L,
+        endsAt,
+    ) {
+        if (endsAt == null) {
+            value = 0L
+            return@produceState
+        }
+        while (true) {
+            value = (endsAt - System.currentTimeMillis()).coerceAtLeast(0L)
+            if (value == 0L) break
+            delay(1_000)
+        }
+    }
+    return remaining
+}
+
+/** 집중 중이라 잠긴 상태 — 링이 남은 시간을 그리고, 임시 허용 대신 안내가 뜹니다. */
+@Preview(widthDp = 412, heightDp = 892)
+@Composable
+private fun LockOverlayScreenFocusPreview() {
+    LockOverlayScreen(
+        appName = "쇼츠",
+        stat = SampleData.today,
+        settings = SampleData.settings,
+        temporaryAllowRemaining = TemporaryAllow.DAILY_LIMIT,
+        onDismiss = {},
+        onTemporaryAllow = {},
+        focusEndsAt = System.currentTimeMillis() + 18 * 60_000L,
+        onOpenFocus = {},
+    )
 }
 
 @Preview(widthDp = 412, heightDp = 892)

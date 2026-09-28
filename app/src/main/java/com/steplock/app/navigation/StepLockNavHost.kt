@@ -20,6 +20,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,7 +30,6 @@ import androidx.navigation.navArgument
 import com.steplock.app.R
 import com.steplock.app.data.AuthState
 import com.steplock.app.service.AppWatchService
-import com.steplock.app.service.PomodoroService
 import com.steplock.app.system.AppPermissions
 import com.steplock.app.system.PermissionGroup
 import com.steplock.app.system.PermissionStep
@@ -44,14 +45,35 @@ import com.steplock.app.ui.screens.LoginTrigger
 import com.steplock.app.ui.screens.OnboardingScreen
 import com.steplock.app.ui.screens.PomodoroScreen
 import com.steplock.app.ui.screens.SettingsScreen
+import com.steplock.app.ui.screens.SignUpScreen
 import com.steplock.app.ui.screens.StatsScreen
 import com.steplock.app.ui.screens.TutorialScreen
 import com.steplock.app.ui.screens.messageRes
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.ThemeModeApplier
 
+/**
+ * 하단 탭 이동. 홈을 바닥에 두고 그 위에 탭 하나만 올립니다.
+ *
+ * 전에는 탭을 누를 때마다 화면을 쌓아서, 홈→통계→설정→통계… 를 오가면 뒤로 가기를
+ * 그만큼 눌러야 앱을 나갈 수 있었습니다. 이제 어느 탭에서든 뒤로 가기 한 번이면
+ * 홈으로, 홈에서 한 번 더 누르면 앱을 나갑니다.
+ */
+private fun NavController.navigateTab(tab: NavTab) {
+    when (tab) {
+        NavTab.Home -> popBackStack(Route.HOME, inclusive = false)
+        NavTab.Stats, NavTab.Settings -> navigate(
+            if (tab == NavTab.Stats) Route.STATS else Route.SETTINGS,
+        ) {
+            popUpTo(Route.HOME)
+            launchSingleTop = true
+        }
+    }
+}
+
 object Route {
     const val LOGIN = "login?trigger={trigger}"
+    const val SIGNUP = "signup?trigger={trigger}"
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SETTINGS = "settings"
@@ -62,7 +84,37 @@ object Route {
 
     fun login(trigger: LoginTrigger = LoginTrigger.AppStart) = "login?trigger=${trigger.name}"
 
+    fun signUp(trigger: LoginTrigger) = "signup?trigger=${trigger.name}"
+
     fun tutorial(replay: Boolean = false) = "tutorial?replay=$replay"
+}
+
+private fun triggerArgument() = navArgument("trigger") {
+    type = NavType.StringType
+    defaultValue = LoginTrigger.AppStart.name
+}
+
+private fun NavBackStackEntry.loginTrigger(): LoginTrigger =
+    runCatching { LoginTrigger.valueOf(arguments?.getString("trigger").orEmpty()) }
+        .getOrDefault(LoginTrigger.AppStart)
+
+/**
+ * 로그인(또는 가입)이 끝났을 때. 앱을 처음 열어 들어온 경우엔 튜토리얼이나 홈으로
+ * 넘어가며 로그인·가입 화면을 모두 지우고, 설정 등에서 들어온 경우엔 로그인 화면
+ * 앞으로 돌아갑니다 — 가입 화면에서 끝났어도 로그인 화면이 남지 않게.
+ */
+private fun NavController.leaveAuth(
+    trigger: LoginTrigger,
+    onboardingCompleted: Boolean,
+    startDestination: String,
+) {
+    if (trigger == LoginTrigger.AppStart) {
+        navigate(if (onboardingCompleted) Route.HOME else Route.tutorial()) {
+            popUpTo(startDestination) { inclusive = true }
+        }
+    } else {
+        popBackStack(Route.LOGIN, inclusive = true)
+    }
 }
 
 /**
@@ -112,36 +164,24 @@ private fun StepLockNavGraph(
     NavHost(navController = navController, startDestination = startDestination) {
         composable(
             route = Route.LOGIN,
-            arguments = listOf(
-                navArgument("trigger") {
-                    type = NavType.StringType
-                    defaultValue = LoginTrigger.AppStart.name
-                },
-            ),
+            arguments = listOf(triggerArgument()),
         ) { entry ->
-            val trigger = runCatching {
-                LoginTrigger.valueOf(entry.arguments?.getString("trigger").orEmpty())
-            }.getOrDefault(LoginTrigger.AppStart)
+            val trigger = entry.loginTrigger()
             val loginState = viewModel.loginState
 
             // 이메일·소셜 모두 세션이 붙는 순간 여기로 들어옵니다.
             LaunchedEffect(state.authState) {
                 if (state.authState is AuthState.SignedIn) {
-                    if (trigger == LoginTrigger.AppStart) {
-                        navController.navigate(
-                            if (state.onboardingCompleted) Route.HOME else Route.tutorial(),
-                        ) {
-                            popUpTo(startDestination) { inclusive = true }
-                        }
-                    } else {
-                        navController.popBackStack()
-                    }
+                    navController.leaveAuth(trigger, state.onboardingCompleted, startDestination)
                 }
             }
 
             LoginScreen(
-                onLogin = { email, password, _ -> viewModel.signIn(email, password) },
-                onSignUp = { email, password -> viewModel.signUp(email, password) },
+                onLogin = { email, password -> viewModel.signIn(email, password) },
+                onSignUp = {
+                    viewModel.resetLoginState()
+                    navController.navigate(Route.signUp(trigger))
+                },
                 onSocialLogin = viewModel::signInWithSocial,
                 onGuestContinue = {
                     viewModel.continueAsGuest()
@@ -152,6 +192,34 @@ private fun StepLockNavGraph(
                 submitting = loginState.submitting,
                 errorText = loginState.error?.let { stringResource(it.messageRes()) },
                 noticeText = loginState.notice?.let { stringResource(it.messageRes()) },
+            )
+        }
+
+        composable(
+            route = Route.SIGNUP,
+            arguments = listOf(triggerArgument()),
+        ) { entry ->
+            val trigger = entry.loginTrigger()
+            val loginState = viewModel.loginState
+
+            // 인증을 끈 프로젝트거나 소셜로 시작하면 바로 세션이 붙습니다.
+            // 인증 메일의 링크로 돌아온 경우도 여기로 들어옵니다.
+            LaunchedEffect(state.authState) {
+                if (state.authState is AuthState.SignedIn) {
+                    navController.leaveAuth(trigger, state.onboardingCompleted, startDestination)
+                }
+            }
+
+            SignUpScreen(
+                onSignUp = viewModel::signUp,
+                onSocialLogin = viewModel::signInWithSocial,
+                onBackToLogin = {
+                    viewModel.resetLoginState()
+                    navController.popBackStack()
+                },
+                submitting = loginState.submitting,
+                errorText = loginState.error?.let { stringResource(it.messageRes()) },
+                confirmSentTo = loginState.confirmSentTo,
             )
         }
 
@@ -246,13 +314,7 @@ private fun StepLockNavGraph(
                 settings = state.settings,
                 apps = state.blockedApps,
                 selectedTab = NavTab.Home,
-                onTabSelected = { tab ->
-                    when (tab) {
-                        NavTab.Home -> Unit
-                        NavTab.Stats -> navController.navigate(Route.STATS)
-                        NavTab.Settings -> navController.navigate(Route.SETTINGS)
-                    }
-                },
+                onTabSelected = navController::navigateTab,
                 // 홈의 "잠글 앱" 은 설정을 거치지 않고 바로 고르는 화면으로 갑니다.
                 onManageLocks = { navController.navigate(Route.APP_PICKER) },
                 onPomodoroClick = { navController.navigate(Route.POMODORO) },
@@ -296,18 +358,11 @@ private fun StepLockNavGraph(
                 streak = state.streak,
                 longestStreak = state.longestStreak,
                 selectedTab = NavTab.Stats,
-                onTabSelected = { tab ->
-                    when (tab) {
-                        NavTab.Stats -> Unit
-                        NavTab.Home -> navController.popBackStack(Route.HOME, false)
-                        NavTab.Settings -> navController.navigate(Route.SETTINGS)
-                    }
-                },
+                onTabSelected = navController::navigateTab,
             )
         }
 
         composable(Route.POMODORO) {
-            val context = LocalContext.current
             val pomodoro by viewModel.pomodoro.collectAsStateWithLifecycle()
             val pomodoroState = pomodoro
             if (pomodoroState == null) {
@@ -316,19 +371,8 @@ private fun StepLockNavGraph(
                 PomodoroScreen(
                     state = pomodoroState,
                     onBack = { navController.popBackStack() },
-                    onStart = {
-                        viewModel.startPomodoro()
-                        PomodoroService.start(context)
-                    },
-                    onPause = { viewModel.pausePomodoro() },
-                    onResume = {
-                        viewModel.resumePomodoro()
-                        PomodoroService.start(context)
-                    },
-                    onReset = {
-                        viewModel.resetPomodoro()
-                        PomodoroService.stop(context)
-                    },
+                    onStart = viewModel::startPomodoro,
+                    onPickApps = { navController.navigate(Route.APP_PICKER) },
                 )
             }
         }
@@ -366,7 +410,7 @@ private fun StepLockNavGraph(
                 accountName = state.settings.displayName,
                 onSignIn = { navController.navigate(Route.login(LoginTrigger.Sync)) },
                 onSignOut = viewModel::signOut,
-                onBack = { navController.popBackStack() },
+                onTabSelected = navController::navigateTab,
                 onDeleteAccount = viewModel::askDeleteAccount,
                 onDeleteAccountConfirm = viewModel::confirmDeleteAccount,
                 onDeleteAccountDismiss = viewModel::dismissDeleteAccount,
@@ -395,6 +439,7 @@ private fun StepLockNavGraph(
                 onStepGoalChange = viewModel::changeStepGoal,
                 onSleepGoalChange = viewModel::changeSleepGoal,
                 onPomodoroGoalChange = viewModel::changePomodoroGoal,
+                focusing = state.focusing,
             )
         }
 
@@ -410,6 +455,10 @@ private fun StepLockNavGraph(
                 applyOn = state.settingsApplyOn,
                 onToggle = viewModel::toggleBlockedApp,
                 onBack = { navController.popBackStack() },
+                focusing = state.focusing,
+                focusStartsOnLock = !state.focusing &&
+                    state.settings.pomodoroEnabled &&
+                    state.today.pomodoroSessions < state.settings.pomodoroGoal,
             )
         }
     }

@@ -23,12 +23,14 @@ import com.steplock.app.data.StreakCalculator
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.SyncRepository
 import com.steplock.app.data.ThemeMode
+import com.steplock.app.service.PomodoroService
 import com.steplock.app.ui.components.SocialProvider
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -65,6 +67,8 @@ data class StepLockUiState(
     val blockedApps: List<InstalledApp>,
     /** 집중 세션이 도는 중. 이 동안에는 조건을 채웠어도 잠급니다. */
     val focusing: Boolean = false,
+    /** 집중 세션이 끝나는 시각(epoch ms). 잠금 화면이 남은 시간을 그립니다. */
+    val focusEndsAt: Long? = null,
     /**
      * 임시 허용이 끝나는 시각(epoch ms). 지났을 수도 있어서 화면이 지금 시각과
      * 비교해야 합니다 — 이 값만으로 "허용 중"이라고 판단하면 안 됩니다.
@@ -89,6 +93,8 @@ data class LoginUiState(
     val submitting: Boolean = false,
     val error: LoginError? = null,
     val notice: LoginNotice? = null,
+    /** 회원가입 인증 메일을 보낸 주소. 가입 화면이 "메일함을 확인해 주세요"로 바뀝니다. */
+    val confirmSentTo: String? = null,
 )
 
 /** 계정 삭제는 되돌릴 수 없어서 확인 → 진행 → 실패 단계를 화면이 구분해야 합니다. */
@@ -102,10 +108,29 @@ data class PomodoroUiState(
     val remainingMs: Long,
     val progress: Float,
     val running: Boolean,
-    val paused: Boolean,
     val sessionsToday: Int,
     val goal: Int,
+    /** 지금 할 수 있는 것 — 화면이 버튼과 스텝이의 말을 고릅니다. */
+    val phase: FocusPhase,
 )
+
+/** 집중 타이머 화면의 상태. 세션은 시작하면 멈출 수 없어서 "멈춤"이 없습니다. */
+enum class FocusPhase {
+    /** 세션이 도는 중 — 끝날 때까지 기다리는 것 말고는 할 게 없습니다. */
+    Running,
+
+    /** 잠금이 걸려 있고 목표가 남았습니다. 다음 세션을 바로 시작할 수 있습니다. */
+    Ready,
+
+    /** 오늘 목표를 채웠습니다. */
+    GoalMet,
+
+    /** 잠근 앱이 없습니다. 앱을 잠그면 세션이 저절로 시작됩니다. */
+    NoApps,
+
+    /** 집중 조건을 꺼 두었습니다. */
+    ConditionOff,
+}
 
 class StepLockViewModel(
     private val repository: SettingsRepository,
@@ -114,6 +139,8 @@ class StepLockViewModel(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val installedApps: InstalledAppsRepository,
+    /** 타이머 알림 서비스를 띄웁니다. 세션을 시작한 쪽이 부릅니다. */
+    private val startFocusService: () -> Unit,
 ) : ViewModel() {
 
     /**
@@ -168,6 +195,7 @@ class StepLockViewModel(
                 temporaryAllowBonusRemaining = prefs.temporaryAllow.bonusRemaining,
                 blockedApps = installedApps.resolve(prefs.settings.blockedAppIds),
                 focusing = prefs.pomodoro.isRunning,
+                focusEndsAt = prefs.pomodoro.endsAt,
                 temporaryAllowUntil = prefs.temporaryAllow.allowedUntil,
                 blockedToday = prefs.blockedToday,
             )
@@ -183,18 +211,23 @@ class StepLockViewModel(
     val pomodoro: StateFlow<PomodoroUiState?> =
         combine(repository.preferences, secondTicker) { prefs, _ ->
             val state = prefs.pomodoro
-            val remaining = when {
-                state.endsAt != null -> (state.endsAt - System.currentTimeMillis()).coerceAtLeast(0L)
-                state.pausedRemainingMs != null -> state.pausedRemainingMs
-                else -> Pomodoro.SESSION_MS
-            }
+            val settings = prefs.settings
+            val remaining = state.endsAt
+                ?.let { (it - System.currentTimeMillis()).coerceAtLeast(0L) }
+                ?: Pomodoro.SESSION_MS
             PomodoroUiState(
                 remainingMs = remaining,
                 progress = 1f - (remaining.toFloat() / Pomodoro.SESSION_MS).coerceIn(0f, 1f),
                 running = state.isRunning,
-                paused = state.isPaused,
                 sessionsToday = state.sessionsToday,
-                goal = prefs.settings.pomodoroGoal,
+                goal = settings.pomodoroGoal,
+                phase = when {
+                    state.isRunning -> FocusPhase.Running
+                    !settings.pomodoroEnabled -> FocusPhase.ConditionOff
+                    settings.blockedAppIds.isEmpty() -> FocusPhase.NoApps
+                    state.sessionsToday >= settings.pomodoroGoal -> FocusPhase.GoalMet
+                    else -> FocusPhase.Ready
+                },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -236,20 +269,14 @@ class StepLockViewModel(
         }
     }
 
+    /**
+     * 다음 세션을 지금 바로 시작합니다(세션 사이에 기다리지 않고 이어 가고 싶을 때).
+     * 첫 세션은 앱을 잠그는 순간 저절로 시작되니 누를 일이 없습니다.
+     */
     fun startPomodoro() {
-        viewModelScope.launch { repository.startPomodoro() }
-    }
-
-    fun pausePomodoro() {
-        viewModelScope.launch { repository.pausePomodoro() }
-    }
-
-    fun resumePomodoro() {
-        viewModelScope.launch { repository.resumePomodoro() }
-    }
-
-    fun resetPomodoro() {
-        viewModelScope.launch { repository.resetPomodoro() }
+        viewModelScope.launch {
+            if (repository.startPomodoro()) startFocusService()
+        }
     }
 
     fun setStepsEnabled(enabled: Boolean) = edit { it.copy(stepsEnabled = enabled) }
@@ -284,7 +311,9 @@ class StepLockViewModel(
         sleepRepository.refresh()
     }
 
-    fun setPomodoroEnabled(enabled: Boolean) = edit { it.copy(pomodoroEnabled = enabled) }
+    /** 잠근 앱이 있는 채로 집중 조건을 켜면 그때가 잠금이 걸리는 순간이라 세션이 시작됩니다. */
+    fun setPomodoroEnabled(enabled: Boolean) =
+        edit(autoStartFocus = enabled) { it.copy(pomodoroEnabled = enabled) }
 
     fun setRequireAllConditions(enabled: Boolean) = edit { it.copy(requireAllConditions = enabled) }
 
@@ -305,24 +334,58 @@ class StepLockViewModel(
         it.copy(pomodoroGoal = (it.pomodoroGoal + delta).coerceIn(1, 8))
     }
 
-    /** 잠글 앱 켜고 끄기. 빼는 건 완화라서 대기 기간이 걸려 있으면 기다립니다. */
-    fun toggleBlockedApp(packageName: String) = edit {
-        val blocked = it.blockedAppIds
-        it.copy(
-            blockedAppIds = if (packageName in blocked) {
-                blocked - packageName
-            } else {
-                blocked + packageName
-            },
-        )
+    /**
+     * 잠글 앱 켜고 끄기. 빼는 건 완화라서 대기 기간이 걸려 있으면 기다립니다.
+     *
+     * 앱을 **잠그는 순간** 집중 조건이 남아 있으면 세션이 저절로 시작됩니다.
+     * 집중 중에는 앱을 **뺄 수 없습니다** — 빼면 세션은 돌아도 막는 게 없어서,
+     * 멈출 수 없게 한 의미가 사라집니다. 화면도 막지만 여기서 한 번 더 막습니다.
+     */
+    fun toggleBlockedApp(packageName: String) {
+        viewModelScope.launch {
+            val current = repository.preferences.first()
+            val removing = packageName in current.desiredSettings.blockedAppIds
+            if (removing && current.pomodoro.isRunning) return@launch
+            repository.updateSettings {
+                it.copy(
+                    blockedAppIds = if (removing) {
+                        it.blockedAppIds - packageName
+                    } else {
+                        it.blockedAppIds + packageName
+                    },
+                )
+            }
+            if (!removing && repository.autoStartFocusIfNeeded()) startFocusService()
+        }
     }
 
     fun signIn(email: String, password: String) = submitCredentials(email, password) { mail, pass ->
         authRepository.signInWithEmail(mail, pass) to LoginError.SignInFailed
     }
 
-    fun signUp(email: String, password: String) = submitCredentials(email, password) { mail, pass ->
-        authRepository.signUpWithEmail(mail, pass) to LoginError.SignUpFailed
+    fun signUp(email: String, password: String) {
+        val trimmed = email.trim()
+        val validationError = validateCredentials(trimmed, password)
+        if (validationError != null) {
+            loginState = LoginUiState(error = validationError)
+            return
+        }
+        loginState = LoginUiState(submitting = true)
+        viewModelScope.launch {
+            val result = authRepository.signUpWithEmail(trimmed, password)
+            loginState = when {
+                result.isFailure -> LoginUiState(error = LoginError.SignUpFailed)
+                // 인증 메일을 보냈으면 세션이 없어서 화면이 스스로 넘어가지 않습니다.
+                // 가만히 있으면 가입이 된 건지 알 수 없으니 안내로 바꿉니다.
+                result.getOrDefault(false) -> LoginUiState(confirmSentTo = trimmed)
+                else -> LoginUiState()
+            }
+        }
+    }
+
+    /** 로그인 ↔ 회원가입을 오갈 때 앞 화면의 오류·안내를 비웁니다. */
+    fun resetLoginState() {
+        loginState = LoginUiState()
     }
 
     fun signInWithSocial(provider: SocialProvider) {
@@ -408,11 +471,7 @@ class StepLockViewModel(
         request: suspend (String, String) -> Pair<Result<Unit>, LoginError>,
     ) {
         val trimmed = email.trim()
-        val validationError = when {
-            !trimmed.contains('@') || trimmed.length < 5 -> LoginError.InvalidEmail
-            password.length < 6 -> LoginError.ShortPassword
-            else -> null
-        }
+        val validationError = validateCredentials(trimmed, password)
         if (validationError != null) {
             loginState = LoginUiState(error = validationError)
             return
@@ -422,6 +481,12 @@ class StepLockViewModel(
             val (result, failure) = request(trimmed, password)
             loginState = if (result.isSuccess) LoginUiState() else LoginUiState(error = failure)
         }
+    }
+
+    private fun validateCredentials(email: String, password: String): LoginError? = when {
+        !email.contains('@') || email.length < 5 -> LoginError.InvalidEmail
+        password.length < 6 -> LoginError.ShortPassword
+        else -> null
     }
 
     fun continueAsGuest() {
@@ -445,8 +510,11 @@ class StepLockViewModel(
         }
     }
 
-    private fun edit(transform: (LockSettings) -> LockSettings) {
-        viewModelScope.launch { repository.updateSettings(transform) }
+    private fun edit(autoStartFocus: Boolean = false, transform: (LockSettings) -> LockSettings) {
+        viewModelScope.launch {
+            repository.updateSettings(transform)
+            if (autoStartFocus && repository.autoStartFocusIfNeeded()) startFocusService()
+        }
     }
 
     /** 오늘로 끝나는 [days] 일치를 오래된 날부터 돌려줍니다. 빈 날은 0으로 채웁니다. */
@@ -477,6 +545,9 @@ class StepLockViewModel(
                     authRepository = AuthRepository(),
                     syncRepository = SyncRepository(repository),
                     installedApps = InstalledAppsRepository(app),
+                    // 백그라운드에서 막히면(안드로이드 12+) 세션은 저장돼 있으니 잠금과
+                    // 집계는 감시 서비스가 이어서 합니다. 알림만 늦게 뜹니다.
+                    startFocusService = { runCatching { PomodoroService.start(app) } },
                 )
             }
         }

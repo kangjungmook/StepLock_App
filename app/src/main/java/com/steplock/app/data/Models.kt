@@ -203,19 +203,50 @@ object TemporaryAllow {
     const val MINUTES = 5
 }
 
+/**
+ * 집중 세션. **한 번 시작하면 끝날 때까지 멈추거나 되돌릴 수 없습니다** — 멈춤·
+ * 처음부터 버튼이 있으면 잠금이 답답할 때 눌러 버리고, 그러면 집중 조건이 아무것도
+ * 증명하지 못합니다.
+ *
+ * 없어지는 길은 둘뿐입니다. 시스템 설정에서 앱을 **강제 종료**하거나(다음에 앱을 열 때
+ * [com.steplock.app.system.ForceStopCheck] 가 지웁니다) 앱을 **지우는** 것.
+ */
 data class PomodoroState(
     val endsAt: Long? = null,
-    val pausedRemainingMs: Long? = null,
     val sessionsToday: Int = 0,
 ) {
     val isRunning: Boolean get() = endsAt != null
-    val isPaused: Boolean get() = endsAt == null && pausedRemainingMs != null
+
+    /** 세션을 시작한 시각. 세션 길이가 고정이라 끝나는 시각에서 거꾸로 셉니다. */
+    val startedAt: Long? get() = endsAt?.let { it - Pomodoro.SESSION_MS }
 }
 
 object Pomodoro {
     const val SESSION_MINUTES = 25
     const val SESSION_MS = SESSION_MINUTES * 60_000L
 }
+
+/**
+ * 잠금이 **걸려 있는지** — 잠글 앱을 하나 이상 골랐고 해제 조건도 하나 이상 켰을 때.
+ *
+ * 앱을 고르지 않았으면 막을 게 없으니 조건도 진행하지 않습니다. 전에는 앱이 하나도
+ * 없는데도 홈이 "잠겨 있어요 · 3,000보 더"를 말하고 집중 타이머가 돌았습니다.
+ */
+fun LockSettings.isLocking(): Boolean =
+    blockedAppIds.isNotEmpty() && (stepsEnabled || sleepEnabled || pomodoroEnabled)
+
+/**
+ * 잠금이 걸리는 순간 집중 세션을 저절로 시작해야 하는지.
+ *
+ * 집중 조건을 켜 두고 오늘 목표를 아직 못 채웠는데 세션이 돌고 있지 않을 때입니다.
+ * "잠금이 걸리는 순간"은 부르는 쪽이 정합니다 — 앱을 잠그거나, 집중 조건을 켜거나,
+ * 잠금 화면이 뜰 때.
+ */
+fun shouldAutoStartFocus(settings: LockSettings, pomodoro: PomodoroState): Boolean =
+    settings.blockedAppIds.isNotEmpty() &&
+        settings.pomodoroEnabled &&
+        pomodoro.sessionsToday < settings.pomodoroGoal &&
+        !pomodoro.isRunning
 
 /** 켜 둔 조건만 계산합니다. 전부 만족 모드가 꺼져 있으면 하나만 채워도 해제됩니다. */
 object UnlockEvaluator {

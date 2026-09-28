@@ -21,6 +21,7 @@ import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.UnlockEvaluator
 import com.steplock.app.data.hasActivityRecognitionPermission
+import com.steplock.app.system.ForceStopCheck
 import com.steplock.app.ui.LockActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -62,6 +64,10 @@ class AppWatchService : Service() {
     private suspend fun watchForegroundApp() {
         val usageStats = getSystemService(UsageStatsManager::class.java) ?: return
         val repository = SettingsRepository(this)
+        // 강제 종료 뒤 재부팅으로 여기가 먼저 뜰 수도 있어서, 앱을 열 때와 똑같이 봅니다.
+        ForceStopCheck.discardFocusIfForceStopped(this)
+        // 재부팅이나 시스템 정리로 타이머 알림만 사라진 경우 되살립니다.
+        if (repository.preferences.first().pomodoro.isRunning) startFocusService()
         val sleepRepository = SleepRepository(this, repository)
         val preferences = repository.preferences.stateIn(scope)
         val steps = StepTracker(this, repository).todaySteps()
@@ -93,6 +99,15 @@ class AppWatchService : Service() {
                 pomodoroSessions = current.pomodoro.sessionsToday,
             )
 
+            // 끝난 집중 세션을 여기서도 집계합니다. 타이머 알림 서비스가 떠 있지 않으면
+            // (재부팅 뒤, 시스템이 정리한 뒤) 아무도 세션을 끝내지 않아서 **집중 잠금이
+            // 영영 풀리지 않았습니다.** 알림 서비스가 먼저 끝내며 완료 알림을 보내도록
+            // 몇 초 늦게 봅니다.
+            val focusEndsAt = current.pomodoro.endsAt
+            if (focusEndsAt != null && now - focusEndsAt > FOCUS_COMPLETE_GRACE_MS) {
+                repository.completePomodoroSession()
+            }
+
             // 하루 기록을 여기서도 남깁니다.
             //
             // 전에는 화면이 열릴 때만 남겼습니다. 그래서 **하루 종일 앱을 한 번도
@@ -107,7 +122,10 @@ class AppWatchService : Service() {
 
             // 잠김 → 열림으로 바뀐 순간 한 번 알립니다. 걸음 목표를 채웠는지 알려고
             // 앱을 열어 볼 필요가 없게 합니다. 날짜가 바뀌면 다시 셉니다.
+            // 집중 중에는 조건을 채웠어도 잠겨 있으니 "열렸어요"라고 하지 않습니다.
+            // 세션이 끝나 실제로 열리는 순간 알립니다.
             val unlockedNow = current.settings.blockedAppIds.isNotEmpty() &&
+                !current.pomodoro.isRunning &&
                 UnlockEvaluator.isUnlocked(current.settings, stat)
             if (sawLockedOn != stat.date) {
                 sawLocked = false
@@ -143,9 +161,13 @@ class AppWatchService : Service() {
             val blockedPackage = foregroundPackage(usageStats)
                 ?.takeIf { it in current.settings.blockedAppIds }
 
+            // 집중 세션이 도는 동안에는 조건을 이미 채웠어도 잠급니다. 그러지 않으면
+            // 타이머를 켜 둔 채 쇼츠를 봐도 "집중 1회"가 쌓여서, 집중 조건이 아무것도
+            // 증명하지 못합니다. 같은 이유로 **5분 임시 허용도 집중 중에는 듣지 않습니다.**
+            val focusing = current.pomodoro.isRunning
             if (blockedPackage == null) {
                 shownForAppId = null
-            } else if (current.temporaryAllow.isActive()) {
+            } else if (!focusing && current.temporaryAllow.isActive()) {
                 // 허용 중에는 표시 기록을 비워 둡니다.
                 //
                 // 전에는 이 기록이 그대로 남아서, **5분이 지나도 그 앱에 머물러
@@ -153,18 +175,26 @@ class AppWatchService : Service() {
                 // 앱을 떠나지 않는 한 무제한으로 쓸 수 있었습니다.
                 shownForAppId = null
             } else if (shownForAppId != blockedPackage) {
-                // 집중 세션이 도는 동안에는 조건을 이미 채웠어도 잠급니다.
-                // 그러지 않으면 타이머를 켜 둔 채 쇼츠를 봐도 "집중 1회"가 쌓여서,
-                // 집중 조건이 아무것도 증명하지 못합니다.
-                val focusing = current.pomodoro.isRunning
                 if (focusing || !UnlockEvaluator.isUnlocked(current.settings, stat)) {
                     shownForAppId = blockedPackage
+                    // 잠금이 걸리는 순간입니다. 집중 조건이 남아 있으면 세션을 저절로
+                    // 시작합니다 — 잠금 화면에서 타이머를 찾아 누르게 하지 않습니다.
+                    if (!focusing && repository.autoStartFocusIfNeeded()) startFocusService()
                     startActivity(LockActivity.intent(this, blockedPackage))
                     repository.recordBlockedOpen(blockedPackage)
                 }
             }
             delay(POLL_INTERVAL_MS)
         }
+    }
+
+    /**
+     * 타이머 알림 서비스를 띄웁니다. 안드로이드 12+ 는 백그라운드에서 포그라운드
+     * 서비스를 못 띄우게 할 수 있는데, 그래도 세션은 저장돼 있어 잠금과 집계는
+     * 이 서비스가 합니다. 곧 뜨는 잠금 화면이 한 번 더 띄웁니다(LockActivity).
+     */
+    private fun startFocusService() {
+        runCatching { PomodoroService.start(this) }
     }
 
     private fun foregroundPackage(usageStats: UsageStatsManager): String? {
@@ -292,6 +322,9 @@ class AppWatchService : Service() {
         private const val POLL_INTERVAL_MS = 1_000L
         private const val EVENT_WINDOW_MS = 10_000L
         private const val SLEEP_REFRESH_MS = 10 * 60_000L
+
+        /** 끝난 세션을 타이머 알림 서비스가 먼저 집계하도록 기다리는 시간. */
+        private const val FOCUS_COMPLETE_GRACE_MS = 5_000L
 
         /**
          * 하루 기록을 덮어쓰는 간격. 자정 직전 기록이 최대 이만큼 낡을 수 있어서,

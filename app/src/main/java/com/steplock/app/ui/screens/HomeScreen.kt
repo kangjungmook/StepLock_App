@@ -36,6 +36,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,7 +50,9 @@ import com.steplock.app.data.TemporaryAllow
 import com.steplock.app.data.UnlockEvaluator
 import com.steplock.app.ui.components.AppIcon
 import com.steplock.app.ui.components.BottomNavBar
+import com.steplock.app.ui.components.BubbleTail
 import com.steplock.app.ui.components.ConditionRow
+import com.steplock.app.ui.components.IconTile
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.PrimaryButton
@@ -61,7 +64,9 @@ import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.StepLockMascot
 import com.steplock.app.ui.components.StepTrack
+import com.steplock.app.ui.components.StepiSays
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -132,9 +137,10 @@ fun HomeScreen(
     // 홈의 결론은 **감시 서비스와 같은 규칙**이어야 합니다. 예전에는 조건만 봐서,
     // 5분 허용 중에도 "잠겨 있어요", 집중 중에 앱이 막혀도 "열려 있어요"라고
     // 말했습니다 — 화면과 실제가 어긋나면 사용자는 둘 다 믿지 않습니다.
+    // 집중이 허용보다 먼저입니다 — 감시 서비스도 집중 중에는 5분 허용을 듣지 않습니다.
     val status = when {
-        allowActive -> HomeStatus.Allowed
         focusing -> HomeStatus.Focusing
+        allowActive -> HomeStatus.Allowed
         UnlockEvaluator.isUnlocked(settings, stat) -> HomeStatus.Unlocked
         else -> HomeStatus.Locked
     }
@@ -167,13 +173,31 @@ fun HomeScreen(
                 )
             }
 
-            if (conditions.isEmpty()) {
+            if (apps.isEmpty() && !focusing) {
+                // 잠근 앱이 없으면 막을 게 없으니 조건도 진행하지 않습니다. 전에는 앱이
+                // 하나도 없는데 "잠겨 있어요 · 3,000보 더"와 진행 트랙을 보여 줬습니다.
+                IdleHero(onPickApps = onManageLocks)
+                if (conditions.isNotEmpty()) {
+                    HomeSectionHeader(
+                        title = stringResource(R.string.home_section_conditions_preview),
+                        trailing = {
+                            WeekSummaryLink(
+                                text = stringResource(R.string.home_conditions_edit),
+                                onClick = { onTabSelected(NavTab.Settings) },
+                            )
+                        },
+                    )
+                    ConditionPreview(conditions = conditions, settings = settings)
+                }
+            } else if (conditions.isEmpty()) {
                 Spacer(Modifier.height(24.dp))
                 SlPanel {
+                    // 조건은 설정 탭에서 켭니다. 전에는 앱 고르기 화면으로 보내서,
+                    // 눌러도 조건을 켤 곳이 나오지 않았습니다.
                     SlEmptyState(
                         title = stringResource(R.string.home_no_conditions_title),
                         description = stringResource(R.string.home_no_conditions_desc),
-                        onClick = onManageLocks,
+                        onClick = { onTabSelected(NavTab.Settings) },
                     )
                 }
             } else {
@@ -285,13 +309,11 @@ fun HomeScreen(
                 }
             }
 
-            // 5. 차단 중인 앱
-            HomeSectionHeader(
-                title = stringResource(R.string.home_section_blocked_apps),
-                trailing = if (apps.isEmpty()) {
-                    null
-                } else {
-                    {
+            // 5. 차단 중인 앱 — 비었으면 위의 "잠글 앱 고르기"가 대신합니다.
+            if (apps.isNotEmpty()) {
+                HomeSectionHeader(
+                    title = stringResource(R.string.home_section_blocked_apps),
+                    trailing = {
                         // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
                         if (warningTitle == null) DetectingStatus()
                         // 목록 전체를 한 곳에서 고칩니다. 줄마다 화살표를 달면 앱마다 다른
@@ -304,18 +326,8 @@ fun HomeScreen(
                             underline = false,
                             modifier = Modifier.padding(start = 8.dp),
                         )
-                    }
-                },
-            )
-            if (apps.isEmpty()) {
-                SlPanel {
-                    SlEmptyState(
-                        title = stringResource(R.string.home_no_apps_title),
-                        description = stringResource(R.string.home_no_apps_desc),
-                        onClick = onManageLocks,
-                    )
-                }
-            } else {
+                    },
+                )
                 // 오늘 많이 막은 앱이 위로 — 가장 손이 많이 가는 앱이 한눈에 보입니다.
                 // 같은 횟수끼리는 원래 순서(이름 순)를 지킵니다.
                 apps.sortedByDescending { blockedToday[it.packageName] ?: 0 }
@@ -327,6 +339,69 @@ fun HomeScreen(
         }
 
         BottomNavBar(selected = selectedTab, onSelect = onTabSelected)
+    }
+}
+
+/**
+ * 잠근 앱이 없을 때의 첫 구역. 진행 트랙 대신 스텝이가 할 일을 알려 주고,
+ * 바로 고르러 가는 버튼 하나만 둡니다.
+ */
+@Composable
+private fun IdleHero(onPickApps: () -> Unit) {
+    Spacer(Modifier.height(32.dp))
+    StatusPill(HomeStatus.Idle)
+    Spacer(Modifier.height(12.dp))
+    Text(
+        text = stringResource(R.string.home_hero_idle),
+        style = SlText.HeroHeadline,
+        color = SlColor.TextPrimary,
+    )
+    Spacer(Modifier.height(16.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StepLockMascot(
+            modifier = Modifier.size(width = 48.dp, height = 59.dp),
+            mood = MascotMood.Resting,
+        )
+        Spacer(Modifier.width(8.dp))
+        StepiSays(
+            text = stringResource(R.string.home_stepi_idle),
+            tail = BubbleTail.Start,
+            textAlign = TextAlign.Start,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+    }
+    Spacer(Modifier.height(24.dp))
+    PrimaryButton(text = stringResource(R.string.home_pick_apps), onClick = onPickApps)
+}
+
+/**
+ * 앱을 잠그면 채워야 할 조건 — 목표만 보여 주고 진행률은 그리지 않습니다.
+ * 잠그기 전부터 링이 차오르면 "벌써 진행 중"으로 읽힙니다.
+ */
+@Composable
+private fun ConditionPreview(conditions: List<UnlockCondition>, settings: LockSettings) {
+    Column {
+        conditions.forEachIndexed { index, condition ->
+            if (index > 0) SlDivider()
+            ConditionRow(
+                title = stringResource(condition.titleRes),
+                value = stringResource(R.string.home_condition_goal, condition.goalText(settings)),
+                leading = {
+                    IconTile(
+                        icon = when (condition) {
+                            UnlockCondition.Steps -> SlIcons.Steps
+                            UnlockCondition.Sleep -> SlIcons.Moon
+                            UnlockCondition.Pomodoro -> SlIcons.Timer
+                        },
+                        tint = SlColor.TextSecondary,
+                        background = SlColor.SurfaceAlt,
+                        size = 40.dp,
+                        shape = CircleShape,
+                        iconSize = 20.dp,
+                    )
+                },
+            )
+        }
     }
 }
 
@@ -387,10 +462,12 @@ private fun HomeSectionHeader(
 /** 상태를 색 하나로 먼저 알립니다. 잠김은 앰버, 열림·허용·집중은 브랜드. */
 @Composable
 private fun StatusPill(status: HomeStatus) {
-    val locked = status == HomeStatus.Locked
-    val container = if (locked) SlColor.AmberSurface else SlColor.BrandTintAlt
-    val dot = if (locked) SlColor.Amber else SlColor.Brand
-    val content = if (locked) SlColor.AmberText else SlColor.BrandDeep
+    // 잠근 앱이 없을 때는 경고도 성취도 아니라서 중립 회색입니다.
+    val (container, dot, content) = when (status) {
+        HomeStatus.Locked -> Triple(SlColor.AmberSurface, SlColor.Amber, SlColor.AmberText)
+        HomeStatus.Idle -> Triple(SlColor.SurfaceAlt, SlColor.TextTertiary, SlColor.TextSecondary)
+        else -> Triple(SlColor.BrandTintAlt, SlColor.Brand, SlColor.BrandDeep)
+    }
     Row(
         modifier = Modifier
             .clip(CircleShape)
@@ -413,6 +490,7 @@ private fun StatusPill(status: HomeStatus) {
                     HomeStatus.Unlocked -> R.string.home_pill_unlocked
                     HomeStatus.Allowed -> R.string.home_pill_allowed
                     HomeStatus.Focusing -> R.string.home_pill_focusing
+                    HomeStatus.Idle -> R.string.home_pill_idle
                 },
             ),
             style = SlText.Chip,
@@ -473,6 +551,11 @@ private fun HeroHeadline(
         HomeStatus.Focusing -> {
             highlight = null
             text = stringResource(R.string.home_hero_focusing)
+        }
+        // IdleHero 가 따로 그립니다.
+        HomeStatus.Idle -> {
+            highlight = null
+            text = stringResource(R.string.home_hero_idle)
         }
     }
     Text(
@@ -897,8 +980,33 @@ private fun HomeScreenStepsOnlyPreview() {
     }
 }
 
-/** 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다. */
-private enum class HomeStatus { Allowed, Focusing, Unlocked, Locked }
+/** 잠근 앱이 없는 첫 상태 — 조건이 진행되지 않고 고르러 가는 길만 보입니다. */
+@Preview(widthDp = 412, heightDp = 892, name = "No apps")
+@Composable
+private fun HomeScreenNoAppsPreview() {
+    StepLockTheme {
+        HomeScreen(
+            userName = null,
+            stat = SampleData.today,
+            settings = SampleData.settings.copy(blockedAppIds = emptySet()),
+            apps = emptyList(),
+            selectedTab = NavTab.Home,
+            onTabSelected = {},
+            onManageLocks = {},
+            onPomodoroClick = {},
+            streak = 0,
+            warningTitle = null,
+            warningDescription = null,
+            onWarningClick = {},
+        )
+    }
+}
+
+/**
+ * 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다.
+ * [Idle] 은 잠근 앱이 없어 아무것도 막지 않는 상태입니다.
+ */
+private enum class HomeStatus { Allowed, Focusing, Unlocked, Locked, Idle }
 
 /**
  * 임시 허용이 **지금** 유효한지. 끝나는 순간 스스로 false 로 바뀝니다 —
