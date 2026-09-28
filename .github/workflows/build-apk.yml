@@ -32,9 +32,9 @@ jobs:
       STEPLOCK_ADMOB_REWARDED: ${{ vars.STEPLOCK_ADMOB_REWARDED }}
       STEPLOCK_ADMOB_BANNER: ${{ vars.STEPLOCK_ADMOB_BANNER }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -132,9 +132,9 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
