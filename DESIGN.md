@@ -448,7 +448,7 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 | `PermissionWarning` | `HomeScreen.kt` | `SlPanel` + `SlDetailRow` + `SlChevron` |
 | `AccountRow` · `StrictModeRow` | `SettingsScreen.kt` | `SlPanel` + `SlDetailRow` |
 | `AchievementRow` | `StatsScreen.kt` | `ConditionRow` + `IconTile` |
-| `TodayStatusCard` · `ConditionRing` | `HomeScreen.kt` | `StepLockMascot` / `ProgressRing` |
+| `StatusPill` · `HeroHeadline` · `TodayFigures` · `WeekRings` · `BlockedAppRow` · `ConditionRing` | `HomeScreen.kt` | `ProgressRing` · `AppIcon` · `SectionLabel` |
 | `UnlockRule` | `OnboardingScreen.kt` | `IconTile` — 아이콘이 **앞**에 오는 다른 구조 |
 
 ## 4-8. iOS 대응 **[제안 · 시작값]**
@@ -547,59 +547,69 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 
 # 6. 실제 화면 적용 예시
 
-## 6-1. 홈 — 상태를 먼저, 조건은 한 가지 모양으로 **[코드 + 화면]**
+## 6-1. 홈 — 지금 → 오늘 → 최근 → 대상 **[코드 + 화면]**
 
-`docs/screens/03-home.png`
+`docs/screens/14-home-full.png` (스크롤 전체), `docs/screens/03-home.png` (첫 화면)
 
 ```
 [ScreenPadding 20dp]
-좋은 아침이에요, 지우님        ← Greeting 24sp Black / TextPrimary
-9월 21일 월요일               ← RowValue 13sp Normal / TextSecondary   (간격 6dp)
-                              ↕ 24dp
-┌ RadiusPanel 20dp · AmberSurface ─────────────┐
-│ [캐릭터 60×74]  아직 잠겨 있어요               │ ← StatusTitle 18sp Black / AmberText
-│                2,760보만 더 걸으면 열려요      │ ← BodySm 13sp / AmberSubText  (6dp)
-│                ( 5일 연속 )                   │ ← Chip 12sp Bold / Surface 캡슐  (10dp)
-└───────────────────────────────────────────────┘
-                              ↕ 28dp
-잠금 해제 조건                 ← SectionLabel 12sp Bold 자간+0.6
+좋은 아침이에요, 지우님            (5일 연속)   ← Greeting 24sp Black · 오른쪽 Chip 캡슐(BrandTintAlt)
+9월 22일 월요일                                  ← RowValue 13sp / TextSecondary   (4dp)
+                              ↕ 32dp
+( ● 지금 잠겨 있어요 )                           ← 상태 알약 28dp · 잠김 AmberSurface / 그 외 BrandTintAlt
                               ↕ 12dp
-┌ SlPanel · RadiusCard 18dp ───────────────────┐
-│ (링 44dp 66%) 걸음 수                         │ ← RowTitle 15sp Bold
-│               5,240 / 8,000보                 │ ← RowValue 13sp / TextSecondary
-│ ──── SlDivider ──────────────────────────────│
-│ (링 44dp ✓)  수면 시간                        │ ← 달성이면 숫자 대신 체크
-│ ──── SlDivider ──────────────────────────────│
-│ (링 44dp 67%) 집중 타이머          [셰브론]   │ ← 눌리는 줄에만 셰브론
-└───────────────────────────────────────────────┘
+2,760보만 더 걸으면                              ← HeroHeadline 26sp Black · 숫자만 BrandInk
+잠금이 풀려요
+                              ↕ 16dp
+[━━━━━━━━━━━━━(스텝이)· · · · · · |]             ← StepTrack, 캐릭터가 진행만큼 걸어갑니다
+5,240보                           목표 8,000보
+                              ↕ 32dp
+나머지 조건                                      ← SectionLabel (조건 둘 이상일 때만)
+┌ SlPanel ─ (링 44 ✓) 수면 시간 / (링 44 67%) 집중 타이머 ›┐   ← 홈의 유일한 카드
+                              ↕ 32dp
+오늘
+   약 3.7km   │    4번    │    3번                ← FigureValue 20sp Black · 세로 구분선 1×32dp
+   걸은 거리       막은 횟수    남은 임시 허용      ← LabelSm 12sp / TextSecondary
+                              ↕ 32dp
+최근 7일                         7일 중 5일 달성 › ← 링크는 44dp 터치 높이
+ (✓) (✓) (✓) (✓) (✓) ( ◔ ) ( ◑ )                 ← 링 40dp · 채운 날은 Brand 원 + 체크
+ 화  수  목  금  토  일  오늘                      ← 오늘만 Chip 굵게 / BrandDeep
+                              ↕ 32dp
+차단 중인 앱               ● 감지 중   관리
+[아이콘 40] TikTok Lite                          ← ListItem 15sp
+            오늘 3번 막았어요                      ← LabelSm · 숫자만 AmberText Bold
 ```
 
 **적용된 기준**
 
-- 상태 카드는 **주의(앰버)** 색을 씁니다. 잠긴 것은 정상 상태이므로 오류 빨강이 아닙니다.
-- 열리면 면이 `BrandTint`, 글자가 `BrandDeep`으로 바뀌고 캐릭터가 눈을 감습니다 —
-  **색과 형태가 함께 바뀌어 글을 읽지 않아도 구분됩니다.**
-- 조건 세 줄은 **같은 44dp 링**입니다. 상태만 다르고 모양은 같습니다.
+- **결론을 문장으로 먼저** 말합니다. 상태 제목 + 회색 설명 두 줄이던 것을 "무엇을 얼마나 하면
+  풀리는지" 한 문장으로 바꾸고, 할 일의 숫자만 색으로 띄웁니다.
+- **카드는 하나만.** 나머지 구역은 32dp 여백과 섹션 제목으로 나눕니다. 모양은 원(알약 · 링 ·
+  아이콘) 위주 — "네모난 상자가 쌓여 AI 같다"는 피드백에 대한 답입니다.
+- **빈자리는 이 앱만 알려 줄 수 있는 숫자로** 채웁니다(거리 · 막은 횟수 · 남은 허용 · 7일 링).
+  걸음 조건 하나만 켠 기본 상태에서 홈이 비어 보이던 문제를 이것으로 풀었습니다.
+- 어두운 헤더와 그림자 카드는 쓰지 않습니다(한 번 시도했다가 되돌린 방향).
+- 상태는 색과 형태가 함께 바뀝니다 — 알약 색, 캐릭터 동작(걷기 · 쉬기 · 집중).
 - "감지 중" 표시는 섹션 헤더에 **한 번만** — 앱별 상태가 아니라 감시 서비스 하나의 상태입니다.
 
-## 6-2. 잠금 — 조건 하나에 집중 **[코드 + 화면]**
+## 6-2. 잠금 — 조건 하나에 집중, 스텝이가 말로 안내 **[코드 + 화면]**
 
 `docs/screens/05-lock.png`
 
 ```
 [ScreenPaddingWide 24dp · Dark.Background]
-        [캐릭터 80×99 · Dark.GreenIcon]        ← 다크 전용 그린 (반전 아님)
-                    ↕ 24dp
-        유튜브는 잠겨있어요                     ← LockTitle 25sp Black / Dark.TextPrimary
-                    ↕ 8dp
-        2,760보만 더 걸으면 열려요              ← Remaining 14sp Bold / Dark.AmberText
-                    ↕ 32dp
+        YouTube는 잠겨 있어요                   ← LockTitle 25sp Black / Dark.TextPrimary
+                    ↕ 20dp
+ [스텝이 64×79] ◁ 2,760보만 더 걸으면 열려요     ← StepiSays · 꼬리가 캐릭터를 가리킴
+                                                   Remaining 14sp Bold / Dark.AmberText
+                    ↕ 28dp
         ( 링 176dp · 66% · Dark.AmberRing )     ← 채도 낮춘 앰버
                     ↕ 28dp
         [수면 완료]  [2/3 세션]                 ← StatusChip, 링으로 보여 준 조건은 제외
                     ↕ 12dp
         조건을 모두 채워야 열려요                ← LabelSm 12sp / Dark.TextMuted
                     ↕ (남는 공간)
+        [ 집중 타이머로 잠금 풀러 가기 ]         ← 집중 조건이 남았을 때만 · Dark.AmberRing
         [ 알겠어요, 닫기 ]                      ← PrimaryButton 56dp · Dark.SurfaceAlt
         5분만 임시로 허용하기 (오늘 3번 남음)     ← TextLink · 한도 소진 시 사라짐
 ```
@@ -607,27 +617,33 @@ Android는 `sp`, iOS는 `pt`입니다. 아래 값은 전부 코드에서 확인�
 **적용된 기준**
 
 - `ScreenPaddingWide` — 하단 탭 없는 단독 화면입니다.
-- 주 버튼 하나 + 텍스트 링크 하나. **닫기 수단을 여러 개 두지 않습니다**
-  (이전에는 우상단 X까지 있어 셋이었습니다).
+- 풀 수 있는 길(집중 타이머)이 있으면 그게 주 동작이고, 닫기는 한 단계 낮춥니다.
 - 링 채도를 낮춘 이유는 **가장 큰 면적**이기 때문입니다.
+- 앱 모드(라이트 · 다크)와 상관없이 **언제나** 이 어두운 전용 색입니다.
 
-## 6-3. 설정 — 같은 구조의 카드 세 개 **[코드 + 화면]**
+## 6-3. 설정 — 같은 종류는 한 패널에 **[코드 + 화면]**
 
-`docs/screens/04-settings.png`
+`docs/screens/04-settings.png`, `docs/screens/08-relax.png`
 
 ```
-┌ ConditionSettingCard · RadiusCard 18dp ──────┐
-│ [타일 40dp] 걸음 수            [스위치 52×32] │ ← RowTitle + SlSwitch
+해제 조건                                        ← SectionLabel
+┌ SlPanel ─────────────────────────────────────┐
+│ [타일 40] 걸음 수                 [스위치]    │ ← 켜진 조건: 타일 BrandTintAlt
+│           하루 목표  [−] 8,000보 [+]          │ ← 켜져 있을 때만 스테퍼(제목 선에 맞춰 54dp 들여쓰기)
 │ ──── SlDivider ──────────────────────────────│
-│ 하루 목표      [−44dp] 8,000보 [+44dp]        │ ← StepperLabel + StepperValue
+│ … 수면 시간 · 집중 타이머 (같은 구조)          │
+│ ──── SlDivider ──────────────────────────────│
+│ 조건을 모두 만족해야 해제          [스위치]    │ ← 조건이 둘 이상 켜져 있을 때만
 └───────────────────────────────────────────────┘
-                              ↕ 16dp   (카드 사이)
-        … 수면 시간 카드 (같은 구조)
-        … 집중 타이머 카드 (같은 구조)
+                              ↕ 16dp + 섹션 제목
+차단할 앱 › · 마음이 바뀔 때(대기 기간) · 계정 · 화면(모드) · 도움말 · 광고
+바꾼 내용은 바로 저장돼요 …                      ← Caption, "저장" 버튼 없음
 ```
 
-조건 셋은 **완전히 같은 구조**입니다. 단위만 다릅니다(500보 / 30분 / 1회).
-역할이 같으므로 모양을 맞췄습니다.
+- 예전에는 조건마다 카드를 따로 둬 카드가 일곱 장 쌓였습니다. 같은 종류 셋은 패널 하나 안에서
+  구분선으로, 섹션 사이는 여백으로 나눕니다.
+- 꺼진 조건은 스테퍼를 숨기고 아이콘을 가라앉힙니다 — 켜 둔 것처럼 읽히지 않게.
+- 값은 바꾸는 순간 저장됩니다. "저장" 버튼을 두면 누르지 않고 나가면 취소되는 것처럼 읽힙니다.
 
 ## 6-4. 새 화면을 만들 때 **[제안]**
 

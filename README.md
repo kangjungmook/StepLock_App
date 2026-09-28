@@ -86,9 +86,11 @@
 | 화면 | 역할 | 파일 |
 | --- | --- | --- |
 | **Login** | 앱 첫 화면. 밑줄형 입력 · 로그인 유지 · 소셜 3종 · 게스트 진입 | [`LoginScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LoginScreen.kt) |
-| **Onboarding** | 잠금 해제 조건 3가지 안내 + 권한 3단계 요청 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
-| **Home** | 맨 위에 오늘 잠금이 풀렸는지 한 장으로, 아래에 조건별 진행과 차단 앱 | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
-| **Settings** | 조건별 토글 + 목표값 스테퍼, 차단할 앱 선택, 완화 대기 기간, 광고 안내 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
+| **Tutorial** | 첫 실행 안내 네 장. 스텝이가 말풍선으로 한 장에 한 가지씩 — 인사 · 해제 조건 · 5분 허용 · 권한 | [`TutorialScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/TutorialScreen.kt) |
+| **Onboarding** | 필요한 권한 세 줄을 한 화면에(남은 개수 표시), 권한 없이 먼저 둘러보기 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
+| **Home** | 지금 상태를 한 문장으로, 그 아래 오늘의 숫자 · 최근 7일 링 · 앱별 오늘 막은 횟수 (아래 "홈" 절) | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
+| **Settings** | 해제 조건(한 패널), 잠글 앱 고르기, 완화 대기 기간, 계정, 화면 모드(기기 설정 · 라이트 · 다크), 사용 방법 다시 보기 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
+| **App Picker** | 기기에 깔린 앱에서 잠글 앱 고르기. 검색, 고른 앱 먼저, 해제 대기 중인 앱 표시 | [`AppPickerScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/AppPickerScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션 타이머. 세션이 도는 동안 캐릭터가 앉습니다 | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
 | **Stats** | 7일 / 30일 전환, 걸음 차트와 요약 3칸, 조건별 일평균과 달성률 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
@@ -99,6 +101,30 @@
 
 각 화면 파일 하단에 `@Preview`가 있어 Android Studio에서 412×892 프레임으로 바로 확인할 수 있습니다.
 위 이미지는 [`docs/screens/`](docs/screens)에 있습니다.
+
+### 홈
+
+<p align="center">
+  <img src="docs/screens/14-home-full.png" width="36%" alt="홈 — 스크롤 전체" />
+</p>
+
+걸음 조건 하나만 켠 기본 상태에서도 비어 보이지 않도록, 꾸밈이 아니라 **이 앱만 알려 줄 수
+있는 숫자**로 채웠습니다. 위에서 아래로 *지금 → 오늘 → 최근 → 대상* 순서입니다.
+
+| 구역 | 보여 주는 것 |
+| --- | --- |
+| 지금 | 상태 알약(잠김은 앰버, 열림 · 허용 · 집중은 브랜드)과 한 문장 "**2,760보**만 더 걸으면 잠금이 풀려요". 할 일의 숫자만 브랜드 색으로 띄우고, 아래 트랙에서 스텝이가 걸어갑니다 |
+| 나머지 조건 | 조건을 둘 이상 켰을 때만. 잠금을 푸는 데 직접 관계된 것이라 바로 아래에 둡니다 |
+| 오늘 | 걸은 거리(걸음 폭 0.7m로 어림해 "약"), 막은 횟수, 남은 임시 허용. 트랙이 이미 걸음을 보여 주므로 걸음을 되풀이하지 않습니다 |
+| 최근 7일 | 요일마다 링. 채운 날은 꽉 찬 원에 체크, 못 채운 날은 얼마나 갔는지 — "못 했다"보다 "여기까지 갔다". 누르면 통계로 |
+| 차단 중인 앱 | 앱마다 "오늘 **3번** 막았어요". 오늘 많이 막은 앱이 위로 올라옵니다 |
+
+카드는 "나머지 조건" 하나뿐입니다. 나머지는 여백과 섹션 제목으로만 나누고, 모양은 원
+(링 · 알약 · 아이콘) 위주로 써서 네모난 상자가 쌓여 보이지 않게 했습니다.
+
+막은 횟수는 감시 서비스가 잠금 화면을 띄울 때 앱별로 기록합니다. 기기에만 두고 날짜가 바뀌면
+새로 셉니다. 같은 앱에 머무는 동안은 잠금을 다시 띄우지 않으므로 "그 앱을 열려고 한 횟수"에
+가깝습니다.
 
 ---
 
@@ -231,6 +257,10 @@
   <img src="docs/screens/12-settings-dark.png" width="30%" alt="다크 모드 — 잠금 조건 설정" />
   <img src="docs/screens/13-stats-dark.png" width="30%" alt="다크 모드 — 통계" />
 </p>
+
+**설정 → 화면**에서 기기 설정 · 라이트 · 다크를 직접 고를 수 있습니다. 안드로이드 12 이상에서는
+시스템에 앱 전용 모드로 등록해(`UiModeManager.setApplicationNightMode`) 스플래시와 창 배경까지
+같은 모드를 따르고, 상태 표시줄 아이콘 색도 고른 모드에 맞춥니다.
 
 라이트 값을 뒤집지 않고 역할별로 다시 골랐습니다.
 
@@ -489,11 +519,12 @@ AAB 생성까지 준비돼 있습니다. 남은 것은 대부분 콘솔 작업�
 
 ## 구현 범위
 
-동작하는 것 — 일곱 화면, 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
+동작하는 것 — 아홉 화면(튜토리얼 · 잠글 앱 고르기 포함), 설정 영구 저장, 세 조건 모두(걸음 수 센서 · Health Connect 수면 ·
 25분 집중 세션), 차단 앱 감지와 잠금 오버레이, 조건 판정(하나만 / 전부 만족), 임시 허용 5분,
 최근 7일 통계, 이메일·소셜 로그인과 비밀번호 재설정 메일, 계정 단위 서버 동기화,
 재부팅 후 감시 서비스 자동 복구, 계정·데이터 삭제, AdMob 배너·리워드 광고와 UMP 동의,
-설정 완화 대기(기간은 사용자가 선택).
+설정 완화 대기(기간은 사용자가 선택), 다크 모드(기기 설정 · 라이트 · 다크 직접 선택),
+스텝이 말풍선 · 알림(해제 · 저녁 산책 응원), 앱별 오늘 막은 횟수.
 
 아직 연결하지 않은 것:
 
