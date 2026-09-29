@@ -25,6 +25,8 @@ fun WeeklyBarChart(
     emptyBarColor: Color = SlColor.Border,
     goalLineColor: Color = SlColor.BorderStrong,
     baselineColor: Color = SlColor.Border,
+    /** 막대마다 색을 따로 줄 때(달성한 날·오늘). 없으면 [barColor]. */
+    barColorAt: ((index: Int, value: Int) -> Color)? = null,
 ) {
     val scaleMax = maxOf(goal, values.maxOrNull() ?: 0).coerceAtLeast(1)
 
@@ -51,7 +53,11 @@ fun WeeklyBarChart(
             val left = slotWidth * index + (slotWidth - barWidth) / 2f
             // 아래쪽 모서리는 경계 밖으로 넘겨 잘라내 기준선에 붙은 형태를 만듭니다.
             drawRoundRect(
-                color = if (value == 0) emptyBarColor else barColor,
+                color = when {
+                    value == 0 -> emptyBarColor
+                    barColorAt != null -> barColorAt(index, value)
+                    else -> barColor
+                },
                 topLeft = Offset(left, size.height - barHeight),
                 size = Size(barWidth, barHeight + cornerPx),
                 cornerRadius = CornerRadius(cornerPx, cornerPx),

@@ -29,4 +29,10 @@ object SlDimen {
     val ScreenPaddingWide = 24.dp
 
     val PanelPadding = 16.dp
+
+    /**
+     * 떠 있는 하단 탭에 가리지 않도록 스크롤 끝에 두는 여백 —
+     * 탭 높이 64 + 아래 띄움 12 + 숨 쉴 자리 16.
+     */
+    val FloatingNavReserve = 92.dp
 }

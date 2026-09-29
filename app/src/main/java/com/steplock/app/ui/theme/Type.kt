@@ -59,6 +59,18 @@ object SlText {
      */
     val HeroHeadline = slStyle(FontWeight.Black, 26f, 34f, -0.5f)
 
+    /**
+     * 홈의 큰 숫자("2,760보"). 화면에서 가장 먼저 읽혀야 하는 **할 일의 양**이라
+     * 모듈러 스케일(1.25)로 HeroHeadline 26 의 두 단계 위(≈ 40 → 52)에 둡니다.
+     */
+    val HomeBig = slStyle(FontWeight.Black, 52f, 56f, -1.6f)
+
+    /** 큰 숫자 바로 아래 한 줄("더 걸으면 잠금이 풀려요"). */
+    val HomeLine = slStyle(FontWeight.Bold, 22f, 30f, -0.3f)
+
+    /** 홈 "오늘 한눈에" 2×2 칸의 숫자. */
+    val GlanceValue = slStyle(FontWeight.Black, 24f, 30f, -0.4f)
+
     /** 홈 "오늘" 줄의 숫자(거리·막은 횟수·남은 허용). 라벨보다 먼저 읽히도록 굵게. */
     val FigureValue = slStyle(FontWeight.Black, 20f, 26f, -0.3f)
     val LockTitle = slStyle(FontWeight.Black, 25f, 32f, -0.4f)

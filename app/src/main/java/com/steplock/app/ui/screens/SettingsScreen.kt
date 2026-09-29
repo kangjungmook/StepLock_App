@@ -3,6 +3,7 @@ package com.steplock.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -95,11 +97,13 @@ fun SettingsScreen(
     /** 집중 세션이 도는 중. 계정 삭제를 잠시 막습니다. */
     focusing: Boolean = false,
 ) {
-    Column(
+    // 탭은 내용 위에 떠 있습니다 — 내용이 그 뒤로 흘러가도록 겹쳐 둡니다.
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(SlColor.Background),
     ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         // 탭 화면이라 뒤로 가기 화살표를 두지 않습니다 — 홈·통계와 같은 자리에
         // 제목만 둡니다. 화살표가 있으면 "하위 화면"으로 읽혀 탭이 사라진 것처럼 보입니다.
         Text(
@@ -126,8 +130,9 @@ fun SettingsScreen(
                     start = SlDimen.ScreenPadding,
                     end = SlDimen.ScreenPadding,
                     top = 4.dp,
-                    bottom = 24.dp,
-                ),
+                    bottom = SlDimen.FloatingNavReserve,
+                )
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // 맨 위에 둡니다. 목표를 낮췄는데 홈에서 아무 변화가 없으면 고장으로
@@ -307,7 +312,13 @@ fun SettingsScreen(
             )
         }
 
-        BottomNavBar(selected = NavTab.Settings, onSelect = onTabSelected)
+    }
+
+        BottomNavBar(
+            selected = NavTab.Settings,
+            onSelect = onTabSelected,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
     if (deleteAccountConfirming) {

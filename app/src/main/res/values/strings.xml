@@ -124,47 +124,27 @@
     <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
 
     <!-- 홈 -->
-    <string name="home_greeting">%1$s, %2$s님</string>
-    <string name="home_greeting_morning">좋은 아침이에요</string>
-    <string name="home_greeting_afternoon">좋은 오후예요</string>
-    <string name="home_greeting_evening">편안한 저녁이에요</string>
-    <string name="home_greeting_night">늦은 밤이에요</string>
     <string name="home_date_pattern">M월 d일 EEEE</string>
     <!-- 홈 맨 위 상태 카드 — 오늘 잠금이 풀렸는지 -->
     <string name="home_pill_locked">지금 잠겨 있어요</string>
     <string name="home_pill_unlocked">오늘은 열려 있어요</string>
     <string name="home_pill_allowed">잠시 열어 뒀어요</string>
     <string name="home_pill_focusing">집중하는 중이에요</string>
-    <string name="home_hero_steps">%1$s만 더 걸으면\n잠금이 풀려요</string>
-    <string name="home_hero_sleep">오늘 수면 목표를 채우면\n잠금이 풀려요</string>
-    <string name="home_hero_pomodoro">집중 %1$s만 더 하면\n잠금이 풀려요</string>
-    <string name="home_hero_rest">남은 조건만 채우면\n잠금이 풀려요</string>
-    <string name="home_hero_unlocked">오늘 목표를 채웠어요\n자유롭게 써도 돼요</string>
-    <string name="home_hero_allowed">%1$s까지\n잠깐 열어 뒀어요</string>
-    <string name="home_hero_focusing">집중이 끝날 때까지\n잠근 앱은 쉬어요</string>
     <string name="home_times">%1$d번</string>
-    <string name="home_section_today">오늘</string>
-    <string name="home_today_about">약</string>
     <string name="home_today_km">%1$skm</string>
     <string name="home_today_distance">걸은 거리</string>
-    <string name="home_today_blocked">막은 횟수</string>
-    <string name="home_today_allow_left">남은 임시 허용</string>
     <string name="home_section_week">최근 7일</string>
-    <string name="home_week_summary">%1$d일 중 %2$d일 달성</string>
     <string name="home_week_today">오늘</string>
     <string name="home_week_day_done">%1$s, 목표 달성</string>
     <string name="home_week_day_progress">%1$s, 목표의 %2$d%%</string>
-    <string name="home_app_blocked_today">오늘 %1$s 막았어요</string>
-    <string name="home_app_blocked_none">오늘은 막은 적 없어요</string>
     <string name="home_focus_open">집중 타이머 열기</string>
     <string name="home_focus_resume">진행 중인 집중 보기</string>
     <!-- 트랙이 첫 조건을 보여 주므로 카드에는 나머지만 들어갑니다 -->
-    <string name="home_section_conditions_rest">나머지 조건</string>
     <string name="home_track_goal">목표 %1$s</string>
     <!-- 조건이나 앱을 하나도 고르지 않은 경우 -->
     <string name="home_no_conditions_title">지킬 조건이 없어서 쉬고 있어요</string>
     <string name="home_no_conditions_desc">설정에서 조건을 하나 켜 주면 바로 일할게요</string>
-    <string name="home_section_blocked_apps">차단 중인 앱</string>
+    <string name="home_section_blocked_apps">오늘 막은 앱</string>
     <string name="home_manage_apps">관리</string>
     <string name="home_steps_value">%1$s / %2$s보</string>
     <string name="home_sleep_value">%1$s / %2$s</string>
@@ -371,4 +351,37 @@
     <string name="signup_sent_desc">%1$s 주소로 인증 메일을 보냈어요.\n메일의 링크를 누르면 스텝락으로 돌아와 바로 로그인돼요.</string>
     <string name="signup_sent_back">로그인 화면으로 돌아가기</string>
     <string name="settings_account_delete_focusing">집중이 끝나면 계정을 지울 수 있어요</string>
+    <string name="home_header_with_name">%1$s · %2$s님</string>
+    <string name="home_status_locked_one">%1$s 잠김</string>
+    <string name="home_status_locked_many">%1$s 외 %2$d개 잠김</string>
+    <string name="home_big_almost">거의 다 왔어요</string>
+    <string name="home_line_rest">남은 조건만 채우면 잠금이 풀려요</string>
+    <string name="home_line_steps">더 걸으면 잠금이 풀려요</string>
+    <string name="home_sub_steps_minutes">동네 한 바퀴, 약 %1$d분이면 충분해요</string>
+    <string name="home_sub_steps_long">오늘 안에 나눠서 걸어도 괜찮아요</string>
+    <string name="home_big_sleep">오늘 밤</string>
+    <string name="home_line_sleep">충분히 자면 잠금이 풀려요</string>
+    <string name="home_line_pomodoro">더 집중하면 잠금이 풀려요</string>
+    <string name="home_sub_pomodoro">잠근 앱을 열면 %1$d분 집중이 저절로 시작돼요</string>
+    <string name="home_big_unlocked">열렸어요</string>
+    <string name="home_line_unlocked">오늘 목표를 채웠어요. 자유롭게 써도 돼요</string>
+    <string name="home_line_allowed">까지 잠시 열어 뒀어요</string>
+    <string name="home_big_focusing">집중 중</string>
+    <string name="home_line_focusing">끝날 때까지 잠근 앱은 쉬어요</string>
+    <string name="home_track_walked">%1$s보 걸음</string>
+    <string name="home_strip_done">%1$s 채웠어요</string>
+    <string name="home_strip_steps">%1$s보</string>
+    <string name="home_strip_sleep">수면 %1$s</string>
+    <string name="home_strip_pomodoro">집중 %1$d회</string>
+    <string name="home_section_glance">오늘 한눈에</string>
+    <string name="home_glance_blocked">오늘 막은 횟수</string>
+    <string name="home_glance_allow_left">남은 %1$d분 허용</string>
+    <string name="home_glance_focus_value">%1$d / %2$d회</string>
+    <string name="home_glance_focus">집중 세션</string>
+    <string name="home_glance_week_value">%1$d / %2$d일</string>
+    <string name="home_glance_week">최근 7일 달성</string>
+    <string name="home_section_week_steps">최근 7일 걸음</string>
+    <string name="home_week_achieved">%1$d일 달성</string>
+    <string name="home_week_bars_desc">최근 %2$d일 중 %1$d일 걸음 목표를 채웠어요. 누르면 통계로 가요</string>
+    <string name="home_week_goal_line">목표 %1$s</string>
 </resources>
