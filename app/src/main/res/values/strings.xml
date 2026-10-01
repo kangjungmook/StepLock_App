@@ -121,7 +121,7 @@
     <string name="settings_tutorial_replay">사용 방법 다시 보기</string>
     <string name="settings_tutorial_replay_desc">처음 설치했을 때 본 안내를 다시 봅니다</string>
     <string name="onboarding_skip_permissions">권한 없이 먼저 둘러보기</string>
-    <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.</string>
+    <string name="onboarding_privacy">화면 위에 떠 있는 앱 이름만 확인하며,\n화면 내용은 수집하거나 저장하지 않습니다.\n(\'쇼츠만 막기\'를 직접 켜면 YouTube·Instagram의 화면 구성 요소 이름만 읽어요)</string>
 
     <!-- 홈 -->
     <string name="home_date_pattern">M월 d일 EEEE</string>
