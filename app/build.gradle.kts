@@ -109,6 +109,16 @@ android {
     }
 
     buildTypes {
+        // 쇼츠만 막기(접근성 서비스)가 들어간 디버그 빌드.
+        //
+        // 플레이 스토어 밖에서 받은 APK가 접근성 서비스를 선언하면, Google Play 프로텍트가
+        // 브라우저·파일 앱으로 설치하는 것 자체를 막습니다("기기 보호를 위해 앱 차단됨").
+        // 그래서 폰에 바로 까는 debug 에서는 그 서비스를 빼고(src/debug/AndroidManifest.xml),
+        // 이 빌드는 adb 로 설치합니다. 스토어로 나가는 release 에는 들어 있습니다.
+        create("shorts") {
+            initWith(getByName("debug"))
+            matchingFallbacks += listOf("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

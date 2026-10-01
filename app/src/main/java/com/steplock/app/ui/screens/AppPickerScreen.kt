@@ -86,6 +86,8 @@ fun AppPickerScreen(
     shortFormOnly: Set<String> = emptySet(),
     /** 쇼츠 화면을 알아보는 접근성 서비스가 켜져 있는지. */
     shortFormAccessOn: Boolean = false,
+    /** 이 설치 파일에 그 서비스가 들어 있는지. 없으면 선택지 대신 한 줄 안내만. */
+    shortFormAvailable: Boolean = true,
     onShortFormChange: (packageName: String, only: Boolean) -> Unit = { _, _ -> },
     /** 접근성 설정을 엽니다. 안내 대화상자에서 동의한 뒤에만 부릅니다. */
     onOpenShortFormAccess: () -> Unit = {},
@@ -254,7 +256,14 @@ fun AppPickerScreen(
                     onToggle = { onToggle(app.packageName) },
                 )
                 val target = ShortFormTarget.of(app.packageName)
-                if (checked && target != null) {
+                if (checked && target != null && !shortFormAvailable) {
+                    Text(
+                        text = stringResource(R.string.short_form_unavailable, stringResource(target.onlyRes)),
+                        style = SlText.LabelSm,
+                        color = SlColor.TextTertiary,
+                        modifier = Modifier.padding(start = 54.dp, bottom = 12.dp),
+                    )
+                } else if (checked && target != null) {
                     ShortFormChoice(
                         target = target,
                         only = app.packageName in shortFormOnly,

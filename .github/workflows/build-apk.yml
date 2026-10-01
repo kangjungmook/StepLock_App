@@ -45,7 +45,7 @@ jobs:
         id: debug_build
         run: |
           set -o pipefail
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleDebug assembleShorts --stacktrace 2>&1 | tee build.log
 
       # 실행 로그는 Actions UI 밖에서 받기 어려우므로, 실패하면 이슈로 남겨
       # 어디서 깨졌는지 바로 볼 수 있게 합니다.
@@ -59,11 +59,15 @@ jobs:
         run: |
           mkdir -p out
           cp app/build/outputs/apk/debug/app-debug.apk out/steplock-debug.apk
+          # 쇼츠만 막기(접근성 서비스)가 든 빌드 — Play 프로텍트 때문에 adb 로만 설치됩니다.
+          cp app/build/outputs/apk/shorts/app-shorts.apk out/steplock-debug-shorts.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: steplock-debug-apk
-          path: out/steplock-debug.apk
+          path: |
+            out/steplock-debug.apk
+            out/steplock-debug-shorts.apk
 
       # 아티팩트는 zip으로 감싸여 내려오므로, 폰에서 바로 설치하려면 릴리즈가 편합니다.
       - name: debug 릴리즈에 올리기
@@ -71,9 +75,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view debug >/dev/null 2>&1; then
-            gh release upload debug out/steplock-debug.apk --clobber
+            gh release upload debug out/steplock-debug.apk out/steplock-debug-shorts.apk --clobber
           else
-            gh release create debug out/steplock-debug.apk \
+            gh release create debug out/steplock-debug.apk out/steplock-debug-shorts.apk \
               --title "디버그 빌드 (설치용)" \
               --notes "main 브랜치를 빌드한 디버그 APK입니다. 테스트용이고 서명은 디버그 키입니다." \
               --prerelease

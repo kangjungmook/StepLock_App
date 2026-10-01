@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    폰에 바로 까는 디버그 APK 에서는 쇼츠만 막기(접근성 서비스)를 뺍니다.
+    접근성 서비스를 선언한 APK 를 브라우저·파일 앱으로 설치하면 Google Play 프로텍트가
+    "기기 보호를 위해 앱 차단됨"으로 설치를 막기 때문입니다. 서비스가 들어간 빌드는
+    shorts 빌드 타입(steplock-debug-shorts.apk)이고 adb 로 설치합니다.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <service
+            android:name=".service.ShortFormWatchService"
+            tools:node="remove" />
+    </application>
+</manifest>

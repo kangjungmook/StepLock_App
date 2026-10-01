@@ -495,4 +495,5 @@
     <string name="short_form_on_note">%1$s 화면이 뜰 때만 잠가요</string>
     <string name="home_short_form_off_title">쇼츠만 막기가 멈췄어요</string>
     <string name="home_short_form_off_desc">접근성 권한이 꺼져서 지금은 앱 전체를 잠그고 있어요. 눌러서 다시 켜 주세요</string>
+    <string name="short_form_unavailable">\'%1$s 막기\'는 이 설치 파일에 빠져 있어요. 지금은 앱 전체를 잠가요</string>
 </resources>

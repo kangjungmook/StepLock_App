@@ -9,6 +9,15 @@ import com.steplock.app.service.ShortFormWatchService
 /** "쇼츠만 막기"에 필요한 접근성 서비스가 켜져 있는지, 켜러 가는 길. */
 object ShortFormAccess {
 
+    /**
+     * 이 설치 파일에 접근성 서비스가 들어 있는지. 폰에 바로 까는 디버그 APK 에는
+     * 없습니다(Play 프로텍트가 설치를 막아서 — src/debug/AndroidManifest.xml).
+     */
+    fun isAvailable(context: Context): Boolean = runCatching {
+        @Suppress("DEPRECATION")
+        context.packageManager.getServiceInfo(ComponentName(context, ShortFormWatchService::class.java), 0)
+    }.isSuccess
+
     fun isEnabled(context: Context): Boolean {
         val enabled = Settings.Secure.getString(
             context.contentResolver,

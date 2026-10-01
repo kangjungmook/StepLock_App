@@ -500,6 +500,7 @@ private fun StepLockNavGraph(
                     state.today.pomodoroSessions < state.settings.pomodoroGoal,
                 shortFormOnly = state.desiredSettings.shortFormOnly,
                 shortFormAccessOn = shortFormAccessOn,
+                shortFormAvailable = remember { ShortFormAccess.isAvailable(context) },
                 onShortFormChange = viewModel::setShortFormOnly,
                 onOpenShortFormAccess = { context.startActivity(ShortFormAccess.settingsIntent()) },
             )
