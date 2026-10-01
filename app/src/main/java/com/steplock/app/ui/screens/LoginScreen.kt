@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.R
@@ -36,8 +36,9 @@ import com.steplock.app.ui.LoginError
 import com.steplock.app.ui.LoginNotice
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
-import com.steplock.app.ui.components.SocialLoginButton
 import com.steplock.app.ui.components.SocialProvider
+import com.steplock.app.ui.components.SocialWideButton
+import com.steplock.app.ui.components.TrailMap
 import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.components.UnderlineTextField
 import com.steplock.app.ui.components.Wordmark
@@ -85,36 +86,81 @@ fun LoginScreen(
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    // 이메일 칸은 처음엔 접어 둡니다 — 대부분은 소셜 버튼 한 번으로 끝나서,
+    // 칸 두 개와 링크 세 개가 첫눈에 보일 이유가 없습니다.
+    var emailOpen by rememberSaveable { mutableStateOf(false) }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SlColor.Surface)
+            .background(SlColor.Background)
             .safeDrawingPadding()
-            .imePadding(),
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = SlDimen.ScreenPadding),
     ) {
-        Column(
+        // 1. 등산로 입구 — 스텝이가 길 맨 아래에 서 있고, 왼쪽에 한 문장.
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = SlDimen.ScreenPaddingWide, vertical = 24.dp),
+                .fillMaxWidth()
+                .height(HERO_HEIGHT),
         ) {
-            Wordmark(text = stringResource(R.string.app_wordmark))
-
-            Spacer(Modifier.height(44.dp))
-            Text(
-                text = stringResource(R.string.login_title),
-                style = SlText.LoginHeading,
-                color = SlColor.Brand,
+            TrailMap(
+                progress = 0.04f,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clearAndSetSemantics {},
             )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(trigger.noteRes),
-                style = SlText.LoginNote,
-                color = SlColor.TextSecondary,
-            )
+            Column(modifier = Modifier.fillMaxWidth(0.62f).padding(top = 24.dp)) {
+                Wordmark(text = stringResource(R.string.app_wordmark))
+                Spacer(Modifier.height(32.dp))
+                Text(
+                    text = stringResource(R.string.login_title),
+                    style = SlText.HomeBig,
+                    color = SlColor.TextPrimary,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(trigger.noteRes),
+                    style = SlText.Tagline,
+                    color = SlColor.TextSecondary,
+                )
+            }
+        }
 
-            Spacer(Modifier.height(28.dp))
+        if (errorText != null || noticeText != null) {
+            Text(
+                text = errorText ?: noticeText.orEmpty(),
+                style = SlText.Label,
+                color = if (errorText != null) SlColor.Error else SlColor.BrandInk,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+        }
+
+        // 2. 가장 빠른 길 — 소셜 계정.
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SocialProvider.entries.forEach { provider ->
+                SocialWideButton(provider = provider, onClick = { onSocialLogin(provider) })
+            }
+        }
+
+        // 3. 이메일 — 누르면 그 자리에서 펼쳐집니다.
+        Spacer(Modifier.height(24.dp))
+        if (!emailOpen) {
+            PrimaryButton(
+                text = stringResource(R.string.login_email_open),
+                onClick = { emailOpen = true },
+                height = 52.dp,
+                containerColor = SlColor.SurfaceAlt,
+                contentColor = SlColor.TextPrimary,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.login_email_section),
+                style = SlText.SectionTitle,
+                color = SlColor.TextPrimary,
+            )
+            Spacer(Modifier.height(16.dp))
             UnderlineTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -123,7 +169,6 @@ fun LoginScreen(
                 leadingIcon = SlIcons.Mail,
                 keyboardType = KeyboardType.Email,
             )
-
             Spacer(Modifier.height(24.dp))
             UnderlineTextField(
                 value = password,
@@ -135,7 +180,6 @@ fun LoginScreen(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             )
-
             // "로그인 유지" 체크박스를 두지 않습니다. 세션은 언제나 기기에 남아서
             // 체크를 풀어도 달라지는 게 없었습니다 — 동작하지 않는 선택지였습니다.
             Row(
@@ -153,24 +197,7 @@ fun LoginScreen(
                     underline = false,
                 )
             }
-
-            if (errorText != null) {
-                Text(
-                    text = errorText,
-                    style = SlText.Label,
-                    color = SlColor.Error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            } else if (noticeText != null) {
-                Text(
-                    text = noticeText,
-                    style = SlText.Label,
-                    color = SlColor.BrandInk,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
             PrimaryButton(
                 text = if (submitting) {
                     stringResource(R.string.login_submitting)
@@ -180,55 +207,38 @@ fun LoginScreen(
                 onClick = { onLogin(email, password) },
                 enabled = !submitting,
             )
+        }
 
-            Spacer(Modifier.height(24.dp))
+        // 4. 처음이거나, 아직 계정이 필요 없거나.
+        Spacer(Modifier.height(32.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                text = stringResource(R.string.login_social_divider),
-                style = SlText.Label,
+                text = stringResource(R.string.login_signup_prompt),
+                style = SlText.Signup,
                 color = SlColor.TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
             )
-
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-            ) {
-                SocialProvider.entries.forEach { provider ->
-                    SocialLoginButton(provider = provider, onClick = { onSocialLogin(provider) })
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.login_signup_prompt),
-                    style = SlText.Signup,
-                    color = SlColor.TextSecondary,
-                )
-                TextLink(
-                    text = stringResource(R.string.login_signup_action),
-                    onClick = onSignUp,
-                    style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
-                    color = SlColor.BrandInk,
-                    underline = true,
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
             TextLink(
-                text = stringResource(R.string.login_guest),
-                onClick = onGuestContinue,
-                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(R.string.login_signup_action),
+                onClick = onSignUp,
+                style = SlText.Signup.copy(fontWeight = FontWeight.Bold),
+                color = SlColor.BrandInk,
+                underline = true,
             )
         }
+        TextLink(
+            text = stringResource(R.string.login_guest),
+            onClick = onGuestContinue,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(16.dp))
     }
 }
+
+private val HERO_HEIGHT = 300.dp
 
 @Preview(widthDp = 412, heightDp = 892)
 @Composable

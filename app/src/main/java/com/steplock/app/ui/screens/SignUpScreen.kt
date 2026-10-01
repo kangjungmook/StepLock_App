@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.steplock.app.R
 import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.IconTapTarget
@@ -84,7 +85,7 @@ fun SignUpScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SlColor.Surface)
+            .background(SlColor.Background)
             .safeDrawingPadding()
             .imePadding(),
     ) {
@@ -134,13 +135,13 @@ private fun SignUpForm(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = SlDimen.ScreenPaddingWide)
+            .padding(horizontal = SlDimen.ScreenPadding)
             .padding(top = 8.dp, bottom = 24.dp),
     ) {
         Text(
             text = stringResource(R.string.signup_title),
-            style = SlText.LoginHeading,
-            color = SlColor.Brand,
+            style = SlText.HomeBig.copy(fontSize = 32.sp, lineHeight = 40.sp),
+            color = SlColor.TextPrimary,
         )
         Spacer(Modifier.height(8.dp))
         Text(
