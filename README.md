@@ -89,12 +89,12 @@
 | **Sign Up** | 이메일 가입. 비밀번호 확인 · 개인정보 처리방침 동의 · 인증 메일을 보냈으면 "메일함을 확인해 주세요" | [`SignUpScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SignUpScreen.kt) |
 | **Tutorial** | 첫 실행 안내 네 장. 스텝이가 말풍선으로 한 장에 한 가지씩 — 인사 · 해제 조건 · 5분 허용 · 권한 | [`TutorialScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/TutorialScreen.kt) |
 | **Onboarding** | 필요한 권한 세 줄을 한 화면에(남은 개수 표시). 설정에서만 켜는 두 줄은 무엇을 켜면 되는지 안내하고, 켜는 순간 앱으로 저절로 돌아옴. 권한 없이 먼저 둘러보기 | [`OnboardingScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/OnboardingScreen.kt) |
-| **Home** | 지금 상태를 한 문장으로, 그 아래 오늘의 숫자 · 최근 7일 링 · 앱별 오늘 막은 횟수 (아래 "홈" 절) | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
-| **Settings** | 해제 조건(한 패널), 잠글 앱 고르기, 완화 대기 기간, 계정, 화면 모드(기기 설정 · 라이트 · 다크), 사용 방법 다시 보기 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) |
+| **Home** | 아래에서 위로 오르는 등산로 위의 스텝이와 "얼마나 더"를 말하는 큰 숫자, 옆으로 넘기는 오늘 숫자, 잠근 앱별 쓴 시간, 이번 주 일곱 칸 (아래 "홈" 절) | [`HomeScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/HomeScreen.kt) |
+| **Settings** | 잠금 규칙을 한 문장으로("하루에 8,000보 걷거나 … 앱 3개를 열어 줄게요"), 밑줄 친 값을 누르면 시트에서 고침. 완화 대기 기간, 계정, 화면 모드, 사용 방법 다시 보기 | [`SettingsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/SettingsScreen.kt) · [`RuleEditor.kt`](app/src/main/java/com/steplock/app/ui/components/RuleEditor.kt) |
 | **App Picker** | 기기에 깔린 앱에서 잠글 앱 고르기. 검색, 고른 앱 먼저, 해제 대기 중인 앱 표시 | [`AppPickerScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/AppPickerScreen.kt) |
 | **Lock** | 차단 앱 실행 시 덮이는 전체 화면 오버레이. 켜 둔 조건 하나만 링으로 크게, 나머지는 칩으로 (다크 팔레트) | [`LockOverlayScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/LockOverlayScreen.kt) |
 | **Pomodoro** | 25분 집중 세션. 앱을 잠그는 순간 저절로 시작되고 **끝날 때까지 멈출 수 없습니다** | [`PomodoroScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/PomodoroScreen.kt) |
-| **Stats** | 7일 / 30일 전환, 걸음 차트와 요약 3칸, 조건별 일평균과 달성률 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
+| **Stats** | 연속 기록 숫자 하나, 지난 30일 달력(채운 날 흑연 · 고른 날 주황), 누른 날의 걸음 · 잠근 앱 사용 · 잠긴 시간, 하루 평균 | [`StatsScreen.kt`](app/src/main/java/com/steplock/app/ui/screens/StatsScreen.kt) |
 
 화면 이동: `Login(→ Sign Up) → Tutorial → Onboarding → Home`, 홈에서 집중 타이머 · 잠글 앱 고르기로 들어갑니다.
 잠금 화면은 감시 서비스가 차단 앱 위에 띄우며, 집중 중이면 거기서 타이머로 바로 넘어갈 수 있습니다.
@@ -115,21 +115,37 @@
   <img src="docs/screens/11-home-dark.png" width="36%" alt="홈 — 다크 모드" />
 </p>
 
-**할 일의 양을 가장 크게** 말합니다. 화면을 연 사람이 가장 알고 싶은 건 "얼마나 더"라서,
-문장 속에 묻혀 있던 숫자를 떼어 52sp로 올렸습니다. 위에서 아래로 *지금 → 길 → 오늘 → 최근 → 대상*.
+첫 화면은 **등산로 한 장**입니다. 아래에서 위로 굽이쳐 오르는 길을 산길 나무의 주황 표식처럼 칸(26칸)으로
+칠하고, 걸은 만큼 칸이 주황으로 차며, 맨 위 정상에 흑연색 자물쇠 기둥이 서 있습니다. 스텝이는 걸은 만큼의
+자리에 섭니다. 진행 막대를 옆으로 눕히는 대신 위로 세워 "목표에 다가간다"가 "올라간다"로 읽히게 했고,
+칸은 곡선의 길이 기준으로 고르게 놓아 굽은 곳에서 몰리지 않습니다(`TrailMap`).
 
 | 구역 | 보여 주는 것 |
 | --- | --- |
-| 지금 | "YouTube 외 2개 잠김"(점 하나와 글자) → 큰 숫자 **2,760보** → "더 걸으면 잠금이 풀려요" → "동네 한 바퀴, 약 25분이면 충분해요"(분당 약 100보로 어림) |
-| 길 | 굵은 길 위를 스텝이가 걷고, 끝에는 자물쇠. 걸음 조건이면 목표를 4등분한 이정표(2k · 4k · 6k) |
-| 나머지 조건 | 옅은 띠 한 줄씩 — "수면 7시간 채웠어요 ✓", 못 채웠으면 "5시간 / 7시간". 집중 타이머 띠는 누르면 타이머로 |
-| 오늘 한눈에 | 2×3 숫자 — **잠근 앱 사용 시간 · 잠겨 있던 시간**을 맨 앞에, 그 아래 오늘 막은 횟수 · 걸은 거리 · 남은 5분 허용 · 집중 세션(집중 조건이 꺼져 있으면 최근 7일 달성) |
-| 최근 7일 걸음 | 걸음 막대와 목표 점선. 채운 날은 흑연, 못 채운 날은 흐린 회색, 오늘만 표식 주황. 누르면 통계로 |
-| 오늘 막은 앱 | 앱마다 오늘 쓴 시간(오른쪽 숫자)과 그만큼 차는 앰버 막대, 이름 옆에 막은 횟수. 오래 쓴 앱이 위로 |
+| 지금 | 길 왼쪽에 상태 판(잠기면 흑연 판 + 자물쇠) → 표지판 숫자 **2,760** 보 → "더 걸으면 잠금이 풀려요" → "동네 한 바퀴, 약 25분이면 충분해요". 왼쪽 아래 "5,240 / 8,000보" |
+| 오늘 | **옆으로 넘기는 숫자 칸** — 잠근 앱 사용 · 잠겨 있던 시간 · 오늘 막은 횟수 · 걸은 거리 · 남은 5분 허용 · 집중 세션. 다음 칸이 살짝 보여 넘길 수 있다는 걸 알립니다 |
+| 잠근 앱을 쓴 시간 | 스크린 타임처럼 **줄 바닥이 쓴 시간만큼 차오르는** 앱 줄. 오른쪽 큰 숫자가 쓴 시간, 이름 아래가 막은 횟수 |
+| 이번 주 | 일곱 칸 — 채운 날 흑연, 못 채운 날 회색, 오늘은 주황 테두리. 누르면 통계로 |
 
-카드를 쌓지 않습니다. 구역은 44dp 여백과 섹션 제목으로 나누고, 면을 까는 건 "나머지 조건" 띠뿐입니다.
-하단 탭은 화면에서 띄운 알약(좌우 24dp, 아래 12dp)이고 세 탭 모두 이름이 보입니다. 내용은 탭
-뒤로 흐르고, 스크롤 끝에는 탭에 가리지 않게 여백을 둡니다.
+구역 제목은 작은 회색 라벨이 아니라 17sp 흑연 제목이고, 카드는 쌓지 않습니다. 하단 탭은 화면에서 띄운
+알약이며 내용은 그 뒤로 흐릅니다.
+
+### 통계 · 잠금 규칙
+
+<p align="center">
+  <img src="docs/screens/07-stats.png" width="30%" alt="통계 — 30일 달력" />
+  <img src="docs/screens/04-settings.png" width="30%" alt="잠금 규칙 — 한 문장" />
+  <img src="docs/screens/15-rule-sheet.png" width="30%" alt="잠금 규칙 — 값 고치는 시트" />
+</p>
+
+- **통계는 달력 한 장.** 차트와 요약 칸 대신 지난 30일을 요일에 맞춘 달력으로 — 채운 날은 흑연, 못 채운 날은
+  간 만큼 옅은 회색, 기록 없는 날은 테두리만, 고른 날은 주황. 하루를 누르면 그날의 걸음 · 잠근 앱 사용 ·
+  잠겨 있던 시간이 아래에 나옵니다. "얼마나 꾸준했나"는 검은 칸이 이어진 모양으로 보입니다.
+- **잠금 규칙은 한 문장.** "하루에 **8,000보** 걷거나 **7시간** 자거나 **집중 3번**을 하면 **앱 3개**를 열어 줄게요."
+  스위치와 스테퍼가 늘어선 표에서는 조건 셋 + 전부 만족 스위치 + 앱 목록을 머릿속에서 합쳐야 규칙이
+  되지만, 문장은 그 자체가 규칙입니다. 밑줄 친 값을 누르면 아래에서 시트가 올라와 그 값 하나만 고치고
+  (`ModalBottomSheet`), 꺼 둔 조건은 문장에서 빠져 "＋ 조건 추가"로 남습니다. "하나만 / 모두"는 연결어로
+  드러납니다 — 하나만이면 "걷거나 … 자거나", 모두면 "걷고 … 자고".
 
 막은 횟수는 감시 서비스가 잠금 화면을 띄울 때 앱별로 기록합니다. 기기에만 두고 날짜가 바뀌면
 새로 셉니다. 같은 앱에 머무는 동안은 잠금을 다시 띄우지 않으므로 "그 앱을 열려고 한 횟수"에
