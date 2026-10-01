@@ -60,7 +60,7 @@ fun MinuteGrid(
     }
 }
 
-private val GRID_HEIGHT = 5 * 28.dp + 4 * 6.dp
+private val GRID_HEIGHT = 28.dp * 5 + 6.dp * 4
 
 @Preview(widthDp = 372)
 @Composable
