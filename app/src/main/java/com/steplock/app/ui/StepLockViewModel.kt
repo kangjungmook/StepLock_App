@@ -366,9 +366,31 @@ class StepLockViewModel(
                     } else {
                         it.blockedAppIds + packageName
                     },
+                    // 다시 잠글 때는 언제나 앱 전체부터 — 예전 "쇼츠만"이 남아 있지 않게.
+                    shortFormOnly = it.shortFormOnly - packageName,
                 )
             }
             if (!removing && repository.autoStartFocusIfNeeded()) startFocusService()
+        }
+    }
+
+    /**
+     * 앱 전체 / 쇼츠만 바꾸기. "쇼츠만"으로 바꾸는 건 완화라서 대기 기간이 걸려 있으면
+     * 기다리고, 집중 중에는 할 수 없습니다(앱을 빼는 것과 같은 이유).
+     */
+    fun setShortFormOnly(packageName: String, only: Boolean) {
+        viewModelScope.launch {
+            val current = repository.preferences.first()
+            if (only && current.pomodoro.isRunning) return@launch
+            repository.updateSettings {
+                it.copy(
+                    shortFormOnly = if (only) {
+                        it.shortFormOnly + packageName
+                    } else {
+                        it.shortFormOnly - packageName
+                    },
+                )
+            }
         }
     }
 

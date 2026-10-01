@@ -35,6 +35,7 @@ import com.steplock.app.system.PermissionGroup
 import com.steplock.app.system.PermissionReturn
 import com.steplock.app.system.PermissionStep
 import com.steplock.app.system.nextPermissionStep
+import com.steplock.app.system.ShortFormAccess
 import com.steplock.app.system.permissionStates
 import com.steplock.app.ui.StepLockUiState
 import com.steplock.app.ui.StepLockViewModel
@@ -310,13 +311,17 @@ private fun StepLockNavGraph(
             // 온보딩 이후에도 권한이 꺼질 수 있어(사용자가 끄거나 배터리 최적화가 회수)
             // 홈으로 돌아올 때마다 다시 확인합니다.
             var permissionStep by remember { mutableStateOf(nextPermissionStep(context)) }
+            var shortFormAccessOn by remember { mutableStateOf(ShortFormAccess.isEnabled(context)) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 permissionStep = nextPermissionStep(context)
+                shortFormAccessOn = ShortFormAccess.isEnabled(context)
                 PermissionReturn.cancel()
                 viewModel.refreshSleep()
                 viewModel.recordToday()
                 viewModel.syncNow()
             }
+            val shortFormStopped = !shortFormAccessOn &&
+                state.settings.shortFormOnly.any { it in state.settings.blockedAppIds }
             HomeScreen(
                 userName = state.settings.displayName,
                 stat = state.today,
@@ -335,13 +340,23 @@ private fun StepLockNavGraph(
                 usageToday = state.usageToday,
                 temporaryAllowRemaining = state.temporaryAllowRemaining,
                 // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
+                // 셋 다 있는데 "쇼츠만" 막기의 접근성 권한만 꺼졌으면 그걸 알립니다 —
+                // 그동안은 앱 전체가 잠겨서, 모르면 앱이 고장 난 줄 압니다.
                 warningTitle = when (permissionStep) {
-                    PermissionStep.Ready -> null
+                    PermissionStep.Ready -> if (shortFormStopped) {
+                        stringResource(R.string.home_short_form_off_title)
+                    } else {
+                        null
+                    }
                     PermissionStep.ActivityRecognition -> stringResource(R.string.home_steps_stopped)
                     else -> stringResource(R.string.home_watch_stopped)
                 },
                 warningDescription = when (permissionStep) {
-                    PermissionStep.Ready -> null
+                    PermissionStep.Ready -> if (shortFormStopped) {
+                        stringResource(R.string.home_short_form_off_desc)
+                    } else {
+                        null
+                    }
                     PermissionStep.ActivityRecognition ->
                         stringResource(R.string.home_permission_activity)
                     PermissionStep.UsageAccess -> stringResource(R.string.home_permission_usage)
@@ -359,6 +374,7 @@ private fun StepLockNavGraph(
                         when (permissionStep) {
                             PermissionStep.UsageAccess -> AppPermissions.usageAccessSettings(context)
                             PermissionStep.Overlay -> AppPermissions.overlaySettings(context)
+                            PermissionStep.Ready -> ShortFormAccess.settingsIntent()
                             else -> AppPermissions.appDetailsSettings(context)
                         },
                     )
@@ -461,6 +477,12 @@ private fun StepLockNavGraph(
         }
 
         composable(Route.APP_PICKER) {
+            val context = LocalContext.current
+            // 접근성 설정에서 돌아오면 바로 반영되게 화면에 돌아올 때마다 다시 봅니다.
+            var shortFormAccessOn by remember { mutableStateOf(ShortFormAccess.isEnabled(context)) }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                shortFormAccessOn = ShortFormAccess.isEnabled(context)
+            }
             AppPickerScreen(
                 // 목록을 읽는 데 잠깐 걸려서 ViewModel 이 한 번만 읽어 들고 있습니다.
                 apps = viewModel.availableApps,
@@ -476,6 +498,10 @@ private fun StepLockNavGraph(
                 focusStartsOnLock = !state.focusing &&
                     state.settings.pomodoroEnabled &&
                     state.today.pomodoroSessions < state.settings.pomodoroGoal,
+                shortFormOnly = state.desiredSettings.shortFormOnly,
+                shortFormAccessOn = shortFormAccessOn,
+                onShortFormChange = viewModel::setShortFormOnly,
+                onOpenShortFormAccess = { context.startActivity(ShortFormAccess.settingsIntent()) },
             )
         }
     }

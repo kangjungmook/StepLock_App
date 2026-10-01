@@ -18,11 +18,14 @@ import com.steplock.app.R
 import com.steplock.app.data.AppUsageReader
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.SettingsRepository
+import com.steplock.app.data.ShortFormState
+import com.steplock.app.data.ShortFormTarget
 import com.steplock.app.data.SleepRepository
 import com.steplock.app.data.StepTracker
 import com.steplock.app.data.UnlockEvaluator
 import com.steplock.app.data.hasActivityRecognitionPermission
 import com.steplock.app.system.ForceStopCheck
+import com.steplock.app.system.ShortFormAccess
 import com.steplock.app.ui.LockActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +43,8 @@ import java.time.LocalTime
 
 /**
  * 전경 앱을 1초 간격으로 확인해 차단 대상이 열리면 잠금 화면을 띄웁니다.
- * 접근성 서비스 대신 사용 정보 접근 권한을 쓰기 때문에 감지가 1초 정도 늦습니다.
+ * 앱 단위 감지는 사용 정보 접근 권한으로 해서 1초 정도 늦습니다. "쇼츠만" 막는 앱은
+ * 접근성 서비스(ShortFormWatchService)가 알려 주는 화면 정보를 함께 봅니다.
  */
 class AppWatchService : Service() {
 
@@ -81,10 +85,14 @@ class AppWatchService : Service() {
         var sawLockedOn: LocalDate? = null
         var nudgedOn: LocalDate? = null
         val usageReader = AppUsageReader(this)
+        val foregroundTracker = ForegroundTracker(usageStats)
         // 잠금이 걸려 있던 시간. 1초마다 쌓아 두었다가 기록할 때 한꺼번에 씁니다.
         var lastTickAt = System.currentTimeMillis()
         var lastTickDate = LocalDate.now()
         var pendingLockedMs = 0L
+        // 접근성 서비스가 켜져 있는지. 설정값을 매초 읽을 필요는 없어 몇 초마다 봅니다.
+        var shortFormAccessOn = false
+        var shortFormCheckedAt = 0L
 
         while (currentCoroutineContext().isActive) {
             val current = preferences.value
@@ -193,8 +201,31 @@ class AppWatchService : Service() {
             // 고른 앱의 패키지 이름을 그대로 비교합니다. 예전에는 코드에 박아 둔
             // 네 개 중에서만 찾았기 때문에, 틱톡 라이트처럼 패키지가 다른 앱은
             // 골라도 걸리지 않았습니다.
-            val blockedPackage = foregroundPackage(usageStats)
+            val foreground = foregroundTracker.poll(now)
+            val foregroundBlocked = foreground?.packageName
                 ?.takeIf { it in current.settings.blockedAppIds }
+
+            // "쇼츠만" 막는 앱은 짧은 영상 화면일 때만 막습니다. 접근성 서비스가 꺼져
+            // 있으면 그 화면을 알아볼 수 없으니 **앱 전체를 막습니다** — 꺼 두는 것으로
+            // 잠금을 피할 수 없어야 합니다.
+            if (now - shortFormCheckedAt > SHORT_FORM_ACCESS_CHECK_MS) {
+                shortFormCheckedAt = now
+                shortFormAccessOn = ShortFormAccess.isEnabled(this)
+            }
+            val shortFormOnly = foregroundBlocked != null &&
+                foregroundBlocked in current.settings.shortFormOnly &&
+                ShortFormTarget.of(foregroundBlocked) != null &&
+                shortFormAccessOn
+            val blockedPackage = when {
+                foregroundBlocked == null -> null
+                !shortFormOnly -> foregroundBlocked
+                // 그 앱이 앞에 나온 뒤에 확인한 값만 믿습니다(ShortFormState 설명 참고).
+                ShortFormState.isVisible(
+                    foregroundBlocked,
+                    since = foreground?.resumedAt ?: Long.MAX_VALUE,
+                ) -> foregroundBlocked
+                else -> null
+            }
 
             // 집중 세션이 도는 동안에는 조건을 이미 채웠어도 잠급니다. 그러지 않으면
             // 타이머를 켜 둔 채 쇼츠를 봐도 "집중 1회"가 쌓여서, 집중 조건이 아무것도
@@ -215,7 +246,7 @@ class AppWatchService : Service() {
                     // 잠금이 걸리는 순간입니다. 집중 조건이 남아 있으면 세션을 저절로
                     // 시작합니다 — 잠금 화면에서 타이머를 찾아 누르게 하지 않습니다.
                     if (!focusing && repository.autoStartFocusIfNeeded()) startFocusService()
-                    startActivity(LockActivity.intent(this, blockedPackage))
+                    startActivity(LockActivity.intent(this, blockedPackage, shortForm = shortFormOnly))
                     repository.recordBlockedOpen(blockedPackage)
                 }
             }
@@ -230,20 +261,6 @@ class AppWatchService : Service() {
      */
     private fun startFocusService() {
         runCatching { PomodoroService.start(this) }
-    }
-
-    private fun foregroundPackage(usageStats: UsageStatsManager): String? {
-        val now = System.currentTimeMillis()
-        val events = usageStats.queryEvents(now - EVENT_WINDOW_MS, now)
-        val event = UsageEvents.Event()
-        var packageName: String? = null
-        while (events.hasNextEvent()) {
-            events.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                packageName = event.packageName
-            }
-        }
-        return packageName
     }
 
     private fun notifyUnlocked() {
@@ -355,8 +372,8 @@ class AppWatchService : Service() {
         /** 저녁 산책을 권하는 시간대. 너무 이르면 잔소리, 너무 늦으면 걸을 수 없습니다. */
         private val NUDGE_HOURS = 19..21
         private const val POLL_INTERVAL_MS = 1_000L
-        private const val EVENT_WINDOW_MS = 10_000L
         private const val SLEEP_REFRESH_MS = 10 * 60_000L
+        private const val SHORT_FORM_ACCESS_CHECK_MS = 5_000L
 
         /** 끝난 세션을 타이머 알림 서비스가 먼저 집계하도록 기다리는 시간. */
         private const val FOCUS_COMPLETE_GRACE_MS = 5_000L
@@ -381,5 +398,43 @@ class AppWatchService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, AppWatchService::class.java))
         }
+    }
+}
+
+/** 앞에 나온 앱과 그 시각. 짧은 영상 판단이 그 시각 이후의 값만 믿는 데 씁니다. */
+private data class ForegroundApp(val packageName: String, val resumedAt: Long)
+
+/**
+ * 지금 앞에 있는 앱을 **기억해 두며** 따라갑니다.
+ *
+ * 전에는 매번 최근 10초의 사용 기록만 봐서, 앱을 연 지 10초가 지나면 "앞에 있는 앱
+ * 없음"이 됐습니다. 앱 전체를 막을 때는 여는 순간에 잠금이 떠서 문제가 드러나지
+ * 않았지만, 쇼츠만 막으려면 **유튜브를 연 지 한참 뒤 쇼츠로 들어가는 순간**을 잡아야
+ * 합니다. 쇼츠는 같은 앱 안의 화면이라 사용 기록에 새 기록이 남지 않을 수 있어서,
+ * 마지막으로 앞에 나온 앱을 다른 앱이 나올 때까지 들고 있습니다.
+ */
+private class ForegroundTracker(private val usageStats: UsageStatsManager) {
+    private var current: ForegroundApp? = null
+    private var lastEventAt = 0L
+
+    fun poll(now: Long): ForegroundApp? {
+        val events = usageStats.queryEvents(now - EVENT_WINDOW_MS, now)
+        val event = UsageEvents.Event()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType != UsageEvents.Event.ACTIVITY_RESUMED) continue
+            // 창이 겹쳐서 이미 본 기록은 건너뜁니다.
+            if (event.timeStamp <= lastEventAt) continue
+            lastEventAt = event.timeStamp
+            // 같은 앱 안에서 화면만 바뀐 경우에는 처음 앞에 나온 시각을 유지합니다.
+            if (current?.packageName != event.packageName) {
+                current = ForegroundApp(event.packageName, event.timeStamp)
+            }
+        }
+        return current
+    }
+
+    private companion object {
+        const val EVENT_WINDOW_MS = 10_000L
     }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    이벤트는 아래 두 앱에서만 받습니다. 다른 앱의 화면은 이 서비스에 오지 않습니다.
+    flagReportViewIds 가 있어야 구성 요소 이름(view id)을 읽을 수 있습니다.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/short_form_a11y_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="200"
+    android:packageNames="com.google.android.youtube,com.instagram.android" />

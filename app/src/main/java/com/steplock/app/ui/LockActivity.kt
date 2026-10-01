@@ -21,6 +21,7 @@ import com.steplock.app.MainActivity
 import com.steplock.app.ads.Ads
 import com.steplock.app.ads.rememberRewardedAd
 import com.steplock.app.data.InstalledAppsRepository
+import com.steplock.app.data.ShortFormTarget
 import com.steplock.app.service.PomodoroService
 import com.steplock.app.ui.screens.LockOverlayScreen
 import com.steplock.app.ui.theme.SlColor
@@ -39,7 +40,13 @@ class LockActivity : ComponentActivity() {
         // 사용자가 고른 앱이라 이름은 기기에서 읽습니다. 못 읽으면(막 지운 앱)
         // 패키지 이름을 그대로 보여 줍니다 — 빈 제목보다는 낫습니다.
         val blockedPackage = intent.getStringExtra(EXTRA_PACKAGE).orEmpty()
-        val appLabel = InstalledAppsRepository(this).label(blockedPackage) ?: blockedPackage
+        // 쇼츠 화면만 막은 경우에는 "YouTube" 대신 "YouTube 쇼츠"라고 씁니다 —
+        // 유튜브 전체가 막힌 줄 알면 안 됩니다.
+        val shortFormTarget = ShortFormTarget.of(blockedPackage)
+            ?.takeIf { intent.getBooleanExtra(EXTRA_SHORT_FORM, false) }
+        val appLabel = shortFormTarget?.let { getString(it.labelRes) }
+            ?: InstalledAppsRepository(this).label(blockedPackage)
+            ?: blockedPackage
 
         onBackPressedDispatcher.addCallback(this) { goHome() }
 
@@ -122,10 +129,12 @@ class LockActivity : ComponentActivity() {
 
     companion object {
         private const val EXTRA_PACKAGE = "blocked_package"
+        private const val EXTRA_SHORT_FORM = "short_form"
 
-        fun intent(context: Context, blockedPackage: String): Intent =
+        fun intent(context: Context, blockedPackage: String, shortForm: Boolean = false): Intent =
             Intent(context, LockActivity::class.java)
                 .putExtra(EXTRA_PACKAGE, blockedPackage)
+                .putExtra(EXTRA_SHORT_FORM, shortForm)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 }

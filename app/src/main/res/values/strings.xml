@@ -478,4 +478,21 @@
     <string name="signup_email_summary">가입할 이메일</string>
     <string name="signup_change_email">이메일 바꾸기</string>
     <string name="signup_sent_desc_short">위 주소로 인증 메일을 보냈어요. 메일의 링크를 누르면 스텝락으로 돌아와 바로 로그인돼요.</string>
+    <!-- 쇼츠·릴스 화면만 막기 -->
+    <string name="short_form_youtube">YouTube 쇼츠</string>
+    <string name="short_form_instagram">Instagram 릴스</string>
+    <string name="short_form_whole">앱 전체</string>
+    <string name="short_form_only_shorts">쇼츠만</string>
+    <string name="short_form_only_reels">릴스만</string>
+    <string name="short_form_a11y_label">스텝락 쇼츠 막기</string>
+    <string name="short_form_a11y_description">YouTube와 Instagram에서 쇼츠·릴스 화면이 떠 있는지 확인해, 앱 전체가 아니라 그 화면만 잠급니다. 화면 구성 요소의 이름만 읽고 글자·영상·입력한 내용은 읽지 않으며, 아무것도 저장하거나 보내지 않습니다. 다른 앱의 화면은 받지 않습니다.</string>
+    <string name="short_form_disclosure_title">쇼츠만 막으려면 접근성 권한이 필요해요</string>
+    <string name="short_form_disclosure_body">스텝락이 YouTube와 Instagram 화면의 구성 요소 이름을 읽어서 지금 쇼츠·릴스 화면인지 확인해요. 글자, 영상, 입력한 내용은 읽지 않고, 읽은 정보는 저장하거나 어디로도 보내지 않아요. 다른 앱의 화면은 받지 않아요.\n\n설정이 열리면 \'설치된 앱\' → \'스텝락 쇼츠 막기\'를 켜 주세요. \'제한된 설정\'이라며 켜지지 않으면 앱 정보 → 오른쪽 위 ⋮ → \'제한된 설정 허용\'을 먼저 눌러 주세요.</string>
+    <string name="short_form_disclosure_confirm">동의하고 접근성 설정 열기</string>
+    <string name="short_form_disclosure_cancel">앱 전체 잠그기로 두기</string>
+    <string name="short_form_off_note">접근성 권한이 꺼져 있어 지금은 앱 전체를 잠가요</string>
+    <string name="short_form_open_settings">켜러 가기</string>
+    <string name="short_form_on_note">%1$s 화면이 뜰 때만 잠가요</string>
+    <string name="home_short_form_off_title">쇼츠만 막기가 멈췄어요</string>
+    <string name="home_short_form_off_desc">접근성 권한이 꺼져서 지금은 앱 전체를 잠그고 있어요. 눌러서 다시 켜 주세요</string>
 </resources>

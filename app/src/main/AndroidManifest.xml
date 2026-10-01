@@ -135,6 +135,23 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="사용자가 시작한 집중 세션의 남은 시간을 세고 알림에 표시합니다" />
         </service>
+
+        <!--
+            "쇼츠만 막기". 유튜브·인스타그램 화면의 구성 요소 이름만 읽어 짧은 영상
+            화면인지 봅니다. 시스템만 붙을 수 있도록 BIND_ACCESSIBILITY_SERVICE 로 막아 둡니다.
+        -->
+        <service
+            android:name=".service.ShortFormWatchService"
+            android:exported="true"
+            android:label="@string/short_form_a11y_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/short_form_accessibility" />
+        </service>
     </application>
 
 </manifest>

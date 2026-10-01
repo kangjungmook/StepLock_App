@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.steplock.app.R
 import com.steplock.app.data.InstalledApp
 import com.steplock.app.data.Pomodoro
+import com.steplock.app.data.ShortFormTarget
 import com.steplock.app.ui.components.AppIcon
 import com.steplock.app.ui.components.CheckboxMark
 import com.steplock.app.ui.components.IconTapTarget
@@ -37,7 +38,10 @@ import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlDivider
 import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
+import com.steplock.app.ui.components.SlConfirmDialog
 import com.steplock.app.ui.components.SlPanel
+import com.steplock.app.ui.components.SlSegmented
+import com.steplock.app.ui.components.TextLink
 import com.steplock.app.ui.components.UnderlineTextField
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
@@ -78,8 +82,34 @@ fun AppPickerScreen(
      * 멈출 수 없는 25분이 시작되니 누르기 전에 미리 알려 줍니다.
      */
     focusStartsOnLock: Boolean = false,
+    /** "쇼츠만" 막는 앱(정해 둔 값). */
+    shortFormOnly: Set<String> = emptySet(),
+    /** 쇼츠 화면을 알아보는 접근성 서비스가 켜져 있는지. */
+    shortFormAccessOn: Boolean = false,
+    onShortFormChange: (packageName: String, only: Boolean) -> Unit = { _, _ -> },
+    /** 접근성 설정을 엽니다. 안내 대화상자에서 동의한 뒤에만 부릅니다. */
+    onOpenShortFormAccess: () -> Unit = {},
 ) {
     var query by remember { mutableStateOf("") }
+    // "쇼츠만"을 눌렀는데 접근성 권한이 없을 때 — 무엇을 읽는지 먼저 알리고 동의를 받습니다.
+    var disclosureFor by remember { mutableStateOf<String?>(null) }
+
+    disclosureFor?.let { packageName ->
+        SlConfirmDialog(
+            title = stringResource(R.string.short_form_disclosure_title),
+            description = stringResource(R.string.short_form_disclosure_body),
+            confirmText = stringResource(R.string.short_form_disclosure_confirm),
+            cancelText = stringResource(R.string.short_form_disclosure_cancel),
+            onConfirm = {
+                onShortFormChange(packageName, true)
+                onOpenShortFormAccess()
+                disclosureFor = null
+            },
+            onDismiss = { disclosureFor = null },
+            confirmContainerColor = SlColor.Brand,
+            confirmContentColor = SlColor.OnBrand,
+        )
+    }
 
     // 체크를 풀었지만 아직 막혀 있는 앱. 이걸 알려 주지 않으면 사용자는 체크를
     // 풀었는데도 잠금이 떠서 앱이 고장 난 줄 압니다.
@@ -223,6 +253,24 @@ fun AppPickerScreen(
                     locked = focusing && checked,
                     onToggle = { onToggle(app.packageName) },
                 )
+                val target = ShortFormTarget.of(app.packageName)
+                if (checked && target != null) {
+                    ShortFormChoice(
+                        target = target,
+                        only = app.packageName in shortFormOnly,
+                        accessOn = shortFormAccessOn,
+                        // 집중 중에는 "쇼츠만"으로 느슨하게 바꿀 수 없습니다.
+                        canLoosen = !focusing,
+                        onChange = { only ->
+                            if (only && !shortFormAccessOn) {
+                                disclosureFor = app.packageName
+                            } else {
+                                onShortFormChange(app.packageName, only)
+                            }
+                        },
+                        onOpenAccess = { disclosureFor = app.packageName },
+                    )
+                }
                 SlDivider()
             }
         }
@@ -273,6 +321,59 @@ private fun AppPickerRow(
             )
         }
         CheckboxMark(checked = checked)
+    }
+}
+
+/**
+ * 유튜브·인스타그램처럼 짧은 영상 화면을 알아볼 수 있는 앱에서만 보이는 선택.
+ * 앱 줄 바로 아래, 아이콘 열에 맞춰 들여 둡니다.
+ */
+@Composable
+private fun ShortFormChoice(
+    target: ShortFormTarget,
+    only: Boolean,
+    accessOn: Boolean,
+    canLoosen: Boolean,
+    onChange: (Boolean) -> Unit,
+    onOpenAccess: () -> Unit,
+) {
+    val onlyLabel = stringResource(target.onlyRes)
+    Column(modifier = Modifier.padding(start = 54.dp, bottom = 12.dp)) {
+        SlSegmented(
+            options = listOf(stringResource(R.string.short_form_whole), onlyLabel),
+            selectedIndex = if (only) 1 else 0,
+            onSelect = { index ->
+                val wantOnly = index == 1
+                if (wantOnly != only && (!wantOnly || canLoosen)) onChange(wantOnly)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (only) {
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (accessOn) {
+                        stringResource(R.string.short_form_on_note, stringResource(target.labelRes))
+                    } else {
+                        stringResource(R.string.short_form_off_note)
+                    },
+                    style = SlText.LabelSm,
+                    color = if (accessOn) SlColor.TextSecondary else SlColor.Error,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!accessOn) {
+                    TextLink(
+                        text = stringResource(R.string.short_form_open_settings),
+                        onClick = onOpenAccess,
+                        style = SlText.Label,
+                        color = SlColor.BrandInk,
+                        underline = false,
+                    )
+                }
+            }
+        }
     }
 }
 

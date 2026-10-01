@@ -74,7 +74,23 @@ data class LockSettings(
     /** 잠글 앱의 **패키지 이름**. 사용자가 기기에 깔린 앱에서 직접 고릅니다. */
     val blockedAppIds: Set<String> = emptySet(),
     val relaxDelay: RelaxDelay = RelaxDelay.Default,
+    /**
+     * [blockedAppIds] 중 **쇼츠·릴스 화면만** 막는 앱. 비어 있으면 모두 앱 전체를 막습니다.
+     * 접근성 서비스가 꺼져 있으면 감시 서비스는 이 값을 무시하고 앱 전체를 막습니다.
+     * 기기에만 두고 서버로 보내지 않습니다.
+     */
+    val shortFormOnly: Set<String> = emptySet(),
 )
+
+/**
+ * 앱 하나를 얼마나 막는지 — 0 안 막음, 1 쇼츠 화면만, 2 앱 전체.
+ * 엄한 쪽·느슨한 쪽을 앱마다 비교할 때 씁니다.
+ */
+fun LockSettings.lockLevel(packageName: String): Int = when {
+    packageName !in blockedAppIds -> 0
+    packageName in shortFormOnly -> 1
+    else -> 2
+}
 
 /**
  * [other] 보다 느슨한 항목이 하나라도 있으면 true.
@@ -83,8 +99,8 @@ data class LockSettings(
  * 한 번의 변경이라 느슨함과 엄함이 섞인 변경은 사실상 생기지 않고, 섞였다면
  * 기다리는 쪽이 안전합니다.
  *
- * `blockedAppIds` 는 **빠진 앱이 있는지**로 봅니다 — 잠글 앱을 목록에서 빼는 건
- * 그 앱의 잠금을 푸는 것과 같습니다.
+ * 잠글 앱은 **앱마다 막는 정도가 줄었는지**로 봅니다 — 목록에서 빼거나 "앱 전체"를
+ * "쇼츠만"으로 바꾸는 건 그 앱의 잠금을 푸는 것과 같습니다.
  */
 /**
  * 이것과 [other] 중 **항목마다 더 엄한 쪽**을 골라 모은 값.
@@ -104,6 +120,11 @@ fun LockSettings.strictestWith(other: LockSettings): LockSettings = copy(
     requireAllConditions = requireAllConditions || other.requireAllConditions,
     // 앱은 합집합입니다 — 목록에서 빼는 건 느슨해지는 쪽이라 기다려야 합니다.
     blockedAppIds = blockedAppIds + other.blockedAppIds,
+    // 앱마다 더 엄한 쪽. 한쪽은 "쇼츠만", 다른 쪽은 아예 안 막으면 "쇼츠만"입니다 —
+    // 단순 교집합이면 앱을 뺀 순간 오히려 앱 전체가 막혀 버립니다.
+    shortFormOnly = (blockedAppIds + other.blockedAppIds).filterTo(mutableSetOf()) {
+        maxOf(lockLevel(it), other.lockLevel(it)) == 1
+    },
     relaxDelay = if (relaxDelay.days >= other.relaxDelay.days) relaxDelay else other.relaxDelay,
 )
 
@@ -115,7 +136,8 @@ fun LockSettings.isLooserThan(other: LockSettings): Boolean =
         (!sleepEnabled && other.sleepEnabled) ||
         (!pomodoroEnabled && other.pomodoroEnabled) ||
         (!requireAllConditions && other.requireAllConditions) ||
-        !blockedAppIds.containsAll(other.blockedAppIds) ||
+        // 앱을 빼거나 "앱 전체"를 "쇼츠만"으로 바꾸면 느슨해집니다.
+        other.blockedAppIds.any { lockLevel(it) < other.lockLevel(it) } ||
         relaxDelay.days < other.relaxDelay.days
 
 data class DailyStat(

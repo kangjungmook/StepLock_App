@@ -76,6 +76,7 @@ private class ConditionKeys(prefix: String) {
     val requireAll = booleanPreferencesKey("${prefix}require_all_conditions")
     val blockedAppIds = stringSetPreferencesKey("${prefix}blocked_app_ids")
     val relaxDelayDays = intPreferencesKey("${prefix}relax_delay_days")
+    val shortFormOnly = stringSetPreferencesKey("${prefix}short_form_only")
 }
 
 class SettingsRepository(context: Context) {
@@ -246,6 +247,7 @@ class SettingsRepository(context: Context) {
         this[keys.requireAll] = next.requireAllConditions
         this[keys.blockedAppIds] = next.blockedAppIds
         this[keys.relaxDelayDays] = next.relaxDelay.days
+        this[keys.shortFormOnly] = next.shortFormOnly intersect next.blockedAppIds
     }
 
     /** 계정 정보는 잠금 조건이 아니라 예약 대상이 아닙니다 — 언제나 바로 씁니다. */
@@ -598,6 +600,7 @@ class SettingsRepository(context: Context) {
             relaxDelay = RelaxDelay.fromDays(
                 read({ it.relaxDelayDays }, defaults.relaxDelay.days),
             ),
+            shortFormOnly = read({ it.shortFormOnly }, defaults.shortFormOnly),
         )
     }
 
