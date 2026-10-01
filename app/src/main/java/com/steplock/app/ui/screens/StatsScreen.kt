@@ -225,9 +225,13 @@ private fun StepsPanel(days: List<DailyStat>, goal: Int) {
             color = SlColor.TextPrimary,
         )
         Spacer(Modifier.height(16.dp))
+        val todayColor = SlColor.Brand
+        val dayColor = SlColor.TextPrimary
         WeeklyBarChart(
             values = days.map { it.steps },
             goal = goal,
+            // 오늘만 주황, 지난날은 흑연 — 홈의 7일 막대와 같은 규칙입니다.
+            barColorAt = { index, _ -> if (index == days.lastIndex) todayColor else dayColor },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(140.dp),

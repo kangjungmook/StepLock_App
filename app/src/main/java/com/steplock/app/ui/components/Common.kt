@@ -297,7 +297,9 @@ fun SlSwitch(
             modifier = Modifier
                 .size(width = SlDimen.SwitchWidth, height = SlDimen.SwitchHeight)
                 .clip(CircleShape)
-                .background(if (checked) SlColor.Brand else SlColor.TrackOff)
+                // 켜짐은 흑연 — 주황은 "가야 할 길"(진행·주요 버튼)에만 씁니다. 스위치마다
+                // 주황이면 설정 화면이 경고판처럼 시끄러워집니다.
+                .background(if (checked) SlColor.TextPrimary else SlColor.TrackOff)
                 .padding(3.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -334,15 +336,15 @@ fun CheckboxMark(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .background(if (checked) SlColor.Brand else Color.Transparent)
-            .border(borderWidth, if (checked) SlColor.Brand else SlColor.BorderStrong, shape),
+            .background(if (checked) SlColor.TextPrimary else Color.Transparent)
+            .border(borderWidth, if (checked) SlColor.TextPrimary else SlColor.BorderStrong, shape),
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {
             Icon(
                 imageVector = checkIcon,
                 contentDescription = null,
-                tint = SlColor.OnBrand,
+                tint = SlColor.Background,
                 modifier = Modifier.size(checkSize),
             )
         }

@@ -721,9 +721,10 @@ private fun GlanceGrid(figures: List<Pair<String, String>>) {
 @Composable
 private fun WeekBars(days: List<DailyStat>, settings: LockSettings, onClick: () -> Unit) {
     val todayLabel = stringResource(R.string.home_week_today)
-    val done = SlColor.Brand
-    val notYet = SlColor.BrandTint
-    val today = SlColor.BrandInk
+    // 채운 날은 흑연, 못 채운 날은 흐린 회색, 오늘만 표식 주황 — "지금 여기"를 가리킵니다.
+    val done = SlColor.TextPrimary
+    val notYet = SlColor.TrackOff
+    val today = SlColor.Brand
     val description = stringResource(
         R.string.home_week_bars_desc,
         days.count { it.steps >= settings.stepGoal },

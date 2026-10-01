@@ -58,8 +58,8 @@ fun ConditionSettingRow(
                 icon = icon,
                 // 꺼진 조건은 아이콘도 한 단계 가라앉힙니다 — 스위치만 보고
                 // 판단하지 않아도 무엇이 켜져 있는지 훑어 읽힙니다.
-                tint = if (enabled) SlColor.BrandDeep else SlColor.TextTertiary,
-                background = if (enabled) SlColor.BrandTintAlt else SlColor.SurfaceAlt,
+                tint = if (enabled) SlColor.TextPrimary else SlColor.TextTertiary,
+                background = SlColor.SurfaceAlt,
                 size = 40.dp,
                 shape = RoundedCornerShape(SlDimen.RadiusBadge),
                 iconSize = 20.dp,
