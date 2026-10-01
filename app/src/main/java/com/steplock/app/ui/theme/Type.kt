@@ -105,6 +105,24 @@ object SlText {
     /** 홈 "오늘 한눈에" 2×2 칸의 숫자. */
     val GlanceValue = numeralStyle(FontWeight.SemiBold, 32f, 34f)
 
+    /** 등산로 이정표(2k · 4k · 6k). */
+    val TrailTick = numeralStyle(FontWeight.SemiBold, 13f, 16f)
+
+    /** 길 아래 "5,240 / 8,000보" 의 앞 숫자. */
+    val TrailProgress = numeralStyle(FontWeight.SemiBold, 22f, 26f)
+
+    /** 앱 줄 오른쪽의 사용 시간("32분"). */
+    val RowNumeral = numeralStyle(FontWeight.SemiBold, 28f, 30f)
+
+    /**
+     * 화면 안 구역 제목("오늘", "잠근 앱을 쓴 시간"). 작은 회색 라벨 대신 본문보다 한 단계
+     * 큰 제목으로 — 구역이 라벨이 아니라 문장 덩어리로 읽힙니다.
+     */
+    val SectionTitle = slStyle(FontWeight.Bold, 17f, 24f)
+
+    /** 설정 첫머리의 규칙 문장. */
+    val RuleSentence = slStyle(FontWeight.Bold, 24f, 42f, -0.3f)
+
     /** 홈 "오늘" 줄의 숫자(거리·막은 횟수·남은 허용). 라벨보다 먼저 읽히도록 굵게. */
     val FigureValue = slStyle(FontWeight.Black, 20f, 26f, -0.3f)
     val LockTitle = slStyle(FontWeight.Black, 25f, 32f, -0.4f)

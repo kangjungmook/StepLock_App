@@ -1,6 +1,13 @@
 package com.steplock.app.ui.screens
 
 import androidx.compose.foundation.background
+import com.steplock.app.ui.components.TrailMap
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.layout
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,8 +63,6 @@ import com.steplock.app.ui.components.IconTile
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.NavTab
 import com.steplock.app.ui.components.PrimaryButton
-import com.steplock.app.ui.components.ProgressRing
-import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
 import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
@@ -65,9 +70,7 @@ import com.steplock.app.ui.components.SlEmptyState
 import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.StepLockMascot
-import com.steplock.app.ui.components.StepTrack
 import com.steplock.app.ui.components.StepiSays
-import com.steplock.app.ui.components.WeeklyBarChart
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
@@ -260,31 +263,54 @@ private fun LockingContent(
 ) {
     val hero = primaryCondition(settings)
 
-    // 1. 지금 — 무엇이 잠겼고, 얼마나 더 하면 되는지.
-    Spacer(Modifier.height(32.dp))
-    StatusLine(status = status, apps = apps)
-    Spacer(Modifier.height(12.dp))
-    BigHero(
-        status = status,
-        hero = hero,
-        stat = stat,
-        settings = settings,
-        allowUntil = temporaryAllowUntil,
-    )
-
-    // 2. 길 — 스텝이가 목표까지 걸어갑니다.
-    Spacer(Modifier.height(28.dp))
-    StepTrack(
-        progress = hero.progress(stat, settings),
-        startLabel = hero.currentText(stat, settings),
-        goalLabel = stringResource(R.string.home_track_goal, hero.goalText(settings)),
-        mood = when (status) {
-            HomeStatus.Focusing -> MascotMood.Focusing
-            HomeStatus.Locked -> MascotMood.Walking
-            else -> MascotMood.Resting
-        },
-        ticks = if (hero == UnlockCondition.Steps) stepTicks(settings.stepGoal) else emptyList(),
-    )
+    // 1. 지금 — 등산로 위의 스텝이, 그 왼쪽에 "얼마나 더".
+    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(TRAIL_HEIGHT),
+    ) {
+        TrailMap(
+            progress = hero.progress(stat, settings),
+            ticks = if (hero == UnlockCondition.Steps) stepTicks(settings.stepGoal) else emptyList(),
+            mood = when (status) {
+                HomeStatus.Focusing -> MascotMood.Focusing
+                HomeStatus.Locked -> MascotMood.Walking
+                else -> MascotMood.Resting
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.64f)
+                .padding(top = 20.dp),
+        ) {
+            StatusLine(status = status, apps = apps)
+            Spacer(Modifier.height(20.dp))
+            BigHero(
+                status = status,
+                hero = hero,
+                stat = stat,
+                settings = settings,
+                allowUntil = temporaryAllowUntil,
+            )
+        }
+        // 왼쪽 아래 — 지금까지 / 목표. 길의 시작점 곁입니다.
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SlText.TrailProgress.toSpanStyle().copy(color = SlColor.TextPrimary)) {
+                    append(hero.currentNumber(stat))
+                }
+                append(" / ")
+                append(hero.goalText(settings))
+            },
+            style = SlText.LabelSm,
+            color = SlColor.TextSecondary,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(bottom = 20.dp),
+        )
+    }
 
     // 집중 타이머가 맨 앞 조건이면 타이머로 가는 길을 길 바로 아래에 둡니다.
     if (hero == UnlockCondition.Pomodoro) {
@@ -313,37 +339,38 @@ private fun LockingContent(
         }
     }
 
-    // 4. 오늘 한눈에 — 잠근 앱을 얼마나 썼고 얼마나 잠겨 있었는지를 맨 앞에.
-    HomeSectionHeader(stringResource(R.string.home_section_glance))
+    // 4. 오늘 — 옆으로 넘겨 보는 숫자 칸. 맨 앞은 잠근 앱 사용 시간과 잠긴 시간.
+    HomeSectionHeader(stringResource(R.string.home_section_today_title))
     val achievedDays = weekly.count { UnlockEvaluator.isUnlocked(settings, it) }
-    GlanceGrid(
-        figures = listOf(
-            minutesLabel(stat.blockedUsageMinutes) to stringResource(R.string.home_glance_usage),
-            minutesLabel(stat.lockedMinutes) to stringResource(R.string.home_glance_locked),
-            stringResource(R.string.home_times, blockedToday.values.sum()) to
-                stringResource(R.string.home_glance_blocked),
-            distanceText(stat.steps) to stringResource(R.string.home_today_distance),
-            stringResource(R.string.home_times, temporaryAllowRemaining) to
-                stringResource(R.string.home_glance_allow_left, TemporaryAllow.MINUTES),
+    TodayStrip(
+        figures = buildList {
+            add(minutesLabel(stat.blockedUsageMinutes) to stringResource(R.string.home_tile_usage))
+            add(minutesLabel(stat.lockedMinutes) to stringResource(R.string.home_glance_locked))
+            add(
+                stringResource(R.string.home_times, blockedToday.values.sum()) to
+                    stringResource(R.string.home_glance_blocked),
+            )
+            add(distanceText(stat.steps) to stringResource(R.string.home_today_distance))
+            add(
+                stringResource(R.string.home_times, temporaryAllowRemaining) to
+                    stringResource(R.string.home_glance_allow_left, TemporaryAllow.MINUTES),
+            )
             if (settings.pomodoroEnabled) {
-                stringResource(
-                    R.string.home_glance_focus_value,
-                    stat.pomodoroSessions,
-                    settings.pomodoroGoal,
-                ) to stringResource(R.string.home_glance_focus)
-            } else {
-                stringResource(R.string.home_glance_week_value, achievedDays, weekly.size) to
-                    stringResource(R.string.home_glance_week)
-            },
-        ),
+                add(
+                    stringResource(
+                        R.string.home_glance_focus_value,
+                        stat.pomodoroSessions,
+                        settings.pomodoroGoal,
+                    ) to stringResource(R.string.home_glance_focus),
+                )
+            }
+        },
     )
 
-    // 5. 최근 7일
+    // 5. 이번 주 — 일곱 칸. 채운 날은 흑연, 오늘은 주황 테두리.
     if (weekly.isNotEmpty()) {
         HomeSectionHeader(
-            title = stringResource(
-                if (settings.stepsEnabled) R.string.home_section_week_steps else R.string.home_section_week,
-            ),
+            title = stringResource(R.string.home_section_week_title),
             trailing = {
                 SectionLink(
                     text = stringResource(R.string.home_week_achieved, achievedDays),
@@ -351,16 +378,12 @@ private fun LockingContent(
                 )
             },
         )
-        if (settings.stepsEnabled) {
-            WeekBars(days = weekly, settings = settings, onClick = onOpenStats)
-        } else {
-            WeekRings(days = weekly, settings = settings, hero = hero, onClick = onOpenStats)
-        }
+        WeekSquares(days = weekly, settings = settings, hero = hero, onClick = onOpenStats)
     }
 
     // 6. 오늘 막은 앱
     HomeSectionHeader(
-        title = stringResource(R.string.home_section_blocked_apps),
+        title = stringResource(R.string.home_section_usage_title),
         trailing = {
             // 감지는 앱별 상태가 아니라 하나뿐인 감시 서비스의 상태입니다.
             if (detecting) DetectingStatus()
@@ -378,7 +401,7 @@ private fun LockingContent(
     )
     val maxUsage = sorted.maxOfOrNull { usageToday[it.packageName] ?: 0L }?.coerceAtLeast(1L) ?: 1L
     sorted.forEachIndexed { index, app ->
-        if (index > 0) SlDivider()
+        if (index > 0) Spacer(Modifier.height(8.dp))
         BlockedAppRow(
             app = app,
             usageMs = usageToday[app.packageName] ?: 0L,
@@ -434,17 +457,22 @@ private fun HomeSectionHeader(
     title: String,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    Spacer(Modifier.height(44.dp))
+    Spacer(Modifier.height(36.dp))
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 24.dp),
+            .heightIn(min = SlDimen.TouchTarget),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SectionLabel(text = title, modifier = Modifier.weight(1f))
+        Text(
+            text = title,
+            style = SlText.SectionTitle,
+            color = SlColor.TextPrimary,
+            modifier = Modifier.weight(1f),
+        )
         trailing?.invoke()
     }
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(8.dp))
 }
 
 /** "5일 달성 ›" 같은 섹션 오른쪽 링크. 44dp 터치 높이를 지킵니다. */
@@ -676,103 +704,98 @@ private fun ConditionStrip(
     }
 }
 
-/** 오늘의 숫자 넷을 2×2로. 칸 사이는 선 하나씩만. */
+/**
+ * 잠근 앱 한 줄 — 스크린 타임처럼 **줄 바닥이 쓴 시간만큼 차오릅니다**. 오늘 가장 오래 쓴
+ * 앱이 줄 끝까지 차고, 나머지는 그에 비례합니다. 오른쪽 큰 숫자가 쓴 시간, 이름 아래가
+ * 막은 횟수입니다.
+ */
 @Composable
-private fun GlanceGrid(figures: List<Pair<String, String>>) {
-    Column {
-        figures.chunked(2).forEachIndexed { rowIndex, row ->
-            if (rowIndex > 0) SlDivider()
-            Row(modifier = Modifier.fillMaxWidth()) {
-                row.forEachIndexed { colIndex, (value, label) ->
-                    if (colIndex > 0) {
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(GLANCE_CELL)
-                                .background(SlColor.Border),
-                        )
-                    }
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(GLANCE_CELL)
-                            .padding(start = if (colIndex > 0) 20.dp else 0.dp)
-                            .semantics(mergeDescendants = true) {},
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Text(
-                            text = numeralText(value, unitSize = 15.sp),
-                            style = SlText.GlanceValue,
-                            color = SlColor.TextPrimary,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
-                    }
-                }
+private fun BlockedAppRow(app: InstalledApp, usageMs: Long, maxUsageMs: Long, blockedCount: Int) {
+    val usageMinutes = (usageMs / 60_000L).toInt()
+    val fill = SlColor.TextPrimary.copy(alpha = 0.08f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(68.dp)
+            .clip(RoundedCornerShape(SlDimen.RadiusCard))
+            .background(SlColor.SurfaceAlt)
+            .semantics(mergeDescendants = true) {},
+    ) {
+        if (usageMs > 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth((usageMs.toFloat() / maxUsageMs).coerceIn(0.04f, 1f))
+                    .background(fill),
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 기기에서 읽은 실제 아이콘. 첫 글자 뱃지로는 "라이트" 같은 변종을 구분할 수 없습니다.
+            AppIcon(packageName = app.packageName, label = app.label, size = 40.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = app.label,
+                    style = SlText.RowTitle,
+                    color = SlColor.TextPrimary,
+                    maxLines = 1,
+                )
+                Text(
+                    text = if (blockedCount > 0) {
+                        stringResource(R.string.home_app_blocked_times, blockedCount)
+                    } else {
+                        stringResource(R.string.home_app_blocked_none_today)
+                    },
+                    style = SlText.LabelSm,
+                    color = SlColor.TextSecondary,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
+            Text(
+                text = numeralText(minutesLabel(usageMinutes), unitSize = 14.sp),
+                style = SlText.RowNumeral,
+                color = if (usageMinutes > 0) SlColor.TextPrimary else SlColor.TextTertiary,
+            )
         }
     }
 }
 
 /**
- * 최근 7일 걸음 막대와 목표 점선. 채운 날은 브랜드, 못 채운 날은 옅은 브랜드,
- * 오늘은 가장 진한 색 — 오늘이 어디쯤인지가 먼저 보입니다.
+ * 오늘의 숫자 칸 — 옆으로 넘겨 봅니다. 화면 끝까지 이어 그려서 다음 칸이 살짝
+ * 보이게 하고(넘길 수 있다는 신호), 칸마다 라벨 위 · 숫자 아래로 같은 자리를 지킵니다.
  */
 @Composable
-private fun WeekBars(days: List<DailyStat>, settings: LockSettings, onClick: () -> Unit) {
-    val todayLabel = stringResource(R.string.home_week_today)
-    // 채운 날은 흑연, 못 채운 날은 흐린 회색, 오늘만 표식 주황 — "지금 여기"를 가리킵니다.
-    val done = SlColor.TextPrimary
-    val notYet = SlColor.TrackOff
-    val today = SlColor.Brand
-    val description = stringResource(
-        R.string.home_week_bars_desc,
-        days.count { it.steps >= settings.stepGoal },
-        days.size,
-    )
-    Column(
+private fun TodayStrip(figures: List<Pair<String, String>>) {
+    Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusField))
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics(mergeDescendants = true) { contentDescription = description },
+            .bleed(SlDimen.ScreenPadding)
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = SlDimen.ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = stringResource(R.string.home_week_goal_line, settings.stepGoal.formatThousands()),
-            style = SlText.LabelSm,
-            color = SlColor.TextTertiary,
-            textAlign = TextAlign.End,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(4.dp))
-        WeeklyBarChart(
-            values = days.map { it.steps },
-            goal = settings.stepGoal,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(96.dp),
-            barColorAt = { index, value ->
-                when {
-                    index == days.lastIndex -> today
-                    value >= settings.stepGoal -> done
-                    else -> notYet
-                }
-            },
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            days.forEachIndexed { index, day ->
-                val isToday = index == days.lastIndex
+        figures.forEach { (value, label) ->
+            Column(
+                modifier = Modifier
+                    .width(148.dp)
+                    .height(104.dp)
+                    .clip(RoundedCornerShape(SlDimen.RadiusCard))
+                    .background(SlColor.Surface)
+                    .border(1.dp, SlColor.Border, RoundedCornerShape(SlDimen.RadiusCard))
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .semantics(mergeDescendants = true) {},
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
                 Text(
-                    text = if (isToday) {
-                        todayLabel
-                    } else {
-                        day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
-                    },
-                    style = if (isToday) SlText.Chip else SlText.LabelSm,
-                    color = if (isToday) SlColor.BrandDeep else SlColor.TextSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
+                    text = numeralText(value, unitSize = 15.sp),
+                    style = SlText.GlanceValue,
+                    color = SlColor.TextPrimary,
+                    maxLines = 1,
                 )
             }
         }
@@ -780,11 +803,11 @@ private fun WeekBars(days: List<DailyStat>, settings: LockSettings, onClick: () 
 }
 
 /**
- * 걸음 조건을 끈 경우의 7일 — 요일마다 링. 채운 날은 꽉 찬 원에 체크.
- * 달성 여부는 연속 기록·통계와 같은 기준(지금 설정)으로 판정합니다.
+ * 이번 주 일곱 칸. 채운 날은 흑연, 못 채운 날은 흐린 회색, 오늘은 주황 테두리
+ * (오늘을 채웠으면 주황으로 칠함). 누르면 통계로 갑니다.
  */
 @Composable
-private fun WeekRings(
+private fun WeekSquares(
     days: List<DailyStat>,
     settings: LockSettings,
     hero: UnlockCondition,
@@ -794,45 +817,49 @@ private fun WeekRings(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(SlDimen.RadiusField))
+            .clip(RoundedCornerShape(SlDimen.RadiusCard))
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         days.forEachIndexed { index, day ->
             val isToday = index == days.lastIndex
             val done = UnlockEvaluator.isUnlocked(settings, day)
-            val progress = hero.progress(day, settings)
             val dayName = day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.KOREAN)
             val description = if (done) {
                 stringResource(R.string.home_week_day_done, dayName)
             } else {
-                stringResource(R.string.home_week_day_progress, dayName, (progress * 100).roundToInt())
+                stringResource(
+                    R.string.home_week_day_progress,
+                    dayName,
+                    (hero.progress(day, settings) * 100).roundToInt(),
+                )
             }
+            val shape = RoundedCornerShape(SlDimen.RadiusSmall)
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .semantics(mergeDescendants = true) { contentDescription = description },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (done) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(SlColor.Brand),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = SlIcons.CheckBold,
-                            contentDescription = null,
-                            tint = SlColor.OnBrand,
-                            modifier = Modifier.size(18.dp),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(shape)
+                        .background(
+                            when {
+                                isToday && done -> SlColor.Brand
+                                done -> SlColor.TextPrimary
+                                isToday -> SlColor.Surface
+                                else -> SlColor.TrackOff
+                            },
                         )
-                    }
-                } else {
-                    ProgressRing(progress = progress, size = 40.dp, radius = 18.dp, strokeWidth = 4.dp)
-                }
-                Spacer(Modifier.height(8.dp))
+                        .then(
+                            if (isToday && !done) Modifier.border(2.dp, SlColor.Brand, shape) else Modifier,
+                        ),
+                )
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = if (isToday) {
                         todayLabel
@@ -840,75 +867,24 @@ private fun WeekRings(
                         day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
                     },
                     style = if (isToday) SlText.Chip else SlText.LabelSm,
-                    color = if (isToday) SlColor.BrandDeep else SlColor.TextSecondary,
+                    color = if (isToday) SlColor.BrandInk else SlColor.TextSecondary,
                 )
             }
         }
     }
 }
 
-/**
- * 잠근 앱 한 줄 — 아이콘, 이름과 "3번 막았어요", 오늘 쓴 시간만큼 차는 막대,
- * 오른쪽에 쓴 시간. 막대는 오늘 가장 오래 쓴 앱을 끝으로 둔 상대 길이입니다.
- */
-@Composable
-private fun BlockedAppRow(app: InstalledApp, usageMs: Long, maxUsageMs: Long, blockedCount: Int) {
-    val usageMinutes = (usageMs / 60_000L).toInt()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // 기기에서 읽은 실제 아이콘. 첫 글자 뱃지로는 "라이트" 같은 변종을 구분할 수 없습니다.
-        AppIcon(packageName = app.packageName, label = app.label, size = 40.dp)
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = app.label,
-                    style = SlText.ListItem,
-                    color = SlColor.TextPrimary,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (blockedCount > 0) {
-                        stringResource(R.string.home_app_blocked_times, blockedCount)
-                    } else {
-                        stringResource(R.string.home_app_blocked_zero)
-                    },
-                    style = SlText.LabelSm,
-                    color = if (blockedCount > 0) SlColor.AmberText else SlColor.TextTertiary,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .clip(CircleShape)
-                    .background(SlColor.SurfaceAlt),
-            ) {
-                if (usageMs > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth((usageMs.toFloat() / maxUsageMs).coerceIn(0.02f, 1f))
-                            .height(4.dp)
-                            .clip(CircleShape)
-                            .background(SlColor.Amber),
-                    )
-                }
-            }
-        }
-        Text(
-            text = minutesLabel(usageMinutes),
-            style = SlText.Remaining,
-            color = if (usageMinutes > 0) SlColor.TextPrimary else SlColor.TextTertiary,
-            textAlign = TextAlign.End,
-            modifier = Modifier.width(64.dp),
-        )
+/** 좌우 여백을 무시하고 화면 끝까지 그립니다(옆으로 넘기는 줄). */
+private fun Modifier.bleed(horizontal: Dp): Modifier = layout { measurable, constraints ->
+    val extra = horizontal.roundToPx() * 2
+    val placeable = measurable.measure(
+        constraints.copy(
+            minWidth = (constraints.minWidth + extra).coerceAtLeast(0),
+            maxWidth = constraints.maxWidth + extra,
+        ),
+    )
+    layout(placeable.width - extra, placeable.height) {
+        placeable.place(-horizontal.roundToPx(), 0)
     }
 }
 
@@ -1058,6 +1034,13 @@ private fun UnlockCondition.currentText(stat: DailyStat, settings: LockSettings)
         UnlockCondition.Pomodoro -> stringResource(R.string.unit_sessions, stat.pomodoroSessions)
     }
 
+/** 길 아래 "5,240 / 8,000보" 의 앞 숫자. */
+private fun UnlockCondition.currentNumber(stat: DailyStat): String = when (this) {
+    UnlockCondition.Steps -> stat.steps.formatThousands()
+    UnlockCondition.Sleep -> "%.1f".format(Locale.KOREA, stat.sleepMinutes / 60f)
+    UnlockCondition.Pomodoro -> stat.pomodoroSessions.toString()
+}
+
 @Composable
 private fun UnlockCondition.goalText(settings: LockSettings): String = when (this) {
     UnlockCondition.Steps -> stringResource(R.string.unit_steps, settings.stepGoal.formatThousands())
@@ -1084,7 +1067,9 @@ private const val STRIDE_METERS = 0.7f
 /** 보통 빠르기로 걸을 때 1분 걸음 수. "약 25분이면 충분해요"를 어림하는 데만 씁니다. */
 private const val STEPS_PER_MINUTE = 100.0
 
-private val GLANCE_CELL = 80.dp
+
+/** 등산로 구역 높이. 큰 숫자 · 두 줄 설명 · 길의 굽이가 모두 들어가는 높이입니다. */
+private val TRAIL_HEIGHT = 460.dp
 
 /**
  * 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다.

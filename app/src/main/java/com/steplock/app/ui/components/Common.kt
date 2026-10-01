@@ -48,12 +48,16 @@ import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 
+/**
+ * 구역 제목. 작은 회색 라벨(12sp) 대신 본문보다 한 단계 큰 흑연 제목(17sp)입니다 —
+ * 구역이 "분류 표시"가 아니라 읽을 거리의 첫머리로 보이게 합니다.
+ */
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = SlText.SectionLabel,
-        color = SlColor.TextSecondary,
+        style = SlText.SectionTitle,
+        color = SlColor.TextPrimary,
         modifier = modifier,
     )
 }

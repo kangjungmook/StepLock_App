@@ -35,14 +35,13 @@ import com.steplock.app.data.RelaxDelay
 import com.steplock.app.data.ThemeMode
 import com.steplock.app.data.SampleData
 import com.steplock.app.ui.components.BottomNavBar
-import com.steplock.app.ui.components.ConditionSettingRow
 import com.steplock.app.ui.components.NavTab
+import com.steplock.app.ui.components.RuleEditor
 import com.steplock.app.ui.components.SectionLabel
 import com.steplock.app.ui.components.SlChevron
 import com.steplock.app.ui.components.SlConfirmDialog
 import com.steplock.app.ui.components.SlDetailRow
 import com.steplock.app.ui.components.SlDivider
-import com.steplock.app.ui.components.SlIcons
 import com.steplock.app.ui.components.SlPanel
 import com.steplock.app.ui.components.SlSegmented
 import com.steplock.app.ui.components.SlSwitch
@@ -51,8 +50,6 @@ import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.theme.StepLockTheme
-import com.steplock.app.ui.util.formatThousands
-import com.steplock.app.ui.util.sleepGoalLabel
 import java.time.LocalDate
 
 /**
@@ -141,75 +138,21 @@ fun SettingsScreen(
                 PendingRelaxNotice(applyOn = settingsApplyOn)
             }
 
-            val stepsTitle = stringResource(R.string.condition_steps)
-            val enabledCount = listOf(
-                settings.stepsEnabled,
-                settings.sleepEnabled,
-                settings.pomodoroEnabled,
-            ).count { it }
-            val sleepTitle = stringResource(R.string.condition_sleep)
-            val pomodoroTitle = stringResource(R.string.condition_pomodoro)
-            val stepsGoalLabel = stringResource(R.string.settings_steps_goal)
-            val sleepGoalName = stringResource(R.string.settings_sleep_goal)
-            val pomodoroGoalName = stringResource(R.string.settings_pomodoro_goal)
-
+            // 규칙은 한 문장으로 — 밑줄 친 값을 누르면 시트에서 그 값만 고칩니다.
+            RuleEditor(
+                settings = settings,
+                blockedCount = blockedCount,
+                onPickApps = onPickApps,
+                onStepsEnabledChange = onStepsEnabledChange,
+                onSleepEnabledChange = onSleepEnabledChange,
+                onPomodoroEnabledChange = onPomodoroEnabledChange,
+                onRequireAllChange = onRequireAllChange,
+                onStepGoalChange = onStepGoalChange,
+                onSleepGoalChange = onSleepGoalChange,
+                onPomodoroGoalChange = onPomodoroGoalChange,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             Column {
-                SectionLabel(
-                    text = stringResource(R.string.settings_section_conditions),
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                // 조건 셋은 같은 종류라 한 패널 안에서 구분선으로만 나눕니다.
-                SlPanel {
-                    ConditionSettingRow(
-                        icon = SlIcons.Steps,
-                        title = stepsTitle,
-                        enabled = settings.stepsEnabled,
-                        onEnabledChange = onStepsEnabledChange,
-                        toggleLabel = stringResource(R.string.settings_condition_toggle, stepsTitle),
-                        goalLabel = stepsGoalLabel,
-                        goalValue = stringResource(R.string.unit_steps, settings.stepGoal.formatThousands()),
-                        decreaseLabel = stringResource(R.string.settings_goal_decrease, stepsGoalLabel),
-                        increaseLabel = stringResource(R.string.settings_goal_increase, stepsGoalLabel),
-                        onDecrease = { onStepGoalChange(-500) },
-                        onIncrease = { onStepGoalChange(500) },
-                    )
-                    SlDivider()
-                    ConditionSettingRow(
-                        icon = SlIcons.Moon,
-                        title = sleepTitle,
-                        enabled = settings.sleepEnabled,
-                        onEnabledChange = onSleepEnabledChange,
-                        toggleLabel = stringResource(R.string.settings_condition_toggle, sleepTitle),
-                        goalLabel = sleepGoalName,
-                        goalValue = sleepGoalLabel(settings.sleepGoalHours),
-                        decreaseLabel = stringResource(R.string.settings_goal_decrease, sleepGoalName),
-                        increaseLabel = stringResource(R.string.settings_goal_increase, sleepGoalName),
-                        onDecrease = { onSleepGoalChange(-0.5f) },
-                        onIncrease = { onSleepGoalChange(0.5f) },
-                    )
-                    SlDivider()
-                    ConditionSettingRow(
-                        icon = SlIcons.Timer,
-                        title = pomodoroTitle,
-                        enabled = settings.pomodoroEnabled,
-                        onEnabledChange = onPomodoroEnabledChange,
-                        toggleLabel = stringResource(R.string.settings_condition_toggle, pomodoroTitle),
-                        goalLabel = pomodoroGoalName,
-                        goalValue = stringResource(R.string.unit_sessions, settings.pomodoroGoal),
-                        decreaseLabel = stringResource(R.string.settings_goal_decrease, pomodoroGoalName),
-                        increaseLabel = stringResource(R.string.settings_goal_increase, pomodoroGoalName),
-                        onDecrease = { onPomodoroGoalChange(-1) },
-                        onIncrease = { onPomodoroGoalChange(1) },
-                    )
-                    // 조건이 둘 이상 켜져 있을 때만 의미가 있는 스위치라 그때만 보입니다.
-                    if (enabledCount >= 2) {
-                        SlDivider()
-                        StrictModeRow(
-                            enabled = settings.requireAllConditions,
-                            onEnabledChange = onRequireAllChange,
-                        )
-                    }
-                }
                 // 잠근 앱이 있는 채로 집중 조건을 켜면 멈출 수 없는 세션이 곧바로
                 // 시작됩니다. 스위치를 누르기 전에 알아야 하는 일이라 바로 아래에 둡니다.
                 Text(
@@ -218,29 +161,6 @@ fun SettingsScreen(
                     color = SlColor.TextTertiary,
                     modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                 )
-            }
-
-            Column {
-                SectionLabel(
-                    text = stringResource(R.string.settings_section_apps),
-                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
-                )
-                // 목록을 여기 펼치지 않습니다 — 기기에 깔린 앱이 수십 개라
-                // 설정 화면이 그 목록에 잡아먹힙니다. 고르기는 별도 화면에서.
-                SlPanel {
-                    SlDetailRow(
-                        title = stringResource(R.string.settings_apps_pick),
-                        description = if (blockedCount == 0) {
-                            stringResource(R.string.settings_apps_none)
-                        } else {
-                            stringResource(R.string.settings_apps_count, blockedCount)
-                        },
-                        modifier = Modifier
-                            .clickable(role = Role.Button, onClick = onPickApps)
-                            .padding(vertical = 16.dp),
-                        trailing = { SlChevron() },
-                    )
-                }
             }
 
             RelaxDelaySection(
@@ -557,21 +477,6 @@ private fun AccountRow(
                 underline = false,
             )
         }
-    }
-}
-
-@Composable
-private fun StrictModeRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
-    SlDetailRow(
-        title = stringResource(R.string.settings_strict_title),
-        description = stringResource(R.string.settings_strict_desc),
-        modifier = Modifier.padding(vertical = 16.dp),
-    ) {
-        SlSwitch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
-            contentDescription = stringResource(R.string.settings_strict_title),
-        )
     }
 }
 
