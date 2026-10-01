@@ -206,43 +206,69 @@ fun OnboardingScreen(
     }
 }
 
-/** 권한 한 줄 — 허용되면 체크로 바뀌고 더 이상 눌리지 않습니다. */
+/**
+ * 권한 한 줄 — 허용되면 체크로 바뀌고 더 이상 눌리지 않습니다.
+ *
+ * 설정 화면에서만 켤 수 있는 두 줄은 **거기서 무엇을 누르면 되는지**를 아래에 짧게
+ * 적어 둡니다. 설정 화면은 기기마다 생김새가 달라서, 무엇을 찾아야 하는지 모르면
+ * 그 화면에서 길을 잃습니다.
+ */
 @Composable
 private fun PermissionRow(group: PermissionGroup, granted: Boolean, onClick: () -> Unit) {
-    SlDetailRow(
-        title = stringResource(group.titleRes),
-        description = stringResource(group.descRes),
+    val guideRes = when (group) {
+        PermissionGroup.Overlay -> R.string.permission_overlay_steps
+        PermissionGroup.UsageAccess -> R.string.permission_usage_steps
+        PermissionGroup.Runtime -> null
+    }
+    Column(
         modifier = Modifier
             .then(if (granted) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick))
             .padding(vertical = 14.dp),
-        trailing = {
-            if (granted) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CheckboxMark(checked = true)
+    ) {
+        SlDetailRow(
+            title = stringResource(group.titleRes),
+            description = stringResource(group.descRes),
+            trailing = {
+                if (granted) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CheckboxMark(checked = true)
+                        Text(
+                            text = stringResource(R.string.permission_granted),
+                            style = SlText.LabelSm,
+                            color = SlColor.BrandDeep,
+                        )
+                    }
+                } else {
                     Text(
-                        text = stringResource(R.string.permission_granted),
-                        style = SlText.LabelSm,
+                        text = stringResource(
+                            if (group.opensSettings) {
+                                R.string.permission_action_open
+                            } else {
+                                R.string.permission_action_allow
+                            },
+                        ),
+                        style = SlText.Chip,
                         color = SlColor.BrandDeep,
                     )
                 }
-            } else {
-                Text(
-                    text = stringResource(
-                        if (group.opensSettings) {
-                            R.string.permission_action_open
-                        } else {
-                            R.string.permission_action_allow
-                        },
-                    ),
-                    style = SlText.Chip,
-                    color = SlColor.BrandDeep,
-                )
-            }
-        },
-    )
+            },
+        )
+        if (!granted && guideRes != null) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(guideRes),
+                style = SlText.Caption,
+                color = SlColor.TextSecondary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SlColor.SurfaceAlt, RoundedCornerShape(SlDimen.RadiusSmall))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            )
+        }
+    }
 }
 
 @Composable
@@ -275,8 +301,8 @@ private fun OnboardingScreenPreview() {
         OnboardingScreen(
             permissions = listOf(
                 PermissionGroup.Runtime to true,
-                PermissionGroup.UsageAccess to false,
                 PermissionGroup.Overlay to false,
+                PermissionGroup.UsageAccess to false,
             ),
             onPermissionClick = {},
             onStart = {},

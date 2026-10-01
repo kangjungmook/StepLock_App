@@ -125,6 +125,13 @@ data class DailyStat(
     val steps: Int,
     val sleepMinutes: Int,
     val pomodoroSessions: Int,
+    /**
+     * 잠근 앱을 앞에 띄워 둔 시간(분) — 안드로이드 사용 기록 기준. 기기에만 두고
+     * 서버로 보내지 않습니다(서버 표에 칸이 없어 동기화로 받은 날은 0).
+     */
+    val blockedUsageMinutes: Int = 0,
+    /** 잠금이 걸려 있던 시간(분) — 감시 서비스가 1초마다 셉니다. 기기에만 둡니다. */
+    val lockedMinutes: Int = 0,
 )
 
 sealed interface AuthState {
@@ -158,6 +165,10 @@ data class AppPreferences(
      * 보여 주는 데 씁니다. 날짜가 바뀌면 비어 있습니다.
      */
     val blockedToday: Map<String, Int> = emptyMap(),
+    /** 오늘 잠근 앱별 사용 시간(ms). 감시 서비스와 화면이 사용 기록에서 읽어 둡니다. */
+    val usageToday: Map<String, Long> = emptyMap(),
+    /** 오늘 잠금이 걸려 있던 시간(초). */
+    val lockedSecondsToday: Long = 0L,
 )
 
 /**

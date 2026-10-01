@@ -32,6 +32,16 @@ fun durationLabel(minutes: Int): String {
     }
 }
 
+/**
+ * 사용 시간·잠긴 시간처럼 분 단위로 짧을 수 있는 시간. 한 시간이 안 되면 "32분"으로만
+ * 씁니다 — [durationLabel] 은 수면용이라 "0시간 32분"이 됩니다.
+ */
+@Composable
+fun minutesLabel(minutes: Int): String = when {
+    minutes < 60 -> stringResource(R.string.duration_minutes, minutes)
+    else -> durationLabel(minutes)
+}
+
 fun sleepGoalMinutes(hours: Float): Int = (hours * 60).roundToInt()
 
 /** 타이머 표시용 mm:ss. */

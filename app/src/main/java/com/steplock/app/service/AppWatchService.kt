@@ -15,6 +15,7 @@ import android.os.IBinder
 import androidx.core.content.ContextCompat
 import com.steplock.app.MainActivity
 import com.steplock.app.R
+import com.steplock.app.data.AppUsageReader
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.SettingsRepository
 import com.steplock.app.data.SleepRepository
@@ -79,6 +80,11 @@ class AppWatchService : Service() {
         var sawLocked = false
         var sawLockedOn: LocalDate? = null
         var nudgedOn: LocalDate? = null
+        val usageReader = AppUsageReader(this)
+        // 잠금이 걸려 있던 시간. 1초마다 쌓아 두었다가 기록할 때 한꺼번에 씁니다.
+        var lastTickAt = System.currentTimeMillis()
+        var lastTickDate = LocalDate.now()
+        var pendingLockedMs = 0L
 
         while (currentCoroutineContext().isActive) {
             val current = preferences.value
@@ -115,9 +121,38 @@ class AppWatchService : Service() {
             // 잡히면서 영구히 사라졌습니다 — 통계에 0보로 남고 연속 달성도 끊겼습니다.
             // 자정을 정확히 집어낼 방법이 없으니 주기적으로 덮어씁니다. 값이 그대로면
             // recordDay 가 쓰지 않습니다.
+            // 지금 잠금이 걸려 있는지 — 아래 잠금 화면을 띄우는 규칙과 같습니다.
+            val lockingNow = current.settings.blockedAppIds.isNotEmpty() &&
+                (
+                    current.pomodoro.isRunning ||
+                        (!current.temporaryAllow.isActive() && !UnlockEvaluator.isUnlocked(current.settings, stat))
+                    )
+            if (stat.date != lastTickDate) {
+                // 자정을 넘었습니다. 어제 몫을 어제로 적고 새로 셉니다.
+                repository.addLockedSeconds(lastTickDate, pendingLockedMs / 1000)
+                pendingLockedMs = 0L
+                lastTickDate = stat.date
+            } else if (lockingNow) {
+                // 도즈 등으로 루프가 오래 멈췄다 깨어나도 그사이 잠금은 걸려 있었습니다.
+                // 다만 기기가 꺼져 있던 시간까지 세지 않도록 한 번에 더하는 양을 묶어 둡니다.
+                pendingLockedMs += (now - lastTickAt).coerceIn(0L, MAX_LOCK_TICK_MS)
+            }
+            lastTickAt = now
+
             if (now - lastRecordAt > RECORD_INTERVAL_MS) {
                 lastRecordAt = now
-                repository.recordDay(stat)
+                val flushedSeconds = pendingLockedMs / 1000
+                repository.addLockedSeconds(stat.date, flushedSeconds)
+                pendingLockedMs -= flushedSeconds * 1000
+                // 잠근 앱을 오늘 얼마나 썼는지 — 안드로이드 사용 기록에서 1분마다 읽습니다.
+                val usage = usageReader.todayUsage(current.settings.blockedAppIds)
+                repository.writeUsageToday(stat.date, usage)
+                repository.recordDay(
+                    stat.copy(
+                        blockedUsageMinutes = (usage.values.sum() / 60_000L).toInt(),
+                        lockedMinutes = ((current.lockedSecondsToday + flushedSeconds) / 60L).toInt(),
+                    ),
+                )
             }
 
             // 잠김 → 열림으로 바뀐 순간 한 번 알립니다. 걸음 목표를 채웠는지 알려고
@@ -325,6 +360,9 @@ class AppWatchService : Service() {
 
         /** 끝난 세션을 타이머 알림 서비스가 먼저 집계하도록 기다리는 시간. */
         private const val FOCUS_COMPLETE_GRACE_MS = 5_000L
+
+        /** 잠긴 시간을 한 번에 더하는 최대치. 루프가 이보다 오래 멈췄으면 기기가 꺼져 있던 것으로 봅니다. */
+        private const val MAX_LOCK_TICK_MS = 5 * 60_000L
 
         /**
          * 하루 기록을 덮어쓰는 간격. 자정 직전 기록이 최대 이만큼 낡을 수 있어서,

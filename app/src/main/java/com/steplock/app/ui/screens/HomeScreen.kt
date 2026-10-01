@@ -74,6 +74,7 @@ import com.steplock.app.ui.util.durationLabel
 import com.steplock.app.ui.util.enabledConditions
 import com.steplock.app.ui.util.formatThousands
 import com.steplock.app.ui.util.isAchieved
+import com.steplock.app.ui.util.minutesLabel
 import com.steplock.app.ui.util.primaryCondition
 import com.steplock.app.ui.util.progress
 import com.steplock.app.ui.util.sleepGoalLabel
@@ -128,6 +129,8 @@ fun HomeScreen(
     blockedToday: Map<String, Int> = emptyMap(),
     /** 오늘 더 쓸 수 있는 임시 허용 횟수. */
     temporaryAllowRemaining: Int = TemporaryAllow.DAILY_LIMIT,
+    /** 오늘 잠근 앱별 사용 시간(ms). */
+    usageToday: Map<String, Long> = emptyMap(),
 ) {
     val conditions = enabledConditions(settings)
     val allowActive = rememberAllowActive(temporaryAllowUntil)
@@ -214,6 +217,7 @@ fun HomeScreen(
                     weekly = weekly,
                     blockedToday = blockedToday,
                     temporaryAllowRemaining = temporaryAllowRemaining,
+                    usageToday = usageToday,
                     detecting = warningTitle == null,
                     onPomodoroClick = onPomodoroClick,
                     onManageLocks = onManageLocks,
@@ -244,6 +248,7 @@ private fun LockingContent(
     weekly: List<DailyStat>,
     blockedToday: Map<String, Int>,
     temporaryAllowRemaining: Int,
+    usageToday: Map<String, Long>,
     detecting: Boolean,
     onPomodoroClick: () -> Unit,
     onManageLocks: () -> Unit,
@@ -304,14 +309,16 @@ private fun LockingContent(
         }
     }
 
-    // 4. 오늘 한눈에
+    // 4. 오늘 한눈에 — 잠근 앱을 얼마나 썼고 얼마나 잠겨 있었는지를 맨 앞에.
     HomeSectionHeader(stringResource(R.string.home_section_glance))
     val achievedDays = weekly.count { UnlockEvaluator.isUnlocked(settings, it) }
     GlanceGrid(
         figures = listOf(
-            distanceText(stat.steps) to stringResource(R.string.home_today_distance),
+            minutesLabel(stat.blockedUsageMinutes) to stringResource(R.string.home_glance_usage),
+            minutesLabel(stat.lockedMinutes) to stringResource(R.string.home_glance_locked),
             stringResource(R.string.home_times, blockedToday.values.sum()) to
                 stringResource(R.string.home_glance_blocked),
+            distanceText(stat.steps) to stringResource(R.string.home_today_distance),
             stringResource(R.string.home_times, temporaryAllowRemaining) to
                 stringResource(R.string.home_glance_allow_left, TemporaryAllow.MINUTES),
             if (settings.pomodoroEnabled) {
@@ -360,17 +367,28 @@ private fun LockingContent(
             )
         },
     )
-    // 많이 막은 앱이 위로. 같은 횟수끼리는 원래 순서(이름 순)를 지킵니다.
-    val sorted = apps.sortedByDescending { blockedToday[it.packageName] ?: 0 }
-    val maxCount = sorted.maxOfOrNull { blockedToday[it.packageName] ?: 0 }?.coerceAtLeast(1) ?: 1
+    // 오래 쓴 앱이 위로, 같으면 많이 막은 앱이 위로. 같은 값끼리는 이름 순을 지킵니다.
+    val sorted = apps.sortedWith(
+        compareByDescending<InstalledApp> { usageToday[it.packageName] ?: 0L }
+            .thenByDescending { blockedToday[it.packageName] ?: 0 },
+    )
+    val maxUsage = sorted.maxOfOrNull { usageToday[it.packageName] ?: 0L }?.coerceAtLeast(1L) ?: 1L
     sorted.forEachIndexed { index, app ->
         if (index > 0) SlDivider()
         BlockedAppRow(
             app = app,
+            usageMs = usageToday[app.packageName] ?: 0L,
+            maxUsageMs = maxUsage,
             blockedCount = blockedToday[app.packageName] ?: 0,
-            maxCount = maxCount,
         )
     }
+    Spacer(Modifier.height(8.dp))
+    // 쇼츠만 따로 재지 못한다는 걸 숨기지 않습니다 — 유튜브 시간은 앱 전체입니다.
+    Text(
+        text = stringResource(R.string.home_usage_note),
+        style = SlText.Caption,
+        color = SlColor.TextTertiary,
+    )
 }
 
 /** 날짜와 이름 한 줄, 오른쪽에 연속 달성. 큰 숫자가 주인공이라 인사는 작게 둡니다. */
@@ -794,12 +812,12 @@ private fun WeekRings(
 }
 
 /**
- * 잠근 앱 한 줄 — 아이콘, 이름, 막은 횟수만큼 차는 막대, 오른쪽에 횟수.
- * 막대는 오늘 가장 많이 막은 앱을 끝으로 둔 상대 길이입니다.
+ * 잠근 앱 한 줄 — 아이콘, 이름과 "3번 막았어요", 오늘 쓴 시간만큼 차는 막대,
+ * 오른쪽에 쓴 시간. 막대는 오늘 가장 오래 쓴 앱을 끝으로 둔 상대 길이입니다.
  */
 @Composable
-private fun BlockedAppRow(app: InstalledApp, blockedCount: Int, maxCount: Int) {
-    val times = stringResource(R.string.home_times, blockedCount)
+private fun BlockedAppRow(app: InstalledApp, usageMs: Long, maxUsageMs: Long, blockedCount: Int) {
+    val usageMinutes = (usageMs / 60_000L).toInt()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -811,7 +829,24 @@ private fun BlockedAppRow(app: InstalledApp, blockedCount: Int, maxCount: Int) {
         // 기기에서 읽은 실제 아이콘. 첫 글자 뱃지로는 "라이트" 같은 변종을 구분할 수 없습니다.
         AppIcon(packageName = app.packageName, label = app.label, size = 40.dp)
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = app.label, style = SlText.ListItem, color = SlColor.TextPrimary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = app.label,
+                    style = SlText.ListItem,
+                    color = SlColor.TextPrimary,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = if (blockedCount > 0) {
+                        stringResource(R.string.home_app_blocked_times, blockedCount)
+                    } else {
+                        stringResource(R.string.home_app_blocked_zero)
+                    },
+                    style = SlText.LabelSm,
+                    color = if (blockedCount > 0) SlColor.AmberText else SlColor.TextTertiary,
+                )
+            }
             Spacer(Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -820,10 +855,10 @@ private fun BlockedAppRow(app: InstalledApp, blockedCount: Int, maxCount: Int) {
                     .clip(CircleShape)
                     .background(SlColor.SurfaceAlt),
             ) {
-                if (blockedCount > 0) {
+                if (usageMs > 0) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(blockedCount.toFloat() / maxCount)
+                            .fillMaxWidth((usageMs.toFloat() / maxUsageMs).coerceIn(0.02f, 1f))
                             .height(4.dp)
                             .clip(CircleShape)
                             .background(SlColor.Amber),
@@ -832,11 +867,11 @@ private fun BlockedAppRow(app: InstalledApp, blockedCount: Int, maxCount: Int) {
             }
         }
         Text(
-            text = times,
+            text = minutesLabel(usageMinutes),
             style = SlText.Remaining,
-            color = if (blockedCount > 0) SlColor.AmberText else SlColor.TextTertiary,
+            color = if (usageMinutes > 0) SlColor.TextPrimary else SlColor.TextTertiary,
             textAlign = TextAlign.End,
-            modifier = Modifier.width(44.dp),
+            modifier = Modifier.width(64.dp),
         )
     }
 }
@@ -1068,6 +1103,7 @@ private fun HomeScreenPreview() {
             onWarningClick = {},
             weekly = SampleData.weekly,
             blockedToday = SampleData.blockedToday,
+            usageToday = SampleData.usageToday,
         )
     }
 }
@@ -1092,6 +1128,7 @@ private fun HomeScreenPreviewDark() {
             onWarningClick = {},
             weekly = SampleData.weekly,
             blockedToday = SampleData.blockedToday,
+            usageToday = SampleData.usageToday,
         )
     }
 }

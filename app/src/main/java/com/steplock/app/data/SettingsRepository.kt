@@ -34,12 +34,17 @@ private fun decodeHits(raw: Set<String>): Map<String, Int> =
         if (pkg.isEmpty() || count == null) null else pkg to count
     }.toMap()
 
+/**
+ * `날짜|걸음|수면분|세션|잠근 앱 사용분|잠긴 분`. 뒤 두 칸은 나중에 붙어서, 예전 기록
+ * (네 칸)도 그대로 읽습니다 — 그날은 0으로 봅니다.
+ */
 private fun encodeDay(stat: DailyStat): String =
-    "${stat.date}|${stat.steps}|${stat.sleepMinutes}|${stat.pomodoroSessions}"
+    "${stat.date}|${stat.steps}|${stat.sleepMinutes}|${stat.pomodoroSessions}" +
+        "|${stat.blockedUsageMinutes}|${stat.lockedMinutes}"
 
 private fun decodeDay(raw: String, deviceUuid: String, accountId: String?): DailyStat? {
     val parts = raw.split('|')
-    if (parts.size != 4) return null
+    if (parts.size != 4 && parts.size != 6) return null
     return runCatching {
         DailyStat(
             deviceUuid = deviceUuid,
@@ -48,6 +53,8 @@ private fun decodeDay(raw: String, deviceUuid: String, accountId: String?): Dail
             steps = parts[1].toInt(),
             sleepMinutes = parts[2].toInt(),
             pomodoroSessions = parts[3].toInt(),
+            blockedUsageMinutes = parts.getOrNull(4)?.toInt() ?: 0,
+            lockedMinutes = parts.getOrNull(5)?.toInt() ?: 0,
         )
     }.getOrNull()
 }
@@ -112,6 +119,12 @@ class SettingsRepository(context: Context) {
         val blockedHitsDate = stringPreferencesKey("blocked_hits_date")
         /** `패키지=횟수` 한 줄씩. 패키지 이름에는 `=` 가 들어갈 수 없습니다. */
         val blockedHits = stringSetPreferencesKey("blocked_hits")
+        /** 잠근 앱 사용 시간이 어느 날의 것인지(ISO). */
+        val usageDate = stringPreferencesKey("usage_date")
+        /** `패키지=밀리초` 한 줄씩. */
+        val usageMs = stringSetPreferencesKey("usage_ms")
+        val lockedDate = stringPreferencesKey("locked_date")
+        val lockedSeconds = longPreferencesKey("locked_seconds")
         val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
     }
 
@@ -445,13 +458,42 @@ class SettingsRepository(context: Context) {
             // 같은 날 걸음은 줄어들지 않으므로 더 큰 쪽을 남깁니다. 감시 서비스가 막
             // 켜져 센서 값이 오기 전(0)에 기록하더라도, 재부팅 직후에 이어 붙일
             // 오늘 걸음을 덮어쓰지 않게 하려는 것입니다.
-            val recordedSteps = sameDay?.split('|')?.getOrNull(1)?.toIntOrNull() ?: 0
-            val encoded = encodeDay(stat.copy(steps = maxOf(stat.steps, recordedSteps)))
+            val recorded = sameDay?.split('|')
+            fun recordedAt(index: Int) = recorded?.getOrNull(index)?.toIntOrNull() ?: 0
+            // 사용 시간·잠긴 시간도 하루 안에서는 줄지 않습니다. 화면과 서비스가 조금씩
+            // 다른 때에 읽어 쓰므로 큰 쪽을 남겨, 늦게 읽은 쪽이 앞선 값을 덮지 않게 합니다.
+            val encoded = encodeDay(
+                stat.copy(
+                    steps = maxOf(stat.steps, recordedAt(1)),
+                    blockedUsageMinutes = maxOf(stat.blockedUsageMinutes, recordedAt(4)),
+                    lockedMinutes = maxOf(stat.lockedMinutes, recordedAt(5)),
+                ),
+            )
             if (sameDay == encoded) return@edit
             prefs[Keys.dailyHistory] = (existing - setOfNotNull(sameDay) + encoded)
                 .sortedByDescending { it.substringBefore('|') }
                 .take(HISTORY_DAYS)
                 .toSet()
+        }
+    }
+
+    /** 오늘 잠근 앱별 사용 시간을 적어 둡니다. 값이 그대로면 쓰지 않습니다. */
+    suspend fun writeUsageToday(date: LocalDate, usage: Map<String, Long>) {
+        store.edit { prefs ->
+            val encoded = usage.map { (pkg, ms) -> "$pkg=$ms" }.toSet()
+            if (prefs[Keys.usageDate] == date.toString() && prefs[Keys.usageMs] == encoded) return@edit
+            prefs[Keys.usageDate] = date.toString()
+            prefs[Keys.usageMs] = encoded
+        }
+    }
+
+    /** 잠금이 걸려 있던 시간을 더합니다. 날짜가 바뀌었으면 새로 셉니다. */
+    suspend fun addLockedSeconds(date: LocalDate, seconds: Long) {
+        if (seconds <= 0) return
+        store.edit { prefs ->
+            val sameDay = prefs[Keys.lockedDate] == date.toString()
+            prefs[Keys.lockedDate] = date.toString()
+            prefs[Keys.lockedSeconds] = (if (sameDay) prefs[Keys.lockedSeconds] ?: 0L else 0L) + seconds
         }
     }
 
@@ -589,6 +631,20 @@ class SettingsRepository(context: Context) {
                 decodeHits(this[Keys.blockedHits].orEmpty())
             } else {
                 emptyMap()
+            },
+            usageToday = if (this[Keys.usageDate] == LocalDate.now().toString()) {
+                this[Keys.usageMs].orEmpty().mapNotNull { line ->
+                    val pkg = line.substringBeforeLast('=', "")
+                    val ms = line.substringAfterLast('=').toLongOrNull()
+                    if (pkg.isEmpty() || ms == null) null else pkg to ms
+                }.toMap()
+            } else {
+                emptyMap()
+            },
+            lockedSecondsToday = if (this[Keys.lockedDate] == LocalDate.now().toString()) {
+                this[Keys.lockedSeconds] ?: 0L
+            } else {
+                0L
             },
             history = this[Keys.dailyHistory].orEmpty()
                 .mapNotNull { decodeDay(it, settings.deviceUuid, accountId) }

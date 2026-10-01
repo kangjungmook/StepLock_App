@@ -63,7 +63,7 @@
     <string name="onboarding_permissions_label">필요한 허용</string>
     <string name="onboarding_permissions_left">%1$d개 남았어요</string>
     <string name="onboarding_permissions_done">모두 허용됐어요</string>
-    <string name="onboarding_permissions_note">뒤 두 가지는 안드로이드가 설정 화면에서만 허용을 받게 해서 한 번에 묶을 수 없어요. 눌러서 켜고 뒤로 돌아오면 여기에 체크가 붙습니다.</string>
+    <string name="onboarding_permissions_note">아래 두 가지는 안드로이드가 설정 화면에서만 켤 수 있게 해 두었어요. 눌러서 스위치 하나만 켜면 스텝락으로 저절로 돌아와요.</string>
     <string name="permission_runtime_title">걸음 수와 알림</string>
     <string name="permission_runtime_desc">걸음을 세고, 감시 중이라는 걸 알림으로 알려 줍니다</string>
     <string name="permission_usage_title">사용 정보 접근</string>
@@ -71,7 +71,7 @@
     <string name="permission_overlay_title">다른 앱 위에 표시</string>
     <string name="permission_overlay_desc">잠긴 앱 위에 잠금 화면을 띄웁니다</string>
     <string name="permission_action_allow">허용</string>
-    <string name="permission_action_open">설정 열기</string>
+    <string name="permission_action_open">켜러 가기</string>
     <string name="permission_granted">허용됨</string>
     <string name="permission_cta_remaining">남은 허용 계속하기</string>
 
@@ -384,4 +384,19 @@
     <string name="home_week_achieved">%1$d일 달성</string>
     <string name="home_week_bars_desc">최근 %2$d일 중 %1$d일 걸음 목표를 채웠어요. 누르면 통계로 가요</string>
     <string name="home_week_goal_line">목표 %1$s</string>
+    <string name="duration_minutes">%1$d분</string>
+    <string name="home_glance_usage">잠근 앱 사용 시간</string>
+    <string name="home_glance_locked">잠겨 있던 시간</string>
+    <string name="home_app_blocked_times">%1$d번 막음</string>
+    <string name="home_app_blocked_zero">안 열어 봄</string>
+    <string name="home_usage_note">사용 시간은 안드로이드 사용 기록 기준이에요. 유튜브는 쇼츠와 일반 영상을 합친 시간이에요.</string>
+    <string name="lock_used_today">오늘 이 앱을 %1$s 썼어요</string>
+    <string name="stats_section_usage">잠근 앱</string>
+    <string name="stats_usage_today">오늘 잠근 앱을 %1$s 썼어요</string>
+    <string name="stats_figure_usage_avg">하루 평균 사용</string>
+    <string name="stats_figure_usage_max">가장 많이 쓴 날</string>
+    <string name="stats_figure_locked_avg">하루 평균 잠김</string>
+    <string name="stats_usage_note">안드로이드 사용 기록 기준이에요. 이 기록을 시작하기 전 날은 0으로 보여요.</string>
+    <string name="permission_overlay_steps">① 설정이 열리면 \'다른 앱 위에 표시 허용\' 스위치를 켜요\n② 켜면 스텝락으로 저절로 돌아와요</string>
+    <string name="permission_usage_steps">① 설정이 열리면 \'사용 정보 접근 허용\'을 켜요 (앱 목록이 먼저 보이면 \'스텝락\'을 눌러요)\n② 켜면 스텝락으로 저절로 돌아와요</string>
 </resources>

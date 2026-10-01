@@ -46,6 +46,7 @@ import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.util.UnlockCondition
 import com.steplock.app.ui.util.enabledConditions
 import com.steplock.app.ui.util.formatCountdown
+import com.steplock.app.ui.util.minutesLabel
 import com.steplock.app.ui.util.isAchieved
 import com.steplock.app.ui.util.primaryCondition
 import com.steplock.app.ui.util.progress
@@ -84,6 +85,11 @@ fun LockOverlayScreen(
     focusEndsAt: Long? = null,
     /** 집중 타이머 화면으로 가는 길. 집중 중일 때만 보입니다. */
     onOpenFocus: (() -> Unit)? = null,
+    /**
+     * 오늘 이 앱을 쓴 시간(분). 막힌 순간에 "벌써 이만큼 썼다"를 보여 주면 닫을 이유가
+     * 하나 더 생깁니다. 사용 기록을 못 읽었으면 null 이고 줄이 나타나지 않습니다.
+     */
+    usedTodayMinutes: Int? = null,
 ) {
     val focusing = focusEndsAt != null
     val focusRemaining = rememberRemaining(focusEndsAt)
@@ -117,6 +123,15 @@ fun LockOverlayScreen(
                 color = SlColor.Dark.TextPrimary,
                 textAlign = TextAlign.Center,
             )
+            if (usedTodayMinutes != null && usedTodayMinutes > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.lock_used_today, minutesLabel(usedTodayMinutes)),
+                    style = SlText.LabelSm,
+                    color = SlColor.Dark.TextMuted,
+                    textAlign = TextAlign.Center,
+                )
+            }
 
             // 무엇을 하면 열리는지는 스텝이가 직접 말합니다. 같은 문장도 캐릭터의
             // 말이면 "막혔다"가 아니라 "같이 채우자"로 읽힙니다.

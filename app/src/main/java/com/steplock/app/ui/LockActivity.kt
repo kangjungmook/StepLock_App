@@ -98,6 +98,7 @@ class LockActivity : ComponentActivity() {
                     },
                     // 세션은 감시 서비스가 잠금을 띄우며 이미 시작해 두었습니다.
                     focusEndsAt = loaded.focusEndsAt,
+                    usedTodayMinutes = loaded.usageToday[blockedPackage]?.let { (it / 60_000L).toInt() },
                     onOpenFocus = { openFocusTimer() },
                 )
             }

@@ -32,6 +32,7 @@ import com.steplock.app.data.AuthState
 import com.steplock.app.service.AppWatchService
 import com.steplock.app.system.AppPermissions
 import com.steplock.app.system.PermissionGroup
+import com.steplock.app.system.PermissionReturn
 import com.steplock.app.system.PermissionStep
 import com.steplock.app.system.nextPermissionStep
 import com.steplock.app.system.permissionStates
@@ -252,6 +253,8 @@ private fun StepLockNavGraph(
             var granted by remember { mutableStateOf(permissionStates(context)) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 granted = permissionStates(context)
+                // 돌아왔으니(저절로든 뒤로 가기든) 더 지켜볼 필요가 없습니다.
+                PermissionReturn.cancel()
             }
             // 두 번 거절하면 안드로이드가 대화상자를 더 띄우지 않습니다. 그때도
             // 계속 launch() 만 부르면 눌러도 아무 일이 없어 고장처럼 보이므로,
@@ -275,11 +278,16 @@ private fun StepLockNavGraph(
                             runtimeRequest.launch(AppPermissions.runtimePermissions())
                         }
 
-                        PermissionGroup.UsageAccess ->
-                            context.startActivity(AppPermissions.usageAccessSettings())
+                        // 설정에서 켜는 순간 스텝락으로 돌아오게 지켜봅니다.
+                        PermissionGroup.UsageAccess -> {
+                            PermissionReturn.watch(context, AppPermissions::hasUsageAccess)
+                            context.startActivity(AppPermissions.usageAccessSettings(context))
+                        }
 
-                        PermissionGroup.Overlay ->
+                        PermissionGroup.Overlay -> {
+                            PermissionReturn.watch(context, AppPermissions::hasOverlay)
                             context.startActivity(AppPermissions.overlaySettings(context))
+                        }
                     }
                 },
                 onStart = {
@@ -304,6 +312,7 @@ private fun StepLockNavGraph(
             var permissionStep by remember { mutableStateOf(nextPermissionStep(context)) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 permissionStep = nextPermissionStep(context)
+                PermissionReturn.cancel()
                 viewModel.refreshSleep()
                 viewModel.recordToday()
                 viewModel.syncNow()
@@ -323,6 +332,7 @@ private fun StepLockNavGraph(
                 temporaryAllowUntil = state.temporaryAllowUntil,
                 weekly = state.weekly,
                 blockedToday = state.blockedToday,
+                usageToday = state.usageToday,
                 temporaryAllowRemaining = state.temporaryAllowRemaining,
                 // 걸음 권한이 없으면 걸음만 못 세고, 나머지 둘은 잠금 자체가 멈춥니다.
                 warningTitle = when (permissionStep) {
@@ -338,9 +348,16 @@ private fun StepLockNavGraph(
                     PermissionStep.Overlay -> stringResource(R.string.home_permission_overlay)
                 },
                 onWarningClick = {
+                    when (permissionStep) {
+                        PermissionStep.UsageAccess ->
+                            PermissionReturn.watch(context, AppPermissions::hasUsageAccess)
+                        PermissionStep.Overlay ->
+                            PermissionReturn.watch(context, AppPermissions::hasOverlay)
+                        else -> Unit
+                    }
                     context.startActivity(
                         when (permissionStep) {
-                            PermissionStep.UsageAccess -> AppPermissions.usageAccessSettings()
+                            PermissionStep.UsageAccess -> AppPermissions.usageAccessSettings(context)
                             PermissionStep.Overlay -> AppPermissions.overlaySettings(context)
                             else -> AppPermissions.appDetailsSettings(context)
                         },

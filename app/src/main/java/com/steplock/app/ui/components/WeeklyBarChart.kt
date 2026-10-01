@@ -27,6 +27,8 @@ fun WeeklyBarChart(
     baselineColor: Color = SlColor.Border,
     /** 막대마다 색을 따로 줄 때(달성한 날·오늘). 없으면 [barColor]. */
     barColorAt: ((index: Int, value: Int) -> Color)? = null,
+    /** 목표가 없는 값(사용 시간 등)이면 false — 점선을 그리지 않습니다. */
+    showGoal: Boolean = true,
 ) {
     val scaleMax = maxOf(goal, values.maxOrNull() ?: 0).coerceAtLeast(1)
 
@@ -40,7 +42,7 @@ fun WeeklyBarChart(
         val plotHeight = size.height - stubPx
 
         val goalY = plotHeight * (1f - goal.toFloat() / scaleMax)
-        drawLine(
+        if (showGoal) drawLine(
             color = goalLineColor,
             start = Offset(0f, goalY),
             end = Offset(size.width, goalY),

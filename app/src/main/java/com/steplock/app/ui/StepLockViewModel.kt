@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.steplock.app.data.AppUsageReader
 import com.steplock.app.data.AuthRepository
 import com.steplock.app.data.AuthState
 import com.steplock.app.data.DailyStat
@@ -26,7 +27,9 @@ import com.steplock.app.data.ThemeMode
 import com.steplock.app.service.PomodoroService
 import com.steplock.app.ui.components.SocialProvider
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -76,6 +79,8 @@ data class StepLockUiState(
     val temporaryAllowUntil: Long? = null,
     /** 오늘 잠금 화면으로 막은 횟수 — 패키지 이름별. */
     val blockedToday: Map<String, Int> = emptyMap(),
+    /** 오늘 잠근 앱별 사용 시간(ms) — 안드로이드 사용 기록 기준. */
+    val usageToday: Map<String, Long> = emptyMap(),
 )
 
 enum class LoginError {
@@ -139,6 +144,7 @@ class StepLockViewModel(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val installedApps: InstalledAppsRepository,
+    private val usageReader: AppUsageReader,
     /** 타이머 알림 서비스를 띄웁니다. 세션을 시작한 쪽이 부릅니다. */
     private val startFocusService: () -> Unit,
 ) : ViewModel() {
@@ -177,6 +183,12 @@ class StepLockViewModel(
                 steps = steps,
                 sleepMinutes = prefs.sleepMinutesToday,
                 pomodoroSessions = prefs.pomodoro.sessionsToday,
+                blockedUsageMinutes = (
+                    prefs.usageToday
+                        .filterKeys { it in prefs.settings.blockedAppIds }
+                        .values.sum() / 60_000L
+                    ).toInt(),
+                lockedMinutes = (prefs.lockedSecondsToday / 60L).toInt(),
             )
             // 오늘 기록은 아직 history 에 없을 수 있어 따로 얹어 줘야 연속이 끊기지 않습니다.
             val withToday = prefs.history.filter { it.date != today.date } + today
@@ -198,6 +210,7 @@ class StepLockViewModel(
                 focusEndsAt = prefs.pomodoro.endsAt,
                 temporaryAllowUntil = prefs.temporaryAllow.allowedUntil,
                 blockedToday = prefs.blockedToday,
+                usageToday = prefs.usageToday,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -506,7 +519,16 @@ class StepLockViewModel(
     /** 통계에 쓰이도록 오늘 값을 이력에 적어 둡니다. 값이 같으면 쓰지 않습니다. */
     fun recordToday() {
         viewModelScope.launch {
-            uiState.value?.let { repository.recordDay(it.today) }
+            // 화면을 열 때마다 잠근 앱 사용 시간을 새로 읽습니다. 감시 서비스는 1분마다
+            // 읽어서, 방금 유튜브를 보다 온 사람에게 1분 전 숫자를 보여 주게 됩니다.
+            val state = uiState.value ?: return@launch
+            val usage = withContext(Dispatchers.IO) {
+                usageReader.todayUsage(state.settings.blockedAppIds)
+            }
+            repository.writeUsageToday(state.today.date, usage)
+            repository.recordDay(
+                state.today.copy(blockedUsageMinutes = (usage.values.sum() / 60_000L).toInt()),
+            )
         }
     }
 
@@ -545,6 +567,7 @@ class StepLockViewModel(
                     authRepository = AuthRepository(),
                     syncRepository = SyncRepository(repository),
                     installedApps = InstalledAppsRepository(app),
+                    usageReader = AppUsageReader(app),
                     // 백그라운드에서 막히면(안드로이드 12+) 세션은 저장돼 있으니 잠금과
                     // 집계는 감시 서비스가 이어서 합니다. 알림만 늦게 뜹니다.
                     startFocusService = { runCatching { PomodoroService.start(app) } },

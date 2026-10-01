@@ -42,6 +42,14 @@ object SampleData {
         steps = 5240,
         sleepMinutes = 440,
         pomodoroSessions = 2,
+        blockedUsageMinutes = 47,
+        lockedMinutes = 372,
+    )
+
+    /** 오늘 잠근 앱별 사용 시간(ms) — 프리뷰용. */
+    val usageToday: Map<String, Long> = mapOf(
+        "com.google.android.youtube" to 32 * 60_000L,
+        "com.instagram.android" to 15 * 60_000L,
     )
 
     /**
@@ -92,6 +100,9 @@ object SampleData {
                 steps = steps,
                 sleepMinutes = sleepMinutes,
                 pomodoroSessions = sessions,
+                // 걸음이 적은 날 잠근 앱을 더 오래 쓴 것처럼 — 통계에서 두 차트를 비교해 보게.
+                blockedUsageMinutes = if (steps == 0) 0 else (120 - steps / 100).coerceIn(10, 110),
+                lockedMinutes = if (steps == 0) 0 else 300 + steps % 240,
             )
         }
 }

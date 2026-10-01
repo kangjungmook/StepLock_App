@@ -48,6 +48,7 @@ import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.theme.StepLockTheme
 import com.steplock.app.ui.util.durationLabel
+import com.steplock.app.ui.util.minutesLabel
 import com.steplock.app.ui.util.formatThousands
 import com.steplock.app.ui.util.sleepGoalMinutes
 import java.time.format.DateTimeFormatter
@@ -138,6 +139,13 @@ fun StatsScreen(
             SectionLabel(stringResource(R.string.stats_section_steps))
             Spacer(Modifier.height(12.dp))
             StepsPanel(days = days, goal = settings.stepGoal)
+
+            // 잠근 앱을 얼마나 썼는지, 하루에 얼마나 잠겨 있었는지. 걸음과 나란히 두면
+            // "걸은 만큼 덜 봤나"를 한 화면에서 비교할 수 있습니다.
+            Spacer(Modifier.height(28.dp))
+            SectionLabel(stringResource(R.string.stats_section_usage))
+            Spacer(Modifier.height(12.dp))
+            UsagePanel(days = days)
 
             Spacer(Modifier.height(28.dp))
             SectionLabel(stringResource(R.string.stats_section_conditions))
@@ -282,6 +290,92 @@ private fun StepsPanel(days: List<DailyStat>, goal: Int) {
 }
 
 /**
+ * 잠근 앱 사용 시간 차트와 요약 세 칸. 목표가 없는 값이라 점선을 긋지 않고,
+ * 막대는 앰버(잠근 앱 = 줄이고 싶은 것)로 칠합니다.
+ */
+@Composable
+private fun UsagePanel(days: List<DailyStat>) {
+    val weekdayFormatter = DateTimeFormatter.ofPattern(
+        stringResource(R.string.stats_weekday_pattern),
+        Locale.KOREAN,
+    )
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("M/d", Locale.KOREAN) }
+    SlPanel(contentPadding = PaddingValues(SlDimen.PanelPadding)) {
+        Text(
+            text = stringResource(
+                R.string.stats_usage_today,
+                minutesLabel(days.lastOrNull()?.blockedUsageMinutes ?: 0),
+            ),
+            style = SlText.RowTitle,
+            color = SlColor.TextPrimary,
+        )
+        Spacer(Modifier.height(16.dp))
+        WeeklyBarChart(
+            values = days.map { it.blockedUsageMinutes },
+            goal = 0,
+            showGoal = false,
+            barColor = SlColor.Amber,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+        )
+        Spacer(Modifier.height(8.dp))
+        if (days.size <= 7) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                days.forEach { day ->
+                    Text(
+                        text = day.date.format(weekdayFormatter),
+                        style = SlText.LabelSm,
+                        color = SlColor.TextSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                listOf(0, days.size / 2, days.size - 1).forEach { index ->
+                    Text(
+                        text = days[index].date.format(dateFormatter),
+                        style = SlText.LabelSm,
+                        color = SlColor.TextSecondary,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        SlDivider()
+        Spacer(Modifier.height(16.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            StatFigure(
+                label = stringResource(R.string.stats_figure_usage_avg),
+                value = minutesLabel(days.average { it.blockedUsageMinutes }),
+                modifier = Modifier.weight(1f),
+            )
+            StatFigure(
+                label = stringResource(R.string.stats_figure_usage_max),
+                value = minutesLabel(days.maxOfOrNull { it.blockedUsageMinutes } ?: 0),
+                modifier = Modifier.weight(1f),
+            )
+            StatFigure(
+                label = stringResource(R.string.stats_figure_locked_avg),
+                value = minutesLabel(days.average { it.lockedMinutes }),
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.stats_usage_note),
+            style = SlText.Caption,
+            color = SlColor.TextSecondary,
+        )
+    }
+}
+
+/**
  * 조건 한 줄 — 평균과 달성률.
  *
  * 퍼센트에는 색을 주지 않습니다. 몇 퍼센트부터 "잘한 것"인지는 사람마다 달라서,
@@ -379,7 +473,8 @@ private fun StreakHero(streak: Int, longest: Int) {
 }
 
 private val DailyStat.hasAnything: Boolean
-    get() = steps > 0 || sleepMinutes > 0 || pomodoroSessions > 0
+    get() = steps > 0 || sleepMinutes > 0 || pomodoroSessions > 0 ||
+        blockedUsageMinutes > 0 || lockedMinutes > 0
 
 private inline fun List<DailyStat>.average(value: (DailyStat) -> Int): Int =
     if (isEmpty()) 0 else sumOf(value) / size

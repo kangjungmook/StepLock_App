@@ -68,8 +68,23 @@ object AppPermissions {
             arrayOf(Manifest.permission.ACTIVITY_RECOGNITION)
         }
 
-    fun usageAccessSettings(): Intent =
-        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    /**
+     * 사용 정보 접근 설정. 패키지를 함께 넘기면 많은 기기(안드로이드 10+)에서 앱 목록을
+     * 건너뛰고 **스텝락 스위치 화면으로 바로** 갑니다. 받아 주는 화면이 없는 기기면
+     * 예전처럼 목록 화면을 엽니다 — 거기서는 "스텝락"을 찾아 눌러야 합니다.
+     */
+    fun usageAccessSettings(context: Context): Intent {
+        val direct = Intent(
+            Settings.ACTION_USAGE_ACCESS_SETTINGS,
+            Uri.fromParts("package", context.packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val resolves = direct.resolveActivity(context.packageManager) != null
+        return if (resolves) {
+            direct
+        } else {
+            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
 
     fun overlaySettings(context: Context): Intent = Intent(
         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -96,8 +111,8 @@ enum class PermissionStep(@StringRes val ctaRes: Int) {
 
 fun nextPermissionStep(context: Context): PermissionStep = when {
     !hasActivityRecognitionPermission(context) -> PermissionStep.ActivityRecognition
-    !AppPermissions.hasUsageAccess(context) -> PermissionStep.UsageAccess
     !AppPermissions.hasOverlay(context) -> PermissionStep.Overlay
+    !AppPermissions.hasUsageAccess(context) -> PermissionStep.UsageAccess
     else -> PermissionStep.Ready
 }
 
@@ -114,8 +129,10 @@ enum class PermissionGroup(
     @StringRes val descRes: Int,
 ) {
     Runtime(R.string.permission_runtime_title, R.string.permission_runtime_desc),
-    UsageAccess(R.string.permission_usage_title, R.string.permission_usage_desc),
+    // 화면 위 표시를 먼저 받습니다. 이걸 받은 앱은 설정 화면에서 스스로 돌아올 수
+    // 있어서(PermissionReturn), 다음 줄(사용 정보 접근)을 켜는 순간 앱으로 돌아옵니다.
     Overlay(R.string.permission_overlay_title, R.string.permission_overlay_desc),
+    UsageAccess(R.string.permission_usage_title, R.string.permission_usage_desc),
     ;
 
     /** 설정 화면으로 나가야 하는 권한은 버튼 문구를 달리합니다. */
