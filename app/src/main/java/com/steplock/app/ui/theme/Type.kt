@@ -20,15 +20,36 @@ private val fontProvider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs,
 )
 
-private val notoSansKr = GoogleFont("Noto Sans KR")
+private val plexSansKr = GoogleFont("IBM Plex Sans KR")
+private val barlowCondensed = GoogleFont("Barlow Condensed")
 
-/** 다운로더블 폰트로 받아옵니다. ttf를 번들하려면 res/font에 넣고 이 정의만 교체하세요. */
-val NotoSansKr = FontFamily(
-    Font(googleFont = notoSansKr, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = notoSansKr, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = notoSansKr, fontProvider = fontProvider, weight = FontWeight.Bold),
-    Font(googleFont = notoSansKr, fontProvider = fontProvider, weight = FontWeight.Black),
+/**
+ * 본문·제목 글꼴. IBM Plex Sans KR — 획 끝이 반듯하게 잘린 공학적인 고딕이라,
+ * 둥근 기본 고딕(Noto)보다 표지판·계기판 쪽 인상을 줍니다. 가장 굵은 굵기가 Bold 라
+ * Black 을 요청한 스타일도 Bold 로 그려집니다.
+ *
+ * 다운로더블 폰트로 받아옵니다. ttf를 번들하려면 res/font에 넣고 이 정의만 교체하세요.
+ */
+val PlexSansKr = FontFamily(
+    Font(googleFont = plexSansKr, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = plexSansKr, fontProvider = fontProvider, weight = FontWeight.Medium),
+    Font(googleFont = plexSansKr, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = plexSansKr, fontProvider = fontProvider, weight = FontWeight.Bold),
 )
+
+/**
+ * 큰 숫자 전용. Barlow Condensed — 도로 표지판 글자에서 출발한 좁은 고딕이라
+ * "2,760"처럼 큰 숫자가 좁은 폭에 시원하게 들어가고, 등산로·이정표라는 이 앱의
+ * 세계와도 맞습니다. 숫자에만 씁니다(한글 글리프가 없습니다).
+ */
+val Numeral = FontFamily(
+    Font(googleFont = barlowCondensed, fontProvider = fontProvider, weight = FontWeight.Medium),
+    Font(googleFont = barlowCondensed, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = barlowCondensed, fontProvider = fontProvider, weight = FontWeight.Bold),
+)
+
+/** 예전 이름을 쓰는 코드를 위해 남겨 둡니다. */
+val NotoSansKr = PlexSansKr
 
 private fun slStyle(
     weight: FontWeight,
@@ -36,7 +57,7 @@ private fun slStyle(
     lineHeight: Float = size * 1.35f,
     letterSpacing: Float = 0f,
 ) = TextStyle(
-    fontFamily = NotoSansKr,
+    fontFamily = PlexSansKr,
     fontWeight = weight,
     fontSize = size.sp,
     lineHeight = lineHeight.sp,
@@ -47,6 +68,13 @@ private fun slStyle(
         trim = LineHeightStyle.Trim.None,
     ),
 )
+
+private fun numeralStyle(weight: FontWeight, size: Float, lineHeight: Float) =
+    slStyle(weight, size, lineHeight).copy(
+        fontFamily = Numeral,
+        // 자릿수가 바뀌어도 숫자 폭이 같아 카운트다운이 흔들리지 않습니다.
+        fontFeatureSettings = "tnum",
+    )
 
 object SlText {
     val Wordmark = slStyle(FontWeight.Black, 32f, 36f, -1f)
@@ -63,18 +91,24 @@ object SlText {
      * 홈의 큰 숫자("2,760보"). 화면에서 가장 먼저 읽혀야 하는 **할 일의 양**이라
      * 모듈러 스케일(1.25)로 HeroHeadline 26 의 두 단계 위(≈ 40 → 52)에 둡니다.
      */
-    val HomeBig = slStyle(FontWeight.Black, 52f, 56f, -1.6f)
+    val HomeBig = slStyle(FontWeight.Bold, 40f, 46f, -0.8f)
+
+    /** 홈의 큰 숫자("2,760"). 표지판 숫자체로 88sp — 화면에서 단 하나의 큰 글자입니다. */
+    val HomeNumeral = numeralStyle(FontWeight.SemiBold, 88f, 88f)
+
+    /** 큰 숫자 옆 단위("보", "번"). 숫자와 같은 줄에 작게. */
+    val HomeUnit = slStyle(FontWeight.Bold, 26f, 30f)
 
     /** 큰 숫자 바로 아래 한 줄("더 걸으면 잠금이 풀려요"). */
     val HomeLine = slStyle(FontWeight.Bold, 22f, 30f, -0.3f)
 
     /** 홈 "오늘 한눈에" 2×2 칸의 숫자. */
-    val GlanceValue = slStyle(FontWeight.Black, 24f, 30f, -0.4f)
+    val GlanceValue = numeralStyle(FontWeight.SemiBold, 32f, 34f)
 
     /** 홈 "오늘" 줄의 숫자(거리·막은 횟수·남은 허용). 라벨보다 먼저 읽히도록 굵게. */
     val FigureValue = slStyle(FontWeight.Black, 20f, 26f, -0.3f)
     val LockTitle = slStyle(FontWeight.Black, 25f, 32f, -0.4f)
-    val RingValue = slStyle(FontWeight.Black, 42f, 42f, -1f)
+    val RingValue = numeralStyle(FontWeight.SemiBold, 48f, 48f)
     val LoginHeading = slStyle(FontWeight.Black, 20f, 26f)
     val DialogTitle = slStyle(FontWeight.Black, 19f, 26f)
     val StatusTitle = slStyle(FontWeight.Black, 18f, 25f)

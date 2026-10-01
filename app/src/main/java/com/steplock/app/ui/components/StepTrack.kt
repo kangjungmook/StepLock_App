@@ -3,9 +3,7 @@ package com.steplock.app.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -25,7 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
+import com.steplock.app.ui.theme.SlDimen
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.steplock.app.ui.theme.SlColor
@@ -62,8 +63,8 @@ fun StepTrack(
     )
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        // 길은 끝의 자물쇠 표시 중심에서 끝납니다.
-        val roadWidth = maxWidth - GOAL_MARK / 2
+        // 길은 끝의 자물쇠 기둥 앞에서 끝납니다.
+        val roadWidth = maxWidth - GOAL_MARK - 6.dp
         val walkWidth = roadWidth - MASCOT_WIDTH / 2
 
         Column {
@@ -83,62 +84,69 @@ fun StepTrack(
             }
 
             // 그리기 블록은 컴포저블이 아니라 테마 색을 그 안에서 읽을 수 없습니다.
-            val roadColor = SlColor.SurfaceAlt
-            val walkedColor = SlColor.Brand
-            val tickColor = SlColor.BorderStrong
+            val markOn = SlColor.Brand
+            val markOff = SlColor.TrackOff
+            val tickColor = SlColor.TextTertiary
             val done = animated >= 1f
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(GOAL_MARK),
             ) {
+                // 길은 **칠해 둔 표식의 줄**입니다. 산길 나무에 주황 페인트로 그어 둔
+                // 표식처럼, 걸은 만큼의 칸이 주황으로 칠해지고 남은 칸은 흐린 회색입니다.
+                // 칸 사이 틈 덕에 "몇 칸 남았나"가 숫자를 읽지 않아도 세어집니다.
                 Canvas(modifier = Modifier.matchParentSize()) {
-                    val stroke = 8.dp.toPx()
-                    val centerY = size.height / 2f
-                    val end = size.width - GOAL_MARK.toPx() / 2f
-                    drawLine(
-                        color = roadColor,
-                        start = Offset(stroke / 2f, centerY),
-                        end = Offset(end, centerY),
-                        strokeWidth = stroke,
-                        cap = StrokeCap.Round,
-                    )
-                    if (animated > 0f) {
-                        drawLine(
-                            color = walkedColor,
-                            start = Offset(stroke / 2f, centerY),
-                            end = Offset((end * animated).coerceAtLeast(stroke / 2f), centerY),
-                            strokeWidth = stroke,
-                            cap = StrokeCap.Round,
+                    val end = size.width - GOAL_MARK.toPx() - 6.dp.toPx()
+                    val gap = 3.dp.toPx()
+                    val markWidth = (end - gap * (MARKS - 1)) / MARKS
+                    val markHeight = 10.dp.toPx()
+                    val top = (size.height - markHeight) / 2f
+                    val filled = animated * MARKS
+                    for (i in 0 until MARKS) {
+                        val left = i * (markWidth + gap)
+                        drawRoundRect(
+                            color = markOff,
+                            topLeft = Offset(left, top),
+                            size = Size(markWidth, markHeight),
+                            cornerRadius = CornerRadius(2.dp.toPx()),
                         )
+                        // 지금 걷는 칸은 걸은 만큼만 칠합니다 — 칸 단위로 뚝뚝 끊기지 않게.
+                        val part = (filled - i).coerceIn(0f, 1f)
+                        if (part > 0f) {
+                            drawRoundRect(
+                                color = markOn,
+                                topLeft = Offset(left, top),
+                                size = Size(markWidth * part, markHeight),
+                                cornerRadius = CornerRadius(2.dp.toPx()),
+                            )
+                        }
                     }
                     if (ticks.isNotEmpty()) {
-                        for (i in 1..3) {
-                            val x = end * i / 4f
+                        for (q in 1..3) {
+                            val x = end * q / 4f
                             drawLine(
                                 color = tickColor,
-                                start = Offset(x, centerY - 4.dp.toPx()),
-                                end = Offset(x, centerY + 4.dp.toPx()),
-                                strokeWidth = 2.dp.toPx(),
-                                cap = StrokeCap.Round,
+                                start = Offset(x, top - 6.dp.toPx()),
+                                end = Offset(x, top - 2.dp.toPx()),
+                                strokeWidth = 1.5.dp.toPx(),
                             )
                         }
                     }
                 }
-                // 길 끝의 자물쇠 — 목표에 닿으면 브랜드 색으로 채워집니다.
+                // 길 끝의 자물쇠 기둥 — 목표에 닿으면 주황으로 칠해집니다.
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .size(GOAL_MARK)
-                        .clip(CircleShape)
-                        .background(if (done) SlColor.Brand else SlColor.Surface)
-                        .border(2.dp, if (done) SlColor.Brand else SlColor.BorderStrong, CircleShape),
+                        .clip(RoundedCornerShape(SlDimen.RadiusSmall))
+                        .background(if (done) SlColor.Brand else SlColor.TextPrimary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = SlIcons.PasswordLock,
                         contentDescription = null,
-                        tint = if (done) SlColor.OnBrand else SlColor.TextSecondary,
+                        tint = if (done) SlColor.OnBrand else SlColor.Background,
                         modifier = Modifier.size(14.dp),
                     )
                 }
@@ -178,6 +186,9 @@ private val MASCOT_WIDTH = 44.dp
 private val MASCOT_HEIGHT = 55.dp
 private val GOAL_MARK = 28.dp
 private val TICK_LABEL_WIDTH = 40.dp
+
+/** 표식 칸 수. 24칸이면 8,000보 목표에서 한 칸이 약 330보 — 한 블록쯤 걸으면 한 칸이 찹니다. */
+private const val MARKS = 24
 
 @Preview(widthDp = 372)
 @Composable

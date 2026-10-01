@@ -365,7 +365,7 @@
     <string name="home_sub_pomodoro">잠근 앱을 열면 %1$d분 집중이 저절로 시작돼요</string>
     <string name="home_big_unlocked">열렸어요</string>
     <string name="home_line_unlocked">오늘 목표를 채웠어요. 자유롭게 써도 돼요</string>
-    <string name="home_line_allowed">까지 잠시 열어 뒀어요</string>
+    <string name="home_line_allowed">이때까지 잠시 열어 뒀어요</string>
     <string name="home_big_focusing">집중 중</string>
     <string name="home_line_focusing">끝날 때까지 잠근 앱은 쉬어요</string>
     <string name="home_track_walked">%1$s보 걸음</string>
@@ -399,4 +399,6 @@
     <string name="stats_usage_note">안드로이드 사용 기록 기준이에요. 이 기록을 시작하기 전 날은 0으로 보여요.</string>
     <string name="permission_overlay_steps">① 설정이 열리면 \'다른 앱 위에 표시 허용\' 스위치를 켜요\n② 켜면 스텝락으로 저절로 돌아와요</string>
     <string name="permission_usage_steps">① 설정이 열리면 \'사용 정보 접근 허용\'을 켜요 (앱 목록이 먼저 보이면 \'스텝락\'을 눌러요)\n② 켜면 스텝락으로 저절로 돌아와요</string>
+    <string name="home_unit_steps">보</string>
+    <string name="home_unit_times">번</string>
 </resources>

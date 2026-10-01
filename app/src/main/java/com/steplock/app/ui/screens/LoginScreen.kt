@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -179,7 +178,6 @@ fun LoginScreen(
                     stringResource(R.string.login_submit)
                 },
                 onClick = { onLogin(email, password) },
-                shape = CircleShape,
                 enabled = !submitting,
             )
 

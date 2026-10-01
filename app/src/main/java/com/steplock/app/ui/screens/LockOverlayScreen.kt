@@ -145,9 +145,9 @@ fun LockOverlayScreen(
                         heroProgress >= 1f -> MascotMood.Resting
                         else -> MascotMood.Walking
                     },
-                    bodyColor = SlColor.Dark.GreenIcon,
-                    shadeColor = SlColor.Dark.GreenDeep,
-                    eyeColor = SlColor.Dark.GreenTint,
+                    bodyColor = SlColor.Dark.MascotBody,
+                    shadeColor = SlColor.Dark.MascotShade,
+                    eyeColor = SlColor.Dark.Background,
                     footprintColor = SlColor.Dark.Border,
                 )
                 Spacer(Modifier.width(8.dp))

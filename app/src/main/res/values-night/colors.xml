@@ -5,5 +5,5 @@
       색이라 DarkPalette.background 와 같아야 합니다 — 다르면 켤 때마다 한 번
       번쩍입니다.
     -->
-    <color name="steplock_background">#FF0E1411</color>
+    <color name="steplock_background">#FF12171B</color>
 </resources>

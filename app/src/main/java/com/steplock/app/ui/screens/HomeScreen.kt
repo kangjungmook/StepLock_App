@@ -37,6 +37,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import com.steplock.app.R
 import com.steplock.app.data.DailyStat
 import com.steplock.app.data.InstalledApp
@@ -75,6 +78,7 @@ import com.steplock.app.ui.util.enabledConditions
 import com.steplock.app.ui.util.formatThousands
 import com.steplock.app.ui.util.isAchieved
 import com.steplock.app.ui.util.minutesLabel
+import com.steplock.app.ui.util.numeralText
 import com.steplock.app.ui.util.primaryCondition
 import com.steplock.app.ui.util.progress
 import com.steplock.app.ui.util.sleepGoalLabel
@@ -460,24 +464,33 @@ private fun SectionLink(text: String, onClick: () -> Unit, chevron: Boolean = tr
 }
 
 /**
- * 무엇이 잠겼는지 한 줄. 알약 대신 점 하나와 글자만 — 큰 숫자 바로 위라 면을 더하면
- * 시선이 둘로 갈립니다. 잠김은 앰버, 그 밖은 브랜드, 잠근 앱 없음은 회색.
+ * 무엇이 잠겼는지 — 표지판 판 하나. 잠김은 **흑연 판에 흰 글자와 자물쇠**, 열림·허용·
+ * 집중은 주황 판, 잠근 앱 없음은 회색 판입니다. 색 하나로 상태가 먼저 읽힙니다.
  */
 @Composable
 private fun StatusLine(status: HomeStatus, apps: List<InstalledApp>) {
-    val (dot, color) = when (status) {
-        HomeStatus.Locked -> SlColor.Amber to SlColor.AmberText
-        HomeStatus.Idle -> SlColor.TextTertiary to SlColor.TextSecondary
-        else -> SlColor.Brand to SlColor.BrandDeep
+    val (container, content) = when (status) {
+        HomeStatus.Locked -> SlColor.TextPrimary to SlColor.Background
+        HomeStatus.Idle -> SlColor.SurfaceAlt to SlColor.TextSecondary
+        else -> SlColor.Brand to SlColor.OnBrand
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(dot),
-        )
-        Spacer(Modifier.width(8.dp))
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(SlDimen.RadiusSmall))
+            .background(container)
+            .heightIn(min = 32.dp)
+            .padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (status == HomeStatus.Locked) {
+            Icon(
+                imageVector = SlIcons.PasswordLock,
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(14.dp),
+            )
+        }
         Text(
             text = when (status) {
                 HomeStatus.Locked -> when {
@@ -495,16 +508,17 @@ private fun StatusLine(status: HomeStatus, apps: List<InstalledApp>) {
                 HomeStatus.Idle -> stringResource(R.string.home_pill_idle)
             },
             style = SlText.Chip,
-            color = color,
+            color = content,
         )
     }
 }
 
 /**
- * 홈의 주인공 — 큰 숫자(또는 짧은 말) 하나와 그 뜻을 푸는 한 줄.
+ * 홈의 주인공 — 표지판 숫자 하나와 그 뜻을 푸는 한 줄.
  *
- * "2,760보만 더 걸으면 잠금이 풀려요"를 한 문장으로 쓰면 숫자가 문장 속에 묻힙니다.
- * 숫자를 떼어 크게 올리면 읽지 않고도 "얼마나 더"가 보입니다.
+ * 숫자는 도로 표지판에서 온 좁은 숫자체(88sp)로, 단위("보", "번", "오후")는 본문
+ * 글꼴로 작게 붙입니다. 이정표의 "2.7 km" 처럼 숫자가 먼저, 단위는 곁에.
+ * 숫자가 없는 상태(열림·집중·수면)는 짧은 말을 굵게 씁니다.
  */
 @Composable
 private fun BigHero(
@@ -514,19 +528,24 @@ private fun BigHero(
     settings: LockSettings,
     allowUntil: Long?,
 ) {
-    val big: String
+    var number: String? = null
+    var unit: String? = null
+    // "오후 3:05" 처럼 단위가 숫자 앞에 오는 경우.
+    var unitFirst = false
+    var word: String? = null
     val line: String
     var sub: String? = null
     when (status) {
         HomeStatus.Locked -> when {
             // 전부 만족 모드에서 맨 앞 조건은 채웠지만 다른 조건이 남은 경우.
             hero.isAchieved(stat, settings) -> {
-                big = stringResource(R.string.home_big_almost)
+                word = stringResource(R.string.home_big_almost)
                 line = stringResource(R.string.home_line_rest)
             }
             hero == UnlockCondition.Steps -> {
                 val remaining = (settings.stepGoal - stat.steps).coerceAtLeast(0)
-                big = stringResource(R.string.unit_steps, remaining.formatThousands())
+                number = remaining.formatThousands()
+                unit = stringResource(R.string.home_unit_steps)
                 line = stringResource(R.string.home_line_steps)
                 // 보통 걸음(분당 약 100보)으로 몇 분이면 되는지. 너무 길면 나눠 걸으라고.
                 val minutes = ceil(remaining / STEPS_PER_MINUTE).toInt().coerceAtLeast(1)
@@ -538,46 +557,58 @@ private fun BigHero(
             }
             // 지금 당장 채울 수 없는 조건이라 숫자로 재촉하지 않습니다.
             hero == UnlockCondition.Sleep -> {
-                big = stringResource(R.string.home_big_sleep)
+                word = stringResource(R.string.home_big_sleep)
                 line = stringResource(R.string.home_line_sleep)
             }
             else -> {
-                big = stringResource(
-                    R.string.home_times,
-                    (settings.pomodoroGoal - stat.pomodoroSessions).coerceAtLeast(1),
-                )
+                number = (settings.pomodoroGoal - stat.pomodoroSessions).coerceAtLeast(1).toString()
+                unit = stringResource(R.string.home_unit_times)
                 line = stringResource(R.string.home_line_pomodoro)
                 sub = stringResource(R.string.home_sub_pomodoro, Pomodoro.SESSION_MINUTES)
             }
         }
         HomeStatus.Unlocked -> {
-            big = stringResource(R.string.home_big_unlocked)
+            word = stringResource(R.string.home_big_unlocked)
             line = stringResource(R.string.home_line_unlocked)
         }
         HomeStatus.Allowed -> {
-            big = clockText(allowUntil ?: 0L)
+            val time = Instant.ofEpochMilli(allowUntil ?: 0L).atZone(ZoneId.systemDefault())
+            number = time.format(DateTimeFormatter.ofPattern("h:mm", Locale.KOREAN))
+            unit = time.format(DateTimeFormatter.ofPattern("a", Locale.KOREAN))
+            unitFirst = true
             line = stringResource(R.string.home_line_allowed)
         }
         HomeStatus.Focusing -> {
-            big = stringResource(R.string.home_big_focusing)
+            word = stringResource(R.string.home_big_focusing)
             line = stringResource(R.string.home_line_focusing)
         }
         HomeStatus.Idle -> {
-            big = ""
             line = stringResource(R.string.home_hero_idle)
         }
     }
     Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
-        Text(
-            text = big,
-            style = SlText.HomeBig,
-            color = if (status == HomeStatus.Locked) SlColor.BrandInk else SlColor.BrandDeep,
-        )
-        Spacer(Modifier.height(4.dp))
+        if (number != null) {
+            Text(
+                text = buildAnnotatedString {
+                    if (unit != null && unitFirst) {
+                        withStyle(SlText.HomeUnit.toSpanStyle()) { append("$unit ") }
+                    }
+                    append(number)
+                    if (unit != null && !unitFirst) {
+                        withStyle(SlText.HomeUnit.toSpanStyle()) { append(" $unit") }
+                    }
+                },
+                style = SlText.HomeNumeral,
+                color = SlColor.TextPrimary,
+            )
+        } else if (word != null) {
+            Text(text = word, style = SlText.HomeBig, color = SlColor.TextPrimary)
+        }
+        Spacer(Modifier.height(8.dp))
         Text(text = line, style = SlText.HomeLine, color = SlColor.TextPrimary)
         if (sub != null) {
             Spacer(Modifier.height(8.dp))
-            Text(text = sub, style = SlText.RowValue, color = SlColor.TextSecondary)
+            Text(text = sub, style = SlText.Body, color = SlColor.TextSecondary)
         }
     }
 }
@@ -669,7 +700,11 @@ private fun GlanceGrid(figures: List<Pair<String, String>>) {
                             .semantics(mergeDescendants = true) {},
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Text(text = value, style = SlText.GlanceValue, color = SlColor.TextPrimary)
+                        Text(
+                            text = numeralText(value, unitSize = 15.sp),
+                            style = SlText.GlanceValue,
+                            color = SlColor.TextPrimary,
+                        )
                         Spacer(Modifier.height(4.dp))
                         Text(text = label, style = SlText.LabelSm, color = SlColor.TextSecondary)
                     }
@@ -1048,7 +1083,7 @@ private const val STRIDE_METERS = 0.7f
 /** 보통 빠르기로 걸을 때 1분 걸음 수. "약 25분이면 충분해요"를 어림하는 데만 씁니다. */
 private const val STEPS_PER_MINUTE = 100.0
 
-private val GLANCE_CELL = 76.dp
+private val GLANCE_CELL = 80.dp
 
 /**
  * 홈 맨 위 한 줄이 말하는 상태. 감시 서비스의 판단 순서와 같습니다.
@@ -1077,12 +1112,6 @@ private fun rememberAllowActive(until: Long?): Boolean {
     }
     return active
 }
-
-/** 오후 3:05 같은 시각. 남은 분을 세는 대신 끝나는 시각을 적어 매초 다시 그리지 않습니다. */
-private fun clockText(epochMs: Long): String =
-    Instant.ofEpochMilli(epochMs)
-        .atZone(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN))
 
 @Preview(widthDp = 412, heightDp = 892)
 @Composable

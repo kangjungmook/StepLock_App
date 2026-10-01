@@ -43,78 +43,84 @@ class SlPalette(
     val mascotEye: Color,
 )
 
-/** 라이트 — 브랜드 기운이 살짝 도는 크림색 뉴트럴. */
+/**
+ * 라이트 — "등산로 표식" 팔레트.
+ *
+ * 차가운 안개색 바탕(색조 230)에 흑연색 글자, 그리고 강조는 **표식 주황 하나**뿐입니다.
+ * 산길 나무에 칠해 둔 주황 표식처럼 "여기로 가면 된다"를 가리키는 색이라, 진행·주요
+ * 버튼·지금 탭에만 씁니다. 크림색 바탕과 초록 강조(예전)는 요즘 생성된 앱들이 가장
+ * 흔히 고르는 조합이라 버렸습니다.
+ *
+ * "잠김"은 두 번째 강조색을 들이지 않고 **흑연색**으로 말합니다 — 닫힌 것은 어둡고,
+ * 열린 것은 주황. amber* 토큰 이름은 그대로 두고 값만 흑연 계열로 바꿨습니다.
+ *
+ * 주황 버튼 위 글자는 흰색이 아니라 흑연색입니다(흰 글자는 대비 3.6:1로 부족).
+ */
 val LightPalette = SlPalette(
-    background = Color(0xFFF5F2E9), // oklch(96% 0.012 90)
-    surface = Color(0xFFFDFCF7), // oklch(99% 0.006 90)
-    surfaceAlt = Color(0xFFEDE8D9), // oklch(93% 0.02 90)
-    border = Color(0xFFDBD7CD), // oklch(88% 0.015 90)
-    borderStrong = Color(0xFFC1BDB3), // oklch(80% 0.015 90)
-    trackOff = Color(0xFFD1CDC3), // oklch(85% 0.015 90)
-    textPrimary = Color(0xFF171D26), // oklch(23% 0.02 260)
-    textSecondary = Color(0xFF5D646F), // oklch(50% 0.02 260)
-    textTertiary = Color(0xFF737B87), // oklch(58% 0.02 260)
-    brand = Color(0xFF009267), // oklch(58% 0.13 165)
-    brandInk = Color(0xFF006944), // oklch(45% 0.12 165)
-    brandDeep = Color(0xFF005A38), // oklch(40% 0.115 165)
-    onBrand = Color(0xFFF6FEFA), // oklch(99% 0.01 165)
-    brandTint = Color(0xFFC7F0DC), // oklch(92% 0.05 165)
-    brandTintAlt = Color(0xFFCDF2E0), // oklch(93% 0.045 165)
-    amber = Color(0xFFE48233), // oklch(70% 0.15 55)
-    amberSurface = Color(0xFFFFE7C3), // oklch(94% 0.055 75)
-    amberBorder = Color(0xFFF8CB9C), // oklch(87% 0.08 68)
-    amberText = Color(0xFF492B0F), // oklch(32% 0.06 60)
-    amberSubText = Color(0xFF6A4F38), // oklch(45% 0.05 62)
-    onAmber = Color(0xFFFEFCF4), // oklch(99% 0.01 90)
-    error = Color(0xFFC53637), // oklch(55% 0.18 25)
-    onError = Color(0xFFFFF9F8), // oklch(99% 0.01 25)
-    shadow = Color(0xFF414853), // oklch(40% 0.02 260)
-    mascotBody = Color(0xFF009267), // = Brand
-    mascotShade = Color(0xFF006944), // = BrandInk
-    mascotEye = Color(0xFF005A38), // = BrandDeep
+    background = Color(0xFFF1F3F4), // oklch(96.3% 0.003 230) 안개
+    surface = Color(0xFFFBFCFC), // oklch(99% 0.002 230)
+    surfaceAlt = Color(0xFFE6EAEC), // oklch(93.5% 0.006 230)
+    border = Color(0xFFD8DDE0), // oklch(89.5% 0.008 230)
+    borderStrong = Color(0xFFB9C0C5), // oklch(80.5% 0.011 230)
+    trackOff = Color(0xFFCDD3D7), // oklch(86% 0.009 230)
+    textPrimary = Color(0xFF1A2026), // oklch(23% 0.015 245) 흑연 — 바탕 위 15:1
+    textSecondary = Color(0xFF55606A), // oklch(48% 0.02 245) — 6.1:1
+    textTertiary = Color(0xFF6B7680), // oklch(56% 0.02 240) — 4.5:1
+    brand = Color(0xFFEC5A24), // oklch(65% 0.19 38) 표식 주황
+    brandInk = Color(0xFFB23E10), // oklch(52% 0.16 38) — 글자용, 바탕 위 5.6:1
+    brandDeep = Color(0xFF8F300A), // oklch(45% 0.14 38)
+    onBrand = Color(0xFF1A2026), // 주황 위 흑연 글자 4.6:1
+    brandTint = Color(0xFFFADDCF), // oklch(91% 0.045 45)
+    brandTintAlt = Color(0xFFFCE6DC), // oklch(93.5% 0.035 45)
+    amber = Color(0xFF2B3238), // 잠김 = 흑연
+    amberSurface = Color(0xFFE3E7EA),
+    amberBorder = Color(0xFFCDD3D8),
+    amberText = Color(0xFF1A2026),
+    amberSubText = Color(0xFF4E5862),
+    onAmber = Color(0xFFF6F8F9),
+    error = Color(0xFFB8234F), // oklch(50% 0.18 5) — 주황과 색조가 떨어진 진홍
+    onError = Color(0xFFFFF7F9),
+    shadow = Color(0xFF3A4550),
+    mascotBody = Color(0xFFEC5A24), // = Brand
+    mascotShade = Color(0xFFB23E10), // = BrandInk
+    mascotEye = Color(0xFF1A2026), // 흑연 눈
 )
 
 /**
- * 다크 — 짙은 회색에 브랜드 초록(165) 기운만 아주 살짝 섞었습니다.
+ * 다크 — 푸른 흑연(색조 235) 위에 한 단계 밝힌 주황.
  *
- * 라이트를 뒤집지 않았습니다. 뒤집으면 초록이 형광처럼 뜨고 크림색이 누렇게
- * 가라앉습니다. 역할별로 다시 골랐습니다:
- * - 면은 밝기 18.5 → 22.5 → 26.5% 로 **밝을수록 앞**에 있는 층이 됩니다(그림자 대신).
- * - 글자는 순백이 아니라 90% — 어두운 면 위 순백은 번져 보이고 눈이 쉽게 지칩니다.
- * - 브랜드 버튼은 밝은 초록 위 **어두운 글자**로 바꿨습니다. 어두운 배경에서 흰 글자
- *   초록 버튼은 버튼이 배경 속으로 가라앉습니다.
- * - 강조 글자(BrandInk·BrandDeep)는 어두운 초록이 읽히지 않아 밝은 초록으로 올렸습니다.
- *
- * 대비는 모두 WCAG AA 이상입니다(본문 13:1, 보조 글자 5.3:1 이상).
+ * 라이트를 뒤집지 않았습니다. 면은 밝기 18 → 21.5 → 25% 로 밝을수록 앞에 있는 층이고,
+ * 글자는 순백이 아닌 91% 입니다. 주황은 어두운 바탕에서 형광처럼 뜨지 않도록 밝기만
+ * 올리고 채도는 조금 내렸습니다. 주황 버튼 위 글자는 바탕과 같은 흑연(7.4:1).
  */
 val DarkPalette = SlPalette(
-    background = Color(0xFF0E1411), // oklch(18.5% 0.011 165)
-    surface = Color(0xFF171E1A), // oklch(22.5% 0.012 165)
-    surfaceAlt = Color(0xFF202724), // oklch(26.5% 0.013 165)
-    border = Color(0xFF2A322F), // oklch(31% 0.013 165)
-    borderStrong = Color(0xFF444D49), // oklch(41% 0.013 165)
-    trackOff = Color(0xFF373F3B), // oklch(36% 0.013 165)
-    textPrimary = Color(0xFFD9E0DD), // oklch(90% 0.008 165) — 13:1, 흰 글씨의 눈부심을 피합니다
-    textSecondary = Color(0xFFAAB4AF), // oklch(76% 0.012 165)
-    textTertiary = Color(0xFF89928D), // oklch(65% 0.012 165) — 표면 위 5.3:1
-    brand = Color(0xFF2EB184), // oklch(68% 0.13 165) — 어두운 글자와 6.8:1
-    brandInk = Color(0xFF69D6AA), // oklch(80% 0.12 165)
-    brandDeep = Color(0xFF8CE3BE), // oklch(85% 0.1 165)
-    onBrand = Color(0xFF051810), // oklch(19% 0.03 165)
-    brandTint = Color(0xFF13382A), // oklch(31% 0.05 165)
-    brandTintAlt = Color(0xFF123226), // oklch(29% 0.045 165)
-    amber = Color(0xFFED914C), // oklch(74% 0.14 55)
-    amberSurface = Color(0xFF38240F), // oklch(28% 0.045 65)
-    amberBorder = Color(0xFF5B3A1B), // oklch(38% 0.065 62)
-    amberText = Color(0xFFF7CC9B), // oklch(87% 0.08 70)
-    amberSubText = Color(0xFFCEAE8C), // oklch(77% 0.06 68)
-    onAmber = Color(0xFF1E1006), // oklch(19% 0.03 60)
-    error = Color(0xFFF5746D), // oklch(71% 0.16 25)
-    onError = Color(0xFF200E0D), // oklch(19% 0.03 25)
-    shadow = Color(0xFF010201), // oklch(8% 0.01 165)
-    mascotBody = Color(0xFF3CC998), // = 잠금 화면의 Dark.GreenIcon
-    mascotShade = Color(0xFF0D8963), // = Dark.GreenDeep
-    mascotEye = Color(0xFF0A3123), // = Dark.GreenTint
+    background = Color(0xFF12171B), // oklch(19% 0.012 235)
+    surface = Color(0xFF1A2025), // oklch(22.5% 0.013 235)
+    surfaceAlt = Color(0xFF222A30), // oklch(26% 0.014 235)
+    border = Color(0xFF2C353C), // oklch(30.5% 0.015 235)
+    borderStrong = Color(0xFF46515A), // oklch(41% 0.018 235)
+    trackOff = Color(0xFF39434B),
+    textPrimary = Color(0xFFE3E8EB), // oklch(92% 0.007 230) — 14:1
+    textSecondary = Color(0xFFAEB8BF), // 8:1
+    textTertiary = Color(0xFF8C979F), // 5.6:1
+    brand = Color(0xFFF7743F), // oklch(71% 0.17 42)
+    brandInk = Color(0xFFFF9B72), // oklch(78% 0.13 45)
+    brandDeep = Color(0xFFFFB79A), // oklch(84% 0.1 48)
+    onBrand = Color(0xFF12171B),
+    brandTint = Color(0xFF3A2219),
+    brandTintAlt = Color(0xFF331F18),
+    amber = Color(0xFFC9D2D8), // 잠김 = 밝은 흑연
+    amberSurface = Color(0xFF232B31),
+    amberBorder = Color(0xFF36414A),
+    amberText = Color(0xFFE3E8EB),
+    amberSubText = Color(0xFFAEB8BF),
+    onAmber = Color(0xFF12171B),
+    error = Color(0xFFFF6B8B),
+    onError = Color(0xFF22080F),
+    shadow = Color(0xFF05080A),
+    mascotBody = Color(0xFFF7743F),
+    mascotShade = Color(0xFFC14A1C),
+    mascotEye = Color(0xFF12171B),
 )
 
 val LocalSlPalette = staticCompositionLocalOf { LightPalette }
@@ -198,30 +204,35 @@ object SlColor {
      * 구분됩니다. 순수 검정은 쓰지 않습니다.
      */
     object Dark {
-        val Background = Color(0xFF0F141D) // oklch(19% 0.02 260)
-        val Surface = Color(0xFF1C222B) // oklch(25% 0.02 260)
-        val SurfaceAlt = Color(0xFF212730) // oklch(27% 0.02 260)
-        val Border = Color(0xFF2F3640) // oklch(33% 0.02 260)
+        val Background = Color(0xFF12171B) // oklch(19% 0.012 235) — 앱 다크와 같은 흑연
+        val Surface = Color(0xFF1A2025)
+        val SurfaceAlt = Color(0xFF222A30)
+        val Border = Color(0xFF2C353C)
 
-        val TextPrimary = Color(0xFFF4F2EA) // oklch(96% 0.01 90)
-        val TextBright = Color(0xFFEEEBE4) // oklch(94% 0.01 90)
+        val TextPrimary = Color(0xFFE9EDEF)
+        val TextBright = Color(0xFFE3E8EB)
         val TextChip = Color(0xFFD6DFEC) // oklch(90% 0.02 260)
         val TextIcon = Color(0xFFB6BECB) // oklch(80% 0.02 260)
         val TextMuted = Color(0xFF9DA5B1) // oklch(72% 0.02 260)
         val TextLink = Color(0xFF9199A5) // oklch(68% 0.02 260)
 
-        val AmberTint = Color(0xFF46280C) // oklch(31% 0.06 60)
-        val AmberIcon = Color(0xFFF79643) // oklch(76% 0.15 58)
-        val AmberText = Color(0xFFFBA962) // oklch(80% 0.13 60)
-        // 잠금 화면에서 가장 큰 면적을 차지하는 링 — 채도를 낮춰 눈이 덜 피로합니다.
-        val AmberRing = Color(0xFFE59656) // oklch(74% 0.125 58)
+        // 잠금 화면의 강조도 앱과 같은 표식 주황 하나입니다.
+        val AmberTint = Color(0xFF3A2219)
+        val AmberIcon = Color(0xFFF7743F)
+        val AmberText = Color(0xFFFF9B72) // 바탕 위 8.9:1
+        // 가장 큰 면적을 차지하는 링 — 주황을 한 단계 눌러 눈이 덜 피로합니다.
+        val AmberRing = Color(0xFFE8693A)
 
-        val GreenTint = Color(0xFF0A3123) // oklch(28% 0.05 165)
-        val GreenBorder = Color(0xFF134E39) // oklch(38% 0.07 165)
-        val GreenIcon = Color(0xFF3CC998) // oklch(75% 0.14 165)
-        val GreenText = Color(0xFF94E1BF) // oklch(85% 0.09 165)
-        // 어두운 배경 위 캐릭터의 그림자 면 — 밝은 GreenIcon 과 짝을 이룹니다.
-        val GreenDeep = Color(0xFF0D8963) // oklch(56% 0.115 165)
+        // "채움(달성)"은 두 번째 색 대신 밝은 흑연으로 — 주황은 "아직 가야 할 길"에만.
+        val GreenTint = Color(0xFF2A333A)
+        val GreenBorder = Color(0xFF46515A)
+        val GreenIcon = Color(0xFFE3E8EB)
+        val GreenText = Color(0xFFE3E8EB)
+        val GreenDeep = Color(0xFFC14A1C)
+
+        /** 잠금 화면의 스텝이 — 앱과 같은 주황 몸. */
+        val MascotBody = Color(0xFFF7743F)
+        val MascotShade = Color(0xFFC14A1C)
     }
 }
 

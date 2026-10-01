@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- oklch(96% 0.012 90) — Compose 토큰(SlColor.Background)과 같은 값 -->
-    <color name="steplock_background">#F5F2E9</color>
-    <!-- oklch(58% 0.13 165) — 브랜드 그린 -->
-    <color name="steplock_brand">#009267</color>
+    <!-- oklch(96.3% 0.003 230) — Compose 토큰(SlColor.Background)과 같은 값 -->
+    <color name="steplock_background">#F1F3F4</color>
+    <!-- oklch(65% 0.19 38) — 표식 주황 -->
+    <color name="steplock_brand">#EC5A24</color>
     <!-- oklch(19% 0.02 260) — 잠금 오버레이 배경 -->
-    <color name="steplock_dark_background">#0F141D</color>
-    <!-- 런처 아이콘 배경 — 캐릭터가 그린이라 크림 톤을 씁니다 -->
-    <color name="steplock_icon_background">#F5F2E9</color>
+    <color name="steplock_dark_background">#12171B</color>
+    <!-- 런처 아이콘 배경 — 주황 캐릭터가 또렷하도록 안개색 -->
+    <color name="steplock_icon_background">#F1F3F4</color>
 </resources>

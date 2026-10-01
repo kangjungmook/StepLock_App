@@ -2,7 +2,12 @@ package com.steplock.app.ui.theme
 
 import androidx.compose.ui.unit.dp
 
-/** 간격은 4dp 그리드를 따르고, 라운드는 14~20dp 범위를 씁니다. */
+/**
+ * 간격은 4dp 그리드를 따릅니다.
+ *
+ * 모서리는 **8dp 하나**로 맞춥니다 — 표지판 판처럼 반듯한 면. 예외는 둘뿐이고 규칙이
+ * 있습니다: 떠 있는 하단 탭과 상태 칩·스위치는 알약(완전 둥근 모서리)입니다.
+ */
 object SlDimen {
     val TouchTarget = 44.dp
     val CtaHeight = 56.dp
@@ -10,14 +15,14 @@ object SlDimen {
     val SwitchHeight = 32.dp
     val SwitchKnob = 26.dp
 
-    val RadiusField = 14.dp
-    val RadiusCard = 18.dp
-    val RadiusPanel = 20.dp
-    val RadiusCta = 16.dp
-    val RadiusBadge = 13.dp
-    val RadiusBadgeSmall = 12.dp
+    val RadiusField = 8.dp
+    val RadiusCard = 8.dp
+    val RadiusPanel = 8.dp
+    val RadiusCta = 8.dp
+    val RadiusBadge = 8.dp
+    val RadiusBadgeSmall = 6.dp
     /** 작은 요소와 누르는 영역의 리플 모서리 (체크박스, 텍스트 링크). */
-    val RadiusSmall = 8.dp
+    val RadiusSmall = 6.dp
 
     /** 하단 탭이나 목록이 있는 화면의 좌우 여백. */
     val ScreenPadding = 20.dp
