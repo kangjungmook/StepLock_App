@@ -347,7 +347,7 @@
     <string name="signup_login_prompt">이미 계정이 있나요?</string>
     <string name="signup_login_action">로그인</string>
     <string name="signup_sent_stepi">메일 하나만 확인하면 끝이에요!</string>
-    <string name="signup_sent_title">메일함을 확인해 주세요</string>
+    <string name="signup_sent_title">메일함을\n확인해 주세요</string>
     <string name="signup_sent_desc">%1$s 주소로 인증 메일을 보냈어요.\n메일의 링크를 누르면 스텝락으로 돌아와 바로 로그인돼요.</string>
     <string name="signup_sent_back">로그인 화면으로 돌아가기</string>
     <string name="settings_account_delete_focusing">집중이 끝나면 계정을 지울 수 있어요</string>
@@ -468,4 +468,14 @@
     <string name="login_email_section">이메일로 로그인</string>
     <string name="onboarding_headline">시작하려면\n세 가지만\n허락해 주세요</string>
     <string name="onboarding_headline_done">준비 끝!\n이제 걸어 볼까요</string>
+    <!-- 회원가입 단계 · 튜토리얼 구조 개편 -->
+    <string name="signup_q_email">어떤 이메일로\n가입할까요?</string>
+    <string name="signup_q_password">비밀번호를\n정해 주세요</string>
+    <string name="signup_q_agree">마지막으로\n하나만 확인할게요</string>
+    <string name="signup_next">다음 단계로</string>
+    <string name="signup_step">%2$d단계 중 %1$d단계</string>
+    <string name="signup_email_invalid">이메일 주소 모양이 아니에요. @와 도메인을 확인해 주세요</string>
+    <string name="signup_email_summary">가입할 이메일</string>
+    <string name="signup_change_email">이메일 바꾸기</string>
+    <string name="signup_sent_desc_short">위 주소로 인증 메일을 보냈어요. 메일의 링크를 누르면 스텝락으로 돌아와 바로 로그인돼요.</string>
 </resources>

@@ -2,6 +2,7 @@ package com.steplock.app.ui.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,31 +29,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.steplock.app.R
 import com.steplock.app.data.TemporaryAllow
 import com.steplock.app.ui.components.MascotMood
 import com.steplock.app.ui.components.PrimaryButton
 import com.steplock.app.ui.components.SlIcons
-import com.steplock.app.ui.components.StepLockMascot
-import com.steplock.app.ui.components.StepiBubble
 import com.steplock.app.ui.components.TextLink
+import com.steplock.app.ui.components.TrailMap
 import com.steplock.app.ui.theme.SlColor
 import com.steplock.app.ui.theme.SlDimen
 import com.steplock.app.ui.theme.SlText
 import com.steplock.app.ui.theme.StepLockTheme
 import kotlinx.coroutines.launch
 
-/** 튜토리얼 한 장. 캐릭터가 말풍선으로 한 가지씩만 말합니다. */
+/** 튜토리얼 한 장. 한 장에 한 가지만 말합니다 — 글이 길면 넘기기만 하고 읽지 않습니다. */
 private data class TutorialPage(
     @StringRes val titleRes: Int,
     @StringRes val bodyRes: Int,
     val mood: MascotMood,
-    /** 말풍선 아래에 늘어놓을 조건 아이콘. 조건을 설명하는 장에서만 씁니다. */
+    /** 본문 아래에 늘어놓을 조건 칩. 조건을 설명하는 장에서만 씁니다. */
     val showConditions: Boolean = false,
 )
 
@@ -68,13 +70,14 @@ private val pages = listOf(
 )
 
 /**
- * 첫 실행 튜토리얼. 캐릭터가 말풍선으로 앱이 하는 일을 네 장에 나눠 알려 줍니다.
+ * 첫 실행 튜토리얼 — **넘길 때마다 스텝이가 등산로를 한 구간씩 오릅니다.**
+ *
+ * 위는 홈과 같은 등산로, 아래는 한 장의 글. 네 장을 다 넘기면 스텝이가 정상의
+ * 자물쇠에 닿고 자물쇠가 주황으로 바뀝니다 — "채우면 열린다"를 글보다 먼저
+ * 그림으로 한 번 겪게 합니다. 말풍선 + 가운데 캐릭터 구조를 버렸습니다.
  *
  * 권한 화면보다 **먼저** 둡니다. 무엇을 하는 앱인지 모르는 채로 "사용 정보 접근"
  * 같은 권한을 요구받으면 거절하기 쉽고, 거절하면 앱이 아무것도 못 합니다.
- *
- * 한 장에 한 가지만 말합니다. 글이 길면 넘기기만 하고 읽지 않습니다.
- * 넘기는 건 스와이프와 아래 버튼 둘 다 되고, 언제든 건너뛸 수 있습니다.
  *
  * @param replay 설정에서 다시 보는 경우. 마지막 버튼이 권한 화면 대신 닫기가 됩니다.
  */
@@ -87,6 +90,7 @@ fun TutorialScreen(
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
     val isLast = pagerState.currentPage == pages.lastIndex
+    val page = pages[pagerState.currentPage]
 
     Column(
         modifier = modifier
@@ -94,14 +98,19 @@ fun TutorialScreen(
             .background(SlColor.Background)
             .safeDrawingPadding(),
     ) {
-        // 건너뛰기는 마지막 장에서 사라집니다 — 거기서는 아래 버튼이 같은 일을 합니다.
+        // 몇 번째 장인지(왼쪽)와 건너뛰기(오른쪽). 건너뛰기는 마지막 장에서 사라집니다.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = SlDimen.TouchTarget)
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.End,
+                .padding(start = SlDimen.ScreenPadding, end = 12.dp, top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            PageMarks(
+                count = pages.size,
+                current = pagerState.currentPage,
+                modifier = Modifier.weight(1f),
+            )
             if (!isLast) {
                 TextLink(
                     text = stringResource(R.string.tutorial_skip),
@@ -113,22 +122,24 @@ fun TutorialScreen(
             }
         }
 
-        HorizontalPager(
-            state = pagerState,
+        // 길 — 장마다 한 구간. 그림이라 읽는 도구에는 숨깁니다.
+        TrailMap(
+            progress = (pagerState.currentPage + 1f) / pages.size,
+            mood = page.mood,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
-        ) { index ->
-            TutorialPageContent(page = pages[index])
-        }
-
-        PageDots(
-            count = pages.size,
-            current = pagerState.currentPage,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 24.dp),
+                .fillMaxWidth()
+                .padding(horizontal = SlDimen.ScreenPadding)
+                .clearAndSetSemantics {},
         )
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) { index ->
+            TutorialPageText(page = pages[index])
+        }
 
         PrimaryButton(
             text = stringResource(
@@ -146,97 +157,100 @@ fun TutorialScreen(
                 }
             },
             modifier = Modifier.padding(
-                start = SlDimen.ScreenPaddingWide,
-                end = SlDimen.ScreenPaddingWide,
+                start = SlDimen.ScreenPadding,
+                end = SlDimen.ScreenPadding,
+                top = 24.dp,
                 bottom = 24.dp,
             ),
         )
     }
 }
 
+/** 한 장의 글 — 왼쪽 정렬 큰 제목과 본문. 최소 높이를 맞춰 장마다 버튼이 튀지 않습니다. */
 @Composable
-private fun TutorialPageContent(page: TutorialPage) {
+private fun TutorialPageText(page: TutorialPage) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = SlDimen.ScreenPaddingWide),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .fillMaxWidth()
+            .heightIn(min = TEXT_HEIGHT)
+            .padding(horizontal = SlDimen.ScreenPadding),
     ) {
-        StepiBubble(
-            modifier = Modifier.widthIn(max = 340.dp).fillMaxWidth(),
-        ) {
-            Text(
-                text = stringResource(page.titleRes),
-                style = SlText.StatusTitle,
-                color = SlColor.TextPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(page.bodyRes, TemporaryAllow.MINUTES, TemporaryAllow.DAILY_LIMIT),
-                style = SlText.Body,
-                color = SlColor.TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (page.showConditions) {
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                ) {
-                    ConditionChip(SlIcons.Steps, stringResource(R.string.condition_steps))
-                    ConditionChip(SlIcons.Moon, stringResource(R.string.condition_sleep))
-                    ConditionChip(SlIcons.Timer, stringResource(R.string.condition_pomodoro))
-                }
+        Text(
+            text = stringResource(page.titleRes),
+            style = SlText.HomeBig.copy(fontSize = 30.sp, lineHeight = 38.sp),
+            color = SlColor.TextPrimary,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(page.bodyRes, TemporaryAllow.MINUTES, TemporaryAllow.DAILY_LIMIT),
+            style = SlText.Tagline,
+            color = SlColor.TextSecondary,
+        )
+        if (page.showConditions) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ConditionChip(SlIcons.Steps, stringResource(R.string.condition_steps))
+                ConditionChip(SlIcons.Moon, stringResource(R.string.condition_sleep))
+                ConditionChip(SlIcons.Timer, stringResource(R.string.condition_pomodoro))
             }
         }
-        Spacer(Modifier.height(20.dp))
-        StepLockMascot(
-            modifier = Modifier.size(width = 120.dp, height = 149.dp),
-            mood = page.mood,
-        )
     }
 }
+
+private val TEXT_HEIGHT = 216.dp
 
 @Composable
 private fun ConditionChip(icon: ImageVector, label: String) {
     Row(
         modifier = Modifier
+            .heightIn(min = 32.dp)
             .clip(CircleShape)
-            .background(SlColor.BrandTintAlt)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .border(1.dp, SlColor.Border, CircleShape)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = SlColor.BrandDeep,
+            tint = SlColor.TextPrimary,
             modifier = Modifier.size(14.dp),
         )
-        Text(text = label, style = SlText.Chip, color = SlColor.BrandDeep)
+        Text(text = label, style = SlText.Chip, color = SlColor.TextPrimary)
     }
 }
 
-/** 지금 몇 번째 장인지. 지금 장만 길게 늘여 색보다 모양으로 구분합니다. */
+/**
+ * 지금 몇 번째 장인지 — 등산로 표식과 같은 납작한 칸. 지난 장 · 지금 장은 칠하고
+ * 남은 장은 흐리게, 옆에 "1 / 4".
+ */
 @Composable
-private fun PageDots(count: Int, current: Int, modifier: Modifier = Modifier) {
+private fun PageMarks(count: Int, current: Int, modifier: Modifier = Modifier) {
     val position = stringResource(R.string.tutorial_position, current + 1, count)
     Row(
-        modifier = modifier.semantics { contentDescription = position },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = position },
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(count) { index ->
             Box(
                 modifier = Modifier
-                    .size(width = if (index == current) 20.dp else 8.dp, height = 8.dp)
-                    .clip(CircleShape)
-                    .background(if (index == current) SlColor.Brand else SlColor.Border),
+                    .size(width = 20.dp, height = 8.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(
+                        when {
+                            index == current -> SlColor.Brand
+                            index < current -> SlColor.TextPrimary
+                            else -> SlColor.TrackOff
+                        },
+                    ),
             )
         }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "${current + 1} / $count",
+            style = SlText.TrailTick.copy(fontSize = 15.sp, color = SlColor.TextSecondary),
+        )
     }
 }
 
