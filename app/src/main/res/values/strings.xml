@@ -446,4 +446,18 @@
     <string name="rule_pomodoro_or">"을 하거나"</string>
     <string name="rule_pomodoro_and">"을 하고"</string>
     <string name="rule_pomodoro_last">"을 하면"</string>
+    <!-- 잠금 화면 · 집중 타이머 구조 개편 -->
+    <string name="lock_sub">잠겨 있어요</string>
+    <string name="lock_sub_used">잠겨 있어요 · 오늘 %1$s 썼어요</string>
+    <string name="lock_line_steps">더 걸으면 열려요</string>
+    <string name="lock_line_sleep">충분히 자면 열려요</string>
+    <string name="lock_line_pomodoro">더 집중하면 열려요</string>
+    <string name="pomodoro_grid_desc">남은 시간 %1$s. 25칸 중 지난 분만큼 칠해져 있어요</string>
+    <string name="pomodoro_grid_caption">한 칸이 1분이에요</string>
+    <string name="pomodoro_left">남았어요</string>
+    <string name="pomodoro_waiting">다음 집중 대기 중</string>
+    <string name="pomodoro_today_title">오늘의 집중</string>
+    <string name="pomodoro_plate_done">%1$d번째 집중 끝남</string>
+    <string name="pomodoro_plate_now">%1$d번째 집중 중</string>
+    <string name="pomodoro_plate_todo">%1$d번째 집중 남음</string>
 </resources>
